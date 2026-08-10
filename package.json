@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
+    "@material/material-color-utilities": "^0.4.0",
     "@rootnative/components": "0.0.0-alpha.8",
     "@rootnative/core": "0.0.0-alpha.8",
     "@rootnative/inertia": "0.0.6",
