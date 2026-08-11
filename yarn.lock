@@ -1667,15 +1667,15 @@
   dependencies:
     nanoid "^3.3.11"
 
-"@rootnative/components@0.0.0-alpha.8":
-  version "0.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.8.tgz#d0f9848789610ac0638649b8d82b572bb1ef0da2"
-  integrity sha512-4EmpAV161br6Rq2MsugQxxHEzYu5P0BuFKNtUGfbjV1ClyFbkwRwhh0T1nBea6tzwaxT/QCTBhqTRicD9bMaIw==
+"@rootnative/components@0.0.0-alpha.9":
+  version "0.0.0-alpha.9"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.9.tgz#ab0c36d95a23c048cdf24625e50c92369959c9d3"
+  integrity sha512-INE6OV2tvUjDn3bGiYXUyC3nzp21bbUsgSyTTZJuigKT2C3LL17z8SUXhSdoKrHsycZKmwt01/HHqYOFusjHmw==
 
-"@rootnative/core@0.0.0-alpha.8":
-  version "0.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.8.tgz#0c290083ee82a247712d3191b30dd21fc67a49a4"
-  integrity sha512-4FzaY5IlXVHqkrHgTGzwRQn9r1erHv9Ja9Y6ciL6rZsYLWkWRIYxLzoasDWym57Y4IgMkG+b5FdopmJEHekICw==
+"@rootnative/core@0.0.0-alpha.9":
+  version "0.0.0-alpha.9"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.9.tgz#0ca8bf0c8a2d23e76e9290225e640952a42575d5"
+  integrity sha512-xstd5Ooo+42aS/n/kTHdgB/S/+0zzfqUGwnM8qj5UbdQHrFeumpgrB+wR6sVdE55ixdyRavXWMgylQohHQ+ZVg==
 
 "@rootnative/inertia@0.0.6":
   version "0.0.6"
