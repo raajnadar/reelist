@@ -1,0 +1,78 @@
+name: Deploy web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-run a deploy from the Actions tab without a new commit.
+  workflow_dispatch:
+
+# GITHUB_TOKEN needs these to publish a Pages artifact.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time. `cancel-in-progress: false` differs from the CI
+# workflow on purpose: cancelling a running deploy can leave the site
+# half-published, so a queued deploy waits instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the web bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Keep this version equal to .nvmrc, the engines field, and ci.yml.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      # Pages serves a project site from a subpath, so the bundled asset URLs
+      # must carry that prefix. `base_path` comes from configure-pages and is
+      # '/reelist' here. app.config.js reads EXPO_BASE_URL and passes it to
+      # `experiments.baseUrl`. Without this the page loads and every asset 404s.
+      - name: Build the static site
+        env:
+          EXPO_BASE_URL: ${{ steps.pages.outputs.base_path }}
+        run: yarn build:web
+
+      # Expo Router serves one index.html and routes on the client. Pages has no
+      # rewrite rule, so a deep link would 404 on reload. Copying index.html to
+      # 404.html makes Pages return the app for an unknown path, and the client
+      # router then resolves it.
+      - name: Add the 404 fallback for client routing
+        run: cp dist/index.html dist/404.html
+
+      # .nojekyll stops Pages ignoring the _expo directory. Jekyll skips paths
+      # that start with an underscore, which is where the whole JS bundle lives.
+      - name: Disable Jekyll
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

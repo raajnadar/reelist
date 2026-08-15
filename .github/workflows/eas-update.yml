@@ -1,0 +1,43 @@
+name: Publish EAS Update
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# The QR code in the README points at the `main` channel. This job republishes
+# that channel, so the code keeps working without the image ever changing.
+concurrency:
+  group: eas-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Publish to the main channel
+    runs-on: ubuntu-latest
+
+    # Skips the job on a fork and on any repository that has no token, instead
+    # of failing the run with a confusing authentication error.
+    if: ${{ github.repository == 'raajnadar/reelist' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Keep this version equal to .nvmrc, the engines field, and ci.yml.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # --branch main matches the channel the README QR code points at.
+      # --non-interactive fails instead of prompting when something is missing.
+      - name: Publish the update
+        run: eas update --branch main --message "${{ github.event.head_commit.message || 'Manual update' }}" --non-interactive
