@@ -34,6 +34,10 @@ export default function HomeScreen() {
       })
       .catch((e: unknown) => {
         if (!active) return
+        // A MissingKeyError and a TmdbError both carry a message written for
+        // the person who sees it: the first says how to set the key, the
+        // second repeats what TMDB reported. Only an unknown throw falls back
+        // to the generic line.
         setError(e instanceof Error ? e.message : 'Could not load movies')
       })
       .finally(() => {

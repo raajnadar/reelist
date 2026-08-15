@@ -32,7 +32,14 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+# Every .env form is ignored, not only *.local. The TMDB key lives in .env, and
+# a key that reaches the repository has to be revoked, not deleted.
+.env
+.env*
+
+# The example holds no value and must stay tracked, so it is re-included after
+# the wildcard above. A new developer copies it to .env.
+!.env.example
 
 # typescript
 *.tsbuildinfo
