@@ -1,7 +1,14 @@
 import { waitFor } from '@testing-library/react-native'
-import { renderWithProviders } from '../../lib/test-utils'
-import { mockMovies } from '../../lib/mock'
-import MovieScreen from './[id]'
+import { renderWithProviders } from '../../../lib/test-utils'
+import { mockMovies } from '../../../lib/mock'
+import MovieScreen from '../../../app/movie/[id]'
+
+// This test mirrors the path of the screen it covers, but it stays outside
+// `app/`. Expo Router builds the route table with `require.context('./app')`,
+// which matches every file in that folder. A test file in `app/` becomes a
+// route, so Metro bundles `@testing-library/react-native` into the app and the
+// build fails on its Node imports (`console`, `util`). Tests for other folders
+// can stay beside their source, because the router does not read those folders.
 
 // The screen reads its id from the router and its data from lib/api. Both are
 // mocked per test so each branch is reachable: a real film, an id with no film,
@@ -15,11 +22,11 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), replace: jest.fn(), canGoBack: () => true }),
 }))
 
-jest.mock('../../lib/api', () => ({
+jest.mock('../../../lib/api', () => ({
   getMovie: jest.fn(),
 }))
 
-const { getMovie } = jest.requireMock('../../lib/api')
+const { getMovie } = jest.requireMock('../../../lib/api')
 
 // Dune: a film with every field populated.
 const movie = mockMovies[0]
