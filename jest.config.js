@@ -2,7 +2,22 @@
 // module mocks, and the platform-aware resolver. Do not replace it with a plain
 // `babel-jest` setup — the app imports native modules that only this preset
 // stubs.
-module.exports = {
+// The proxy is server code, not app code. It uses the Web Request/Response API
+// that Node supplies and the React Native preset does not, so it runs as its
+// own project in a node environment. `yarn test` still runs both.
+const proxyProject = {
+  displayName: 'proxy',
+  testEnvironment: 'node',
+  testMatch: ['<rootDir>/proxy/**/*.test.ts'],
+  // babel-preset-expo is already a dependency and strips the types. The proxy
+  // imports nothing from the app, so it needs no other transform.
+  transform: {
+    '^.+\\.ts$': ['babel-jest', { presets: ['babel-preset-expo'] }],
+  },
+}
+
+const appProject = {
+  displayName: 'app',
   preset: 'jest-expo',
 
   // The preset ignores node_modules by default, but every React Native package
@@ -33,7 +48,17 @@ module.exports = {
     '<rootDir>/node_modules/',
     '<rootDir>/dist/',
     '<rootDir>/.expo/',
+    // The proxy is the other project's job.
+    '<rootDir>/proxy/',
   ],
+}
 
-  collectCoverageFrom: ['lib/**/*.ts', 'components/**/*.tsx', 'app/**/*.tsx'],
+module.exports = {
+  projects: [appProject, proxyProject],
+  collectCoverageFrom: [
+    'lib/**/*.ts',
+    'components/**/*.tsx',
+    'app/**/*.tsx',
+    'proxy/api/**/*.ts',
+  ],
 }

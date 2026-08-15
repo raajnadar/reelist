@@ -48,13 +48,31 @@ carousel feels different there. Use the phone build to judge the motion.
    yarn install
    ```
 
-2. Start the development server:
+2. Point the app at a TMDB proxy.
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Open `.env` and set `EXPO_PUBLIC_TMDB_PROXY_URL`. Deploy the proxy first —
+   see [proxy/README.md](proxy/README.md), which takes about five minutes.
+
+   **The app holds no TMDB key, and it must stay that way.** Every
+   `EXPO_PUBLIC_*` value is inlined into the JavaScript bundle at build time and
+   can be read out of the web build, the `.apk`, and the `.ipa`. The proxy holds
+   the key on the server. The proxy URL is public by design: it is an address,
+   not a credential.
+
+3. Start the development server:
 
    ```bash
    yarn start
    ```
 
-3. Press `i` for iOS, `a` for Android, or `w` for the web.
+4. Press `i` for iOS, `a` for Android, or `w` for the web.
+
+Metro caches the value at build time. Run `yarn start --clear` after you change
+`.env`, or the old one stays in the bundle.
 
 ## Scripts
 
@@ -82,9 +100,11 @@ app/
 └── index.tsx         # Home screen
 components/           # MovieCarousel, MovieRow, MovieCard, CarouselCard
 lib/
-├── api.ts            # The only file that touches the data source
+├── api.ts            # The only file a screen imports for data
+├── tmdb.ts           # The HTTP transport for the TMDB API
+├── config.ts         # Reads the TMDB key from the environment
 ├── types.ts          # Movie and Paged, in the TMDB field shape
-├── mock.ts           # Static movie data
+├── mock.ts           # Static movie data, now used only as a test fixture
 ├── images.ts         # Builds a TMDB poster URL from a path fragment
 └── format.ts         # Rating and year labels
 assets/               # App icons, the splash screen, and the README QR code
@@ -100,9 +120,24 @@ CLAUDE.md             # Instructions for AI agents
 Expo Router uses the files in `app/` to make the navigation. Each file is one
 screen.
 
-`lib/api.ts` is the single seam between the UI and the data. The functions are
-`async` against static data on purpose, so the screens already handle latency
-and failure. A move to the real TMDB API changes that one file, and no screen.
+`lib/api.ts` is the single seam between the UI and the data. Every screen
+imports from it and from nowhere else.
+
+The seam proved itself. The functions were written `async` against static mock
+data first, so the screens already handled latency and failure. The move to the
+real TMDB API changed `lib/api.ts` and added `lib/tmdb.ts` under it. It changed
+no screen.
+
+Three files sit behind the seam:
+
+| File            | Function                                                            |
+| --------------- | ------------------------------------------------------------------- |
+| `lib/api.ts`    | The seam. Maps a TMDB response to the `Movie` type.                 |
+| `lib/tmdb.ts`   | The transport. Builds the URL and turns a bad status into an error. |
+| `lib/config.ts` | Reads the key. Throws `MissingKeyError` when it is absent.          |
+
+A missing key is a distinct error from a failed request, so the app prints the
+setup instruction instead of "Could not load movies".
 
 ## Technology
 
@@ -132,7 +167,7 @@ npx eas update --branch main --message "What changed"
 
 ### Setup that this repository cannot do for itself
 
-Three steps need the GitHub or Expo web interface:
+Four steps need the GitHub or Expo web interface:
 
 1. **Turn on Pages.** In `Settings → Pages`, set **Source** to **GitHub
    Actions**. The deploy workflow fails until this is set.
@@ -140,7 +175,11 @@ Three steps need the GitHub or Expo web interface:
    [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens),
    then add it in `Settings → Secrets and variables → Actions`. The EAS workflow
    skips its steps without it.
-3. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
+3. **Add the `EXPO_PUBLIC_TMDB_API_KEY` secret.** Both deploy workflows read it
+   in `Settings → Secrets and variables → Actions`. The key is inlined into the
+   bundle at build time, so without it the published app builds and then shows
+   the setup error on every row.
+4. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
    mark the `check` job as required. Until then CI reports a failure but does
    not stop a merge.
 

@@ -39,5 +39,10 @@ jobs:
 
       # --branch main matches the channel the README QR code points at.
       # --non-interactive fails instead of prompting when something is missing.
+      # The proxy URL is inlined into the bundle this step builds. It is public
+      # by design, so it is a variable and not a secret. The TMDB key must never
+      # appear here: the bundle this publishes can be read out of Expo Go.
       - name: Publish the update
+        env:
+          EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}
         run: eas update --branch main --message "${{ github.event.head_commit.message || 'Manual update' }}" --non-interactive

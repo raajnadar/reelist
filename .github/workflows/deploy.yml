@@ -43,9 +43,13 @@ jobs:
       # must carry that prefix. `base_path` comes from configure-pages and is
       # '/reelist' here. app.config.js reads EXPO_BASE_URL and passes it to
       # `experiments.baseUrl`. Without this the page loads and every asset 404s.
+      # The proxy URL, not the TMDB key. Anything behind EXPO_PUBLIC_ is inlined
+      # into the bundle and can be read out of the published site, so the key
+      # must never appear here. The proxy holds it. See proxy/README.md.
       - name: Build the static site
         env:
           EXPO_BASE_URL: ${{ steps.pages.outputs.base_path }}
+          EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}
         run: yarn build:web
 
       # Expo Router serves one index.html and routes on the client. Pages has no
