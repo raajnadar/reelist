@@ -51,3 +51,10 @@ jobs:
       - name: Check formatting
         if: ${{ !cancelled() }}
         run: yarn format:check
+
+      # The only check that runs the code instead of reading it. `--ci` fails on
+      # a missing snapshot rather than writing one, so a snapshot never lands in
+      # the repository from a CI run.
+      - name: Test
+        if: ${{ !cancelled() }}
+        run: yarn test --ci
