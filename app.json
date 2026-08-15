@@ -2,8 +2,15 @@
   "expo": {
     "name": "Reelist",
     "slug": "reelist",
+    "owner": "raajnadar",
     "scheme": "reelist",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7fe1b9fe-fa75-406c-aaf9-ae330957fc46"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -28,7 +35,10 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "7fe1b9fe-fa75-406c-aaf9-ae330957fc46"
+      }
     }
   }
 }

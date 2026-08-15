@@ -4,6 +4,36 @@ Reelist is a React Native app. It is built with Expo, Expo Router, and
 [RootNative UI](https://rootnative.github.io/ui/). The app runs on iOS, Android,
 and the web.
 
+## Try the app
+
+### On a phone
+
+Scan this code to open the app in Expo Go. You do not need this repository, and
+you do not need a development server.
+
+<img src="assets/docs/expo-go-qr.png" alt="QR code that opens Reelist in Expo Go" width="220" />
+
+1. Install **Expo Go** from the App Store or Google Play.
+2. Scan the code. Use the Expo Go app on Android, and the Camera app on iOS.
+3. The app opens. The code always serves the newest commit on `main`.
+
+If the code does not scan, open this link on the phone:
+
+```
+exp://u.expo.dev/7fe1b9fe-fa75-406c-aaf9-ae330957fc46?channel-name=main
+```
+
+The app runs on Expo Go SDK 54. Update Expo Go if it reports a version
+mismatch.
+
+### In a browser
+
+The web build is at **https://raajnadar.github.io/reelist/**. It updates on
+every push to `main`.
+
+The browser build has no gestures and no native animation driver, so the
+carousel feels different there. Use the phone build to judge the motion.
+
 ## Requirements
 
 - Node.js 24 or later (see `.nvmrc`; run `nvm use`)
@@ -28,12 +58,21 @@ and the web.
 
 ## Scripts
 
-| Script         | Function                                |
-| -------------- | --------------------------------------- |
-| `yarn start`   | Starts the Expo development server.     |
-| `yarn ios`     | Starts the app in the iOS simulator.    |
-| `yarn android` | Starts the app in the Android emulator. |
-| `yarn web`     | Starts the app in the browser.          |
+| Script              | Function                                      |
+| ------------------- | --------------------------------------------- |
+| `yarn start`        | Starts the Expo development server.           |
+| `yarn ios`          | Starts the app in the iOS simulator.          |
+| `yarn android`      | Starts the app in the Android emulator.       |
+| `yarn web`          | Starts the app in the browser.                |
+| `yarn typecheck`    | Runs TypeScript. Emits no files.              |
+| `yarn lint`         | Runs ESLint.                                  |
+| `yarn lint:fix`     | Runs ESLint and applies the fixes it can.     |
+| `yarn format`       | Applies Prettier to every file.               |
+| `yarn format:check` | Reports the files that Prettier would change. |
+| `yarn build:web`    | Exports the static web build to `dist/`.      |
+
+CI runs `typecheck`, `lint`, and `format:check` on every push to `main` and on
+every pull request.
 
 ## Project structure
 
@@ -41,9 +80,18 @@ and the web.
 app/
 ├── _layout.tsx       # Root layout with the ThemeProvider
 └── index.tsx         # Home screen
-assets/               # App icons and the splash screen
+components/           # MovieCarousel, MovieRow, MovieCard, CarouselCard
+lib/
+├── api.ts            # The only file that touches the data source
+├── types.ts          # Movie and Paged, in the TMDB field shape
+├── mock.ts           # Static movie data
+├── images.ts         # Builds a TMDB poster URL from a path fragment
+└── format.ts         # Rating and year labels
+assets/               # App icons, the splash screen, and the README QR code
+theme.ts              # The Material 3 light and dark themes
 app.json              # Expo configuration
-babel.config.js
+app.config.js         # Adds `baseUrl` for the GitHub Pages build
+eas.json              # EAS build and update profiles
 package.json
 tsconfig.json
 CLAUDE.md             # Instructions for AI agents
@@ -52,6 +100,10 @@ CLAUDE.md             # Instructions for AI agents
 Expo Router uses the files in `app/` to make the navigation. Each file is one
 screen.
 
+`lib/api.ts` is the single seam between the UI and the data. The functions are
+`async` against static data on purpose, so the screens already handle latency
+and failure. A move to the real TMDB API changes that one file, and no screen.
+
 ## Technology
 
 - Expo SDK 54 and Expo Router 6
@@ -59,6 +111,38 @@ screen.
 - `@rootnative/core` — the theme system with Material Design 3 tokens
 - `@rootnative/components` — the UI components
 - TypeScript
+
+## Deployment
+
+Two workflows publish the app on every push to `main`.
+
+| Workflow                                             | Publishes             | Target                                  |
+| ---------------------------------------------------- | --------------------- | --------------------------------------- |
+| [`deploy.yml`](.github/workflows/deploy.yml)         | The static web build  | GitHub Pages                            |
+| [`eas-update.yml`](.github/workflows/eas-update.yml) | The JavaScript bundle | The EAS `main` channel, for the QR code |
+
+The QR image never changes. It points at the channel, and the workflow moves the
+channel to the newest bundle.
+
+To publish an update by hand:
+
+```bash
+npx eas update --branch main --message "What changed"
+```
+
+### Setup that this repository cannot do for itself
+
+Three steps need the GitHub or Expo web interface:
+
+1. **Turn on Pages.** In `Settings → Pages`, set **Source** to **GitHub
+   Actions**. The deploy workflow fails until this is set.
+2. **Add the `EXPO_TOKEN` secret.** Make a token at
+   [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens),
+   then add it in `Settings → Secrets and variables → Actions`. The EAS workflow
+   skips its steps without it.
+3. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
+   mark the `check` job as required. Until then CI reports a failure but does
+   not stop a merge.
 
 ## More information
 
