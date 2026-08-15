@@ -15,7 +15,10 @@
  *
  * The proxy URL is public by design. It is an address, not a credential.
  */
-export const PROXY_URL = process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? ''
+// Not exported. A caller that read this directly would skip the empty check in
+// requireProxyUrl and build a request against '', which fails as a confusing
+// network error instead of the setup message.
+const PROXY_URL = process.env.EXPO_PUBLIC_TMDB_PROXY_URL ?? ''
 
 /**
  * Thrown when the proxy URL is absent. It is a distinct type so a screen can

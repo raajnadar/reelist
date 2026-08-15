@@ -97,10 +97,19 @@ Add a path to `ALLOWED_EXACT` or `ALLOWED_PATTERNS` in
    [your TMDB settings](https://www.themoviedb.org/settings/api). Redeploy after
    you add it, because a function reads its environment at deploy time.
 
-4. Put the resulting URL in the app's `.env`:
+4. Put the URL in the app's `.env`. **Use the stable alias, not the URL the
+   deploy prints.** The printed one contains a build id such as
+   `reelist-qadulvz91-...` and changes on every deploy, which breaks the app the
+   next time you deploy. Find the alias with:
+
+   ```bash
+   vercel alias ls
+   ```
+
+   Then use it:
 
    ```
-   EXPO_PUBLIC_TMDB_PROXY_URL=https://<your-deployment>.vercel.app/api/tmdb
+   EXPO_PUBLIC_TMDB_PROXY_URL=https://<project>.vercel.app/api/tmdb
    ```
 
    This URL is public by design. It is an address, not a credential.
@@ -208,6 +217,29 @@ vercel env pull .vercel/.env.development.local
 
 Restart `vercel dev` afterwards. It reads its environment once at startup, so a
 key added while it runs has no effect until the restart.
+
+### The deployed proxy answers 500 and the key is set
+
+A function reads its environment **when it is built**, not on each request. A key
+added after the last deployment is not in the running function, however correct
+`vercel env ls` looks.
+
+Compare the two times:
+
+```bash
+vercel ls                                    # deployment age
+vercel env ls                                # variable age
+```
+
+If the deployment is older than the variable, deploy again. Nothing else needs
+to change:
+
+```bash
+vercel deploy --prod
+```
+
+This is the same mistake as the local one below, in a different place: the key
+is right, and the process holding it is stale.
 
 ### The deployment redirects to a Vercel login
 
