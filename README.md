@@ -6,7 +6,7 @@ and the web.
 
 ## Requirements
 
-- Node.js 20 or later
+- Node.js 24 or later (see `.nvmrc`; run `nvm use`)
 - Yarn
 - The Expo Go app, an iOS simulator, or an Android emulator
 

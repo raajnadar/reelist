@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A new push to the same branch cancels the run that is already going. The last
+# commit is the only one whose result matters.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, lint, and format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 24 is the current Active LTS, and the version the developers run.
+      # CI and the development machine then share one major version, so a
+      # failure here reproduces locally. Keep this number, .nvmrc, and the
+      # `engines` field in package.json equal.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      # --frozen-lockfile makes the job fail if package.json and yarn.lock
+      # disagree. Without it, CI silently resolves a different dependency tree
+      # than the one a developer gets.
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # Each check runs even after an earlier one fails. One push then reports
+      # every problem, instead of one problem per push.
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: yarn lint
+
+      - name: Check formatting
+        if: ${{ !cancelled() }}
+        run: yarn format:check
