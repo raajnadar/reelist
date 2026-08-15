@@ -31,9 +31,14 @@ type Props = {
   width: number
   /** Slot pitch, i.e. width + spacing. Must match the ScrollView's snap. */
   snap: number
+  /**
+   * Scroll distance between slot 0 and the viewport center on a screen where
+   * the centering inset was capped. Zero when the row centers normally.
+   */
+  centerOffset: number
 }
 
-export function CarouselCard({ movie, index, scrollX, width, snap }: Props) {
+export function CarouselCard({ movie, index, scrollX, width, snap, centerOffset }: Props) {
   const theme = useTheme()
   const router = useRouter()
   const uri = posterUrl(movie.poster_path, 'w500')
@@ -41,7 +46,10 @@ export function CarouselCard({ movie, index, scrollX, width, snap }: Props) {
   // Three stops: previous slot, this slot centered, next slot. The card reaches
   // full scale only when its own slot sits under the viewport center. The pitch
   // comes from the parent so the scale peak always lands on the snap point.
-  const inputRange = [(index - 1) * snap, index * snap, (index + 1) * snap]
+  // centerOffset shifts the stops when the parent capped its centering inset,
+  // because slot 0 then starts left of the viewport center.
+  const center = index * snap - centerOffset
+  const inputRange = [center - snap, center, center + snap]
 
   // One shared value, four style keys, all on the UI thread. No re-render per
   // frame, so the row stays smooth regardless of how many cards are mounted.

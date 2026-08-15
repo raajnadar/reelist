@@ -30,12 +30,25 @@ export function carouselGeometry(width: number) {
   )
 
   // Side padding centers the first and last slot. Without this, slot 0 sits at
-  // the left edge and can never reach the center stop of its input range. The
-  // inset must stay (width - card) / 2, or the centered card is no longer
-  // centered and every scale peak drifts off the viewport center.
-  const sidePadding = (width - cardWidth) / 2
+  // the left edge and can never reach the center stop of its input range.
+  //
+  // On a wide screen the card stops at the ceiling, so this inset grows without
+  // limit and leaves the centered card alone in blank space. The cap keeps the
+  // neighbouring card visible at each edge instead. Once capped the row scrolls
+  // off-center, so the scale peak must move with it: the parent shifts the
+  // interpolation by the same amount.
+  const centerPadding = (width - cardWidth) / 2
+  const sidePadding = Math.min(centerPadding, CAROUSEL_PEEK + CAROUSEL_SPACING)
 
-  return { cardWidth, sidePadding, snap: cardWidth + CAROUSEL_SPACING }
+  return {
+    cardWidth,
+    sidePadding,
+    snap: cardWidth + CAROUSEL_SPACING,
+    // How far the capped inset moved slot 0 away from the viewport center. Each
+    // card subtracts this from its input range so full scale still lands on the
+    // card under the center of the screen.
+    centerOffset: centerPadding - sidePadding,
+  }
 }
 
 export function MovieCarousel({ title, movies }: { title: string; movies: Movie[] }) {
@@ -45,7 +58,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   // React re-render.
   const { scrollX, onScroll } = useScroll()
 
-  const { cardWidth, sidePadding, snap } = carouselGeometry(width)
+  const { cardWidth, sidePadding, snap, centerOffset } = carouselGeometry(width)
 
   const renderItem = useCallback(
     ({ item, index }: { item: Movie; index: number }) => (
@@ -55,9 +68,10 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         scrollX={scrollX}
         width={cardWidth}
         snap={snap}
+        centerOffset={centerOffset}
       />
     ),
-    [scrollX, cardWidth, snap],
+    [scrollX, cardWidth, snap, centerOffset],
   )
 
   const getItemLayout = useCallback(
