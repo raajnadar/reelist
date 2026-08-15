@@ -12,6 +12,32 @@ import {
 
 const keyExtractor = (movie: Movie) => String(movie.id)
 
+/**
+ * The carousel geometry for a given screen width.
+ *
+ * This is exported so a test can assert the invariant below against the code
+ * that actually ships. Inline arithmetic here would leave the test recomputing
+ * the same formula, where it would agree with itself and prove nothing.
+ */
+export function carouselGeometry(width: number) {
+  // Size the card from the screen, not from a constant: the leftover inset is
+  // then exactly the peek strip plus one gap. Widening the card is what creates
+  // the peek. The ceiling stops the card growing on a tablet rather than
+  // becoming one absurdly wide poster.
+  const cardWidth = Math.min(
+    CAROUSEL_MAX_CARD_WIDTH,
+    width - 2 * (CAROUSEL_PEEK + CAROUSEL_SPACING),
+  )
+
+  // Side padding centers the first and last slot. Without this, slot 0 sits at
+  // the left edge and can never reach the center stop of its input range. The
+  // inset must stay (width - card) / 2, or the centered card is no longer
+  // centered and every scale peak drifts off the viewport center.
+  const sidePadding = (width - cardWidth) / 2
+
+  return { cardWidth, sidePadding, snap: cardWidth + CAROUSEL_SPACING }
+}
+
 export function MovieCarousel({ title, movies }: { title: string; movies: Movie[] }) {
   const { width } = useWindowDimensions()
 
@@ -19,21 +45,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   // React re-render.
   const { scrollX, onScroll } = useScroll()
 
-  // Size the card from the screen, not from a constant: the leftover inset is
-  // then exactly the peek strip plus one gap. Widening the card is what creates
-  // the peek — the inset must stay (width - card) / 2 or the centered card is
-  // no longer centered, and every scale peak drifts off the viewport center.
-  // The ceiling stops the card growing on a tablet
-  // rather than becoming one absurdly wide poster.
-  const cardWidth = Math.min(
-    CAROUSEL_MAX_CARD_WIDTH,
-    width - 2 * (CAROUSEL_PEEK + CAROUSEL_SPACING),
-  )
-
-  // Side padding centers the first and last slot. Without this, slot 0 sits at
-  // the left edge and can never reach the center stop of its input range.
-  const sidePadding = (width - cardWidth) / 2
-  const snap = cardWidth + CAROUSEL_SPACING
+  const { cardWidth, sidePadding, snap } = carouselGeometry(width)
 
   const renderItem = useCallback(
     ({ item, index }: { item: Movie; index: number }) => (
