@@ -19,6 +19,9 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+# tests
+coverage/
+
 # debug
 npm-debug.*
 yarn-debug.*
