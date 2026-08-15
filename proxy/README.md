@@ -25,13 +25,50 @@ holding the app can also decrypt. The key has to stay off the device.
 
 ## What the proxy does
 
-| Rule               | Reason                                                           |
-| ------------------ | ---------------------------------------------------------------- |
-| Allowlisted paths  | Without it, the URL is a free TMDB relay under this key.         |
-| Allowlisted params | A caller cannot add their own `api_key` or reach other features. |
-| Edge cache, 10 min | One cached copy serves every user, so TMDB sees few requests.    |
-| Errors not cached  | Caching a failure would pin it in place for the whole window.    |
-| Status passed on   | The app turns a 404 into "no such film" and reports the rest.    |
+| Rule               | Reason                                                            |
+| ------------------ | ----------------------------------------------------------------- |
+| Allowlisted paths  | Without it, the URL is a free TMDB relay under this key.          |
+| Allowlisted params | A caller cannot add their own `api_key` or reach other features.  |
+| Edge cache, 10 min | One cached copy serves every user, so TMDB sees few requests.     |
+| Errors not cached  | Caching a failure would pin it in place for the whole window.     |
+| Status passed on   | The app turns a 404 into "no such film" and reports the rest.     |
+| GET only           | Nothing here writes, so any other method is a mistake or a probe. |
+
+## The interface
+
+The app sends the TMDB path as a `path` parameter. The proxy checks it, adds the
+key, and returns what TMDB answers.
+
+```
+GET /api/tmdb?path=/movie/popular
+GET /api/tmdb?path=/search/movie&query=dune
+```
+
+| Path                   | Used by                       |
+| ---------------------- | ----------------------------- |
+| `/trending/movie/week` | The home carousel             |
+| `/movie/popular`       | The "Popular" row             |
+| `/movie/top_rated`     | The "Top rated" row           |
+| `/movie/{id}`          | The detail screen             |
+| `/search/movie`        | `searchMovies`, no screen yet |
+
+Only `query` and `page` are forwarded. Any other parameter is dropped, including
+an `api_key` supplied by the caller.
+
+| Status | Meaning                                                     |
+| ------ | ----------------------------------------------------------- |
+| 200    | TMDB answered. The body is passed through unchanged.        |
+| 204    | A CORS preflight. The web build sends one; native does not. |
+| 400    | No `path` parameter.                                        |
+| 403    | The path is not on the allowlist.                           |
+| 404    | TMDB has no such film. `getMovie` turns this into `null`.   |
+| 405    | A method other than GET.                                    |
+| 500    | The server has no `TMDB_API_KEY`.                           |
+| 502    | TMDB could not be reached.                                  |
+
+Add a path to `ALLOWED_EXACT` or `ALLOWED_PATTERNS` in
+[api/tmdb.ts](api/tmdb.ts) when a screen needs a new endpoint, and add a case to
+[api/tmdb.test.ts](api/tmdb.test.ts) to cover it.
 
 ## Deploy it
 
@@ -70,24 +107,130 @@ holding the app can also decrypt. The key has to stay off the device.
 
 ## Run it locally
 
-```bash
-cd proxy
-vercel dev
-```
+1. Give the local server the key. `vercel dev` reads `proxy/.env.local`, and it
+   does **not** read a variable you export in the shell:
 
-Then set `EXPO_PUBLIC_TMDB_PROXY_URL=http://localhost:3000/api/tmdb` in the
-app's `.env` and restart Metro with `yarn start --clear`.
+   ```bash
+   cd proxy
+   echo 'TMDB_API_KEY=your-32-character-v3-key' > .env.local
+   ```
+
+   `.env.local` is gitignored by the `.env*` rule at the repository root.
+
+2. Start the server:
+
+   ```bash
+   vercel dev
+   ```
+
+   The first run links the directory to a Vercel project and asks a few
+   questions. It prints the address it uses, which is `http://localhost:3000`
+   unless that port is taken.
+
+3. Point the app at it. In the app's `.env` at the repository root:
+
+   ```
+   EXPO_PUBLIC_TMDB_PROXY_URL=http://localhost:3000/api/tmdb
+   ```
+
+   Restart Metro with `yarn start --clear`. Metro reads `.env` when it starts,
+   so a change without the restart has no effect.
+
+**A phone cannot reach `localhost`.** On a device, `localhost` is the phone
+itself. Use the computer's address on the network instead — for example
+`http://192.168.1.20:3000/api/tmdb`. Find it with `ipconfig getifaddr en0` on
+macOS. The simulator and the web build are fine with `localhost`.
 
 ## Test it
 
-The tests run from the repository root, with the rest of the suite:
+Three checks, from the fastest to the most complete.
+
+**1. The unit tests.** They run from the repository root, mock `fetch`, and need
+no key and no network:
 
 ```bash
-yarn test            # both projects
-yarn test --selectProjects proxy
+yarn test --selectProjects proxy   # the proxy only
+yarn test                          # the app and the proxy
 ```
 
-They mock `fetch`, so they need no key and reach no network.
+**2. The smoke script.** It calls a running proxy and checks that the allowed
+paths work and the refused ones fail. It works against a local server or a
+deployment:
+
+```bash
+./smoke.sh                                          # http://localhost:3000/api/tmdb
+./smoke.sh http://localhost:3001/api/tmdb           # another port
+./smoke.sh https://your-app.vercel.app/api/tmdb     # a deployment
+```
+
+It reports a missing key, a rejected key, and a server that is not running as
+one clear line each, rather than as a list of failed checks.
+
+**3. The app.** Run `yarn start` from the repository root with the proxy
+running. The three rows fill with films, and tapping a poster opens the detail
+screen.
+
+To confirm the key is not in the build, export the web bundle and search it:
+
+```bash
+yarn build:web
+grep -c 'api_key' dist/_expo/static/js/web/entry-*.js   # expect 0
+grep -c 'api.themoviedb.org' dist/_expo/static/js/web/entry-*.js  # expect 0
+```
+
+`image.tmdb.org` does appear, which is correct: the poster CDN needs no
+credential.
+
+## When it does not work
+
+Three failures that each look like a broken key but are not. All three were hit
+while setting this up.
+
+### "TMDB_API_KEY is not set on the server" and `.env.local` exists
+
+`vercel dev` runs in the **Development** environment. A variable added with
+`vercel env add TMDB_API_KEY production` is scoped to Production only, so the
+local server never sees it, whatever `.env.local` holds.
+
+Check which environments have the variable:
+
+```bash
+vercel env ls
+vercel env ls development     # this one must not be empty
+```
+
+Add it for development, then pull it to the file `vercel dev` prefers:
+
+```bash
+vercel env add TMDB_API_KEY development
+vercel env pull .vercel/.env.development.local
+```
+
+Restart `vercel dev` afterwards. It reads its environment once at startup, so a
+key added while it runs has no effect until the restart.
+
+### The deployment redirects to a Vercel login
+
+A request to the deployed proxy answers `302` with a `location` of
+`vercel.com/sso-api`:
+
+```bash
+curl -s -o /dev/null -D - "https://<deployment>/api/tmdb?path=/movie/popular" | grep -i location
+```
+
+This is **Deployment Protection**, which Vercel turns on by default for new
+projects. It stops the request before it reaches the function, so the app gets
+an HTML login page instead of JSON. The app cannot authenticate.
+
+Turn it off in `Settings → Deployment Protection → Vercel Authentication`. The
+proxy is meant to be public — that is what makes it usable as an API, and the
+allowlist and the cache are what bound the exposure.
+
+### The app shows the setup error but the proxy answers `curl`
+
+Metro reads `.env` when it starts and inlines the value. Restart it with
+`yarn start --clear`. Check also that a phone is not being told to use
+`localhost` — see the note above.
 
 ## If the key is already exposed
 
