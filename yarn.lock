@@ -1667,20 +1667,20 @@
   dependencies:
     nanoid "^3.3.11"
 
-"@rootnative/components@0.0.0-alpha.9":
-  version "0.0.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.9.tgz#ab0c36d95a23c048cdf24625e50c92369959c9d3"
-  integrity sha512-INE6OV2tvUjDn3bGiYXUyC3nzp21bbUsgSyTTZJuigKT2C3LL17z8SUXhSdoKrHsycZKmwt01/HHqYOFusjHmw==
+"@rootnative/components@0.0.0-alpha.12":
+  version "0.0.0-alpha.12"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.12.tgz#0cd108da98a1f70300ccdc61b9907a895e6cbd03"
+  integrity sha512-Dvcwml08ceGxTS5JYJ4PZrQ22UziK5Xwl5N0gwiduEpb84Cs0rEr/mJF88zFGtd1csoQc+kUQv/ATSsmb8QSMg==
 
-"@rootnative/core@0.0.0-alpha.9":
-  version "0.0.0-alpha.9"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.9.tgz#0ca8bf0c8a2d23e76e9290225e640952a42575d5"
-  integrity sha512-xstd5Ooo+42aS/n/kTHdgB/S/+0zzfqUGwnM8qj5UbdQHrFeumpgrB+wR6sVdE55ixdyRavXWMgylQohHQ+ZVg==
+"@rootnative/core@0.0.0-alpha.12":
+  version "0.0.0-alpha.12"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.12.tgz#61f40172d4ef6b692fd91330afa0a9cce8bfdc2f"
+  integrity sha512-Hv+z3dtxBxSA7SvCANAMWcqPX1ntGuMZcAc5XN/klZK1P0+hgWKSzf0yy6B3wJkHK5RiJNqEHcsVjmkQrxqF9Q==
 
-"@rootnative/inertia@0.0.6":
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.6.tgz#d879294a06922579d62cb3eb76e93fa6bde86783"
-  integrity sha512-eOrXfAr1dSUa8PvQtV2XBYURmLXo8IorNBcjYE3Z623lzejc840j2xw7O0LTwu6XHotCtzW9EzSph8FJJ1iwuQ==
+"@rootnative/inertia@0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.7.tgz#a7fdd0f893d522a5ebc125b0f26f76144c502c77"
+  integrity sha512-g63he988LCs4x6mfr5kTMK41AvfzEzaphghzyI0Ol55DnPmSYRmWtSUzIumY4D0tngsFIlhgTgElC1fXq/nghg==
 
 "@sinclair/typebox@^0.27.8":
   version "0.27.12"

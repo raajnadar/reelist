@@ -1,5 +1,6 @@
 import { Typography } from '@rootnative/components/typography'
 import { Motion, useScroll } from '@rootnative/inertia'
+import { useCallback } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import type { Movie } from '../lib/types'
 import {
@@ -9,14 +10,14 @@ import {
   CAROUSEL_SPACING,
 } from './CarouselCard'
 
+const keyExtractor = (movie: Movie) => String(movie.id)
+
 export function MovieCarousel({ title, movies }: { title: string; movies: Movie[] }) {
   const { width } = useWindowDimensions()
 
   // scrollX updates on the UI thread, so every card interpolates without a
   // React re-render.
   const { scrollX, onScroll } = useScroll()
-
-  if (!movies.length) return null
 
   // Size the card from the screen, not from a constant: the leftover inset is
   // then exactly the peek strip plus one gap. Widening the card is what creates
@@ -34,38 +35,59 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   const sidePadding = (width - cardWidth) / 2
   const snap = cardWidth + CAROUSEL_SPACING
 
+  const renderItem = useCallback(
+    ({ item, index }: { item: Movie; index: number }) => (
+      <CarouselCard
+        movie={item}
+        index={index}
+        scrollX={scrollX}
+        width={cardWidth}
+        snap={snap}
+      />
+    ),
+    [scrollX, cardWidth, snap],
+  )
+
+  const getItemLayout = useCallback(
+    (_: ArrayLike<Movie> | null | undefined, index: number) => ({
+      length: snap,
+      offset: snap * index,
+      index,
+    }),
+    [snap],
+  )
+
+  // Below the hooks: an early return above them would change hook order
+  // between an empty and a populated row.
+  if (!movies.length) return null
+
   return (
     <View style={styles.wrapper}>
       <Typography variant="titleMediumEmphasized" style={styles.heading}>
         {title}
       </Typography>
 
-      <Motion.ScrollView
+      <Motion.FlatList
+        data={movies}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         horizontal
         onScroll={onScroll}
-        scrollEventThrottle={16}
         showsHorizontalScrollIndicator={false}
         // Snap to the slot pitch so a card always lands centered.
         snapToInterval={snap}
         decelerationRate="fast"
         disableIntervalMomentum
+        // Every slot is one fixed pitch wide, so the list can place a card
+        // without measuring it. This is what keeps the scale peaks aligned
+        // while cards mount and unmount during a fling.
+        getItemLayout={getItemLayout}
         contentContainerStyle={{
           paddingHorizontal: sidePadding,
           // The trailing marginRight on the last slot doubles the end padding.
           paddingRight: sidePadding - CAROUSEL_SPACING,
         }}
-      >
-        {movies.map((movie, index) => (
-          <CarouselCard
-            key={movie.id}
-            movie={movie}
-            index={index}
-            scrollX={scrollX}
-            width={cardWidth}
-            snap={snap}
-          />
-        ))}
-      </Motion.ScrollView>
+      />
     </View>
   )
 }
