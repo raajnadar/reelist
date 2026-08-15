@@ -27,7 +27,9 @@ export function MovieCard({ movie }: { movie: Movie }) {
         {uri ? (
           <Image source={{ uri }} resizeMode="cover" />
         ) : (
-          <View style={[styles.fallback, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <View
+            style={[styles.fallback, { backgroundColor: theme.colors.surfaceVariant }]}
+          >
             <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
               No poster
             </Typography>

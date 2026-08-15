@@ -1,0 +1,7 @@
+node_modules/
+.expo/
+dist/
+web-build/
+yarn.lock
+expo-env.d.ts
+assets/

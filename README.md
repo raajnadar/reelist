@@ -28,12 +28,12 @@ and the web.
 
 ## Scripts
 
-| Script         | Function                             |
-| -------------- | ------------------------------------ |
-| `yarn start`   | Starts the Expo development server.  |
-| `yarn ios`     | Starts the app in the iOS simulator. |
+| Script         | Function                                |
+| -------------- | --------------------------------------- |
+| `yarn start`   | Starts the Expo development server.     |
+| `yarn ios`     | Starts the app in the iOS simulator.    |
 | `yarn android` | Starts the app in the Android emulator. |
-| `yarn web`     | Starts the app in the browser.       |
+| `yarn web`     | Starts the app in the browser.          |
 
 ## Project structure
 
