@@ -37,6 +37,10 @@ jobs:
 
       # Each check runs even after an earlier one fails. One push then reports
       # every problem, instead of one problem per push.
+      #
+      # `typecheck` generates the route types first. `.expo/` is gitignored, so
+      # this checkout has none, and without them a link to a route that does not
+      # exist passes. See scripts/generate-route-types.js.
       - name: Typecheck
         run: yarn typecheck
 

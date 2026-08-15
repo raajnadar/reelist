@@ -2,7 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { Image, Pressable, StyleSheet, View } from 'react-native'
+import { Image, Pressable, StyleSheet, View, type ViewStyle } from 'react-native'
 import { metaLine } from '../lib/format'
 import { posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
@@ -55,8 +55,14 @@ export function CarouselCard({ movie, index, scrollX, width, snap }: Props) {
     { inputRange },
   )
 
+  // The hook returns Reanimated's DefaultStyle, a union that also covers text
+  // keys, so it does not narrow to ViewStyle inside a style array. The map above
+  // emits only transform and opacity, so the cast is safe. Remove it when
+  // @rootnative/inertia types the return against the map it was given.
+  const cardStyle = animatedStyle as ViewStyle
+
   return (
-    <Motion.View style={[styles.slot, { width }, animatedStyle]}>
+    <Motion.View style={[styles.slot, { width }, cardStyle]}>
       <Pressable
         onPress={() => router.push(`/movie/${movie.id}`)}
         accessibilityRole="button"

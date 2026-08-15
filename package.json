@@ -17,7 +17,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "routes:types": "node scripts/generate-route-types.js",
+    "typecheck": "yarn routes:types && tsc --noEmit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

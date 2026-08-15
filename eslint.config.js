@@ -10,6 +10,20 @@ module.exports = [
   ...expo,
   prettier,
   {
+    // The build scripts run in Node, not in the app runtime, so they need the
+    // Node globals. The Expo config supplies the React Native ones only, which
+    // leaves `__dirname` and `require` undefined here.
+    files: ['scripts/**/*.js', 'eslint.config.js', 'app.config.js', 'babel.config.js'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        require: 'readonly',
+        module: 'writable',
+        process: 'readonly',
+      },
+    },
+  },
+  {
     ignores: ['node_modules/', '.expo/', 'dist/', 'web-build/', 'expo-env.d.ts'],
   },
 ]

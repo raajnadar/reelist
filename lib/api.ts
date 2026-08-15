@@ -29,6 +29,8 @@ export const getTopRated = async (): Promise<Paged> => ({
 export const getMovie = async (id: number): Promise<Movie | null> =>
   mockMovies.find((m) => m.id === id) ?? null
 
+// TODO: no caller yet. This waits for the search screen. Delete it with this
+// comment if that screen is dropped, so the seam does not collect dead code.
 export const searchMovies = async (query: string): Promise<Paged> => {
   const q = query.trim().toLowerCase()
   if (!q) return { results: [] }
