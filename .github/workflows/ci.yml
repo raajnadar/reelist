@@ -35,6 +35,14 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      # `proxy/` is a separate project with its own package.json and yarn.lock,
+      # because Vercel deploys it on its own. The root checks still read it: tsc
+      # includes proxy/**/*.ts, eslint lints the whole tree, and jest runs the
+      # `proxy` project. Those checks need @upstash/* on disk, so install here
+      # too. Without this step every check fails on an unresolved import.
+      - name: Install proxy dependencies
+        run: yarn --cwd proxy install --frozen-lockfile
+
       # Each check runs even after an earlier one fails. One push then reports
       # every problem, instead of one problem per push.
       #
