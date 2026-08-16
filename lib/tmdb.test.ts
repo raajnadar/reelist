@@ -102,6 +102,24 @@ describe('the failure branches', () => {
     await expect(tmdbFetch('/movie/550')).rejects.toThrow('Not available.')
   })
 
+  /**
+   * The proxy refuses a caller who is over its rate limit with a 429 and a
+   * status_message. The screens print `error.message`, so this is the whole
+   * path from the limit to the text the user reads — no screen needs its own
+   * branch for it.
+   */
+  it('reports the proxy rate limit in words the user can read', async () => {
+    const { tmdbFetch } = load(PROXY)
+    mockFetch.mockResolvedValue(
+      failing(429, { status_message: 'Too many requests. Please slow down.' }),
+    )
+
+    await expect(tmdbFetch('/movie/popular')).rejects.toMatchObject({
+      message: 'Too many requests. Please slow down.',
+      status: 429,
+    })
+  })
+
   it('carries the status so a caller can branch on 404', async () => {
     const { tmdbFetch } = load(PROXY)
     mockFetch.mockResolvedValue(failing(404, { status_message: 'Not found.' }))

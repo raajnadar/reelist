@@ -26,10 +26,13 @@ describe('carousel geometry', () => {
   // Above the ceiling, centering would push the inset arbitrarily wide. The cap
   // is what stops the gap the screenshot showed at width 2000, where a centered
   // 320px card left 840px of empty space on each side.
-  it.each([1024, 1440, 2000])('caps the inset instead of centering at width %i', (width) => {
-    const { sidePadding } = geometry(width)
-    expect(sidePadding).toBe(CAROUSEL_PEEK + CAROUSEL_SPACING)
-  })
+  it.each([1024, 1440, 2000])(
+    'caps the inset instead of centering at width %i',
+    (width) => {
+      const { sidePadding } = geometry(width)
+      expect(sidePadding).toBe(CAROUSEL_PEEK + CAROUSEL_SPACING)
+    },
+  )
 
   // A capped inset moves slot 0 off the viewport center, so the interpolation
   // must move with it or every card peaks at the wrong scroll position.

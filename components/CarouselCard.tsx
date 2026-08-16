@@ -38,7 +38,14 @@ type Props = {
   centerOffset: number
 }
 
-export function CarouselCard({ movie, index, scrollX, width, snap, centerOffset }: Props) {
+export function CarouselCard({
+  movie,
+  index,
+  scrollX,
+  width,
+  snap,
+  centerOffset,
+}: Props) {
   const theme = useTheme()
   const router = useRouter()
   const uri = posterUrl(movie.poster_path, 'w500')
