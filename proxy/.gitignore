@@ -1,2 +1,6 @@
 .vercel
 .env*
+
+# The example holds no value and must stay tracked, so it is re-included after
+# the wildcard above. It lists the variables the proxy needs.
+!.env.example

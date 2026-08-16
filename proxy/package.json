@@ -1,0 +1,10 @@
+{
+  "name": "reelist-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The TMDB proxy. Holds the API key on the server and rate limits the callers.",
+  "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.2"
+  }
+}

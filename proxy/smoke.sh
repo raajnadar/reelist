@@ -69,11 +69,54 @@ check 400 '' 'no path'
 check 404 'path=/movie/99999999' 'a film that does not exist'
 
 echo
+echo "The rate limit:"
+# Sends more requests than the per-minute allowance and expects a 429. Each one
+# uses a different query so the edge cache cannot answer it — a cached response
+# never reaches the function, so it is never counted.
+#
+# This is skipped against localhost. `vercel dev` sets no client IP header, so
+# the limit deliberately does not count there. Run it against a deployment.
+case "$BASE" in
+  *localhost*|*127.0.0.1*)
+    echo '  skip  not counted locally — vercel dev sets no IP header'
+    ;;
+  *)
+    limited=0
+    for i in $(seq 1 40); do
+      code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+        "$BASE?path=/search/movie&query=ratelimitprobe$i")
+      if [ "$code" = "429" ]; then
+        limited=1
+        break
+      fi
+    done
+    if [ "$limited" = "1" ]; then
+      printf '  ok    %-34s refused after %s requests\n' 'over the limit' "$i"
+      pass=$((pass + 1))
+    else
+      echo '  FAIL  40 requests were all allowed — is UPSTASH_REDIS_REST_URL set?'
+      echo '        The limit fails open by design when Redis is not configured.'
+      fail=$((fail + 1))
+    fi
+    ;;
+esac
+
+echo
 echo "The key must not come back:"
 # The proxy answers with TMDB data, which never contains the key. A 32-character
 # hex string in the body would mean the key leaked into the response.
-body=$(curl -s --max-time 20 "$BASE?path=/movie/popular")
-if echo "$body" | grep -qE '[0-9a-f]{32}'; then
+#
+# The status is checked first. A Vercel error page carries a hex request id of
+# the same shape — bom1::965jp-1786839904867-e9d6d398eaba — so scanning the body
+# of a failed request reports a leak that is not there. That false alarm cost
+# real time once; the guard below is why it will not happen again.
+keybody=$(curl -s -o /tmp/smoke-key.txt -w '%{http_code}' --max-time 20 \
+  "$BASE?path=/movie/popular")
+body=$(cat /tmp/smoke-key.txt)
+if [ "$keybody" != "200" ]; then
+  echo "  skip  the request failed with $keybody — fix that first, then re-run"
+  echo '        (a Vercel error page has a hex id that looks like a key)'
+elif echo "$body" | grep -qE '[0-9a-f]{32}'; then
   echo '  FAIL  a 32-character hex string came back — check for a leak'
   fail=$((fail + 1))
 else

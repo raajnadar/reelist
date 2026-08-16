@@ -7,8 +7,11 @@
  * only way to keep this one private is to keep it off the device.
  *
  * The app sends the TMDB path as `?path=/movie/popular`. This function checks
- * that path against a fixed list, adds the key, and returns what TMDB answers.
+ * that path against a fixed list, counts the request against a per-IP limit,
+ * adds the key, and returns what TMDB answers.
  */
+
+import { check as checkRateLimit } from './rate-limit'
 
 // The edge runtime, declared in the file rather than in vercel.json, which is
 // where Vercel reads it from. It starts with no cold delay and is enough for a
@@ -98,6 +101,30 @@ export default async function handler(request: Request): Promise<Response> {
 
   if (!isAllowed(path)) {
     return json({ status_message: 'That path is not available.' }, 403)
+  }
+
+  // Counted here, after the checks above and before the upstream request. A
+  // request that was going to be refused anyway costs nothing upstream, so
+  // spending a caller's allowance on it would only punish a broken client. A
+  // request from here on can reach TMDB, so this is the point worth bounding.
+  //
+  // The cache sits in front of the function, so a cached response is served
+  // without running this at all. The limit therefore counts the requests that
+  // actually cost something, which is the intent.
+  const limit = await checkRateLimit(request)
+  if (!limit.ok) {
+    return new Response(
+      JSON.stringify({ status_message: 'Too many requests. Please slow down.' }),
+      {
+        status: 429,
+        headers: {
+          'content-type': 'application/json',
+          'access-control-allow-origin': '*',
+          // Tells a well-behaved client when to come back, in seconds.
+          ...(limit.retryAfter ? { 'retry-after': String(limit.retryAfter) } : {}),
+        },
+      },
+    )
   }
 
   const upstream = new URL(TMDB_BASE_URL + path)
