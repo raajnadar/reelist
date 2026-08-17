@@ -1,10 +1,12 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
+import { Motion, Presence } from '@rootnative/inertia'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
+import { SkeletonRow } from '../components/Skeleton'
 import { getPopular, getTopRated, getTrending } from '../lib/api'
 import type { Movie } from '../lib/types'
 
@@ -60,39 +62,75 @@ export default function HomeScreen() {
         Reelist
       </Typography>
 
-      {loading ? (
-        <ActivityIndicator style={styles.centered} color={theme.colors.primary} />
-      ) : error ? (
-        <View style={styles.centered}>
-          <Typography variant="bodyMedium" color={theme.colors.error}>
-            {error}
-          </Typography>
-        </View>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
-        >
-          {/*
-            The first row gets the lightbox carousel as a featured treatment.
-            The rest stay compact rows — the scale effect loses its weight if
-            every row uses it.
-          */}
-          {rows.map((row, index) =>
-            index === 0 ? (
-              <MovieCarousel key={row.title} title={row.title} movies={row.movies} />
-            ) : (
-              <MovieRow key={row.title} title={row.title} movies={row.movies} />
-            ),
-          )}
-        </ScrollView>
-      )}
+      {/*
+        Presence animates the swap between the three states. Each branch needs
+        its own stable `key` — that is how Presence tells a replaced child from
+        a re-rendered one. Without distinct keys the skeleton would be treated
+        as the same element as the content and neither would transition.
+      */}
+      <Presence>
+        {loading ? (
+          <Motion.View
+            key="loading"
+            // No `initial`: the skeleton is on screen from the first frame, and
+            // fading it in would add a delay before the app shows anything.
+            exit={{ opacity: 0 }}
+            transition="exit"
+          >
+            {/* Three rows, matching the three the screen loads. */}
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </Motion.View>
+        ) : error ? (
+          <Motion.View
+            key="error"
+            initial={{ opacity: 0, translateY: 12 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition="enter"
+            style={styles.centered}
+          >
+            <Typography variant="bodyMedium" color={theme.colors.error}>
+              {error}
+            </Typography>
+          </Motion.View>
+        ) : (
+          <Motion.View
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            // `flex: 1` is required, not decorative: this wrapper now sits
+            // between the flexed screen and the ScrollView, and a wrapper with
+            // no flex collapses to its content height and kills the scroll.
+            style={styles.fill}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+            >
+              {/*
+                The first row gets the lightbox carousel as a featured treatment.
+                The rest stay compact rows — the scale effect loses its weight if
+                every row uses it.
+              */}
+              {rows.map((row, index) =>
+                index === 0 ? (
+                  <MovieCarousel key={row.title} title={row.title} movies={row.movies} />
+                ) : (
+                  <MovieRow key={row.title} title={row.title} movies={row.movies} />
+                ),
+              )}
+            </ScrollView>
+          </Motion.View>
+        )}
+      </Presence>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  fill: { flex: 1 },
   title: { paddingHorizontal: 16, paddingVertical: 12 },
   centered: { marginTop: 48, alignItems: 'center' },
 })

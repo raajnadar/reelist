@@ -21,7 +21,7 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(m) => String(m.id)}
-        renderItem={({ item }) => <MovieCard movie={item} />}
+        renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />

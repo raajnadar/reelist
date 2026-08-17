@@ -2,7 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { Image, Pressable, StyleSheet, View, type ViewStyle } from 'react-native'
+import { Image, StyleSheet, View, type ViewStyle } from 'react-native'
 import { metaLine } from '../lib/format'
 import { posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
@@ -22,6 +22,13 @@ export const CAROUSEL_SPACING = 16
  * card instead. See MovieCarousel for how the cap interacts with centering.
  */
 export const CAROUSEL_PEEK = 48
+/**
+ * Degrees the card turns on its Y axis at one full slot from the center. The
+ * centered card is always square on at 0; this is the tilt at the neighbouring
+ * stop. Past roughly 20 degrees the poster art starts to read as distorted
+ * rather than angled, and the text under it becomes hard to scan.
+ */
+export const CAROUSEL_TILT = 14
 
 type Props = {
   movie: Movie
@@ -58,11 +65,19 @@ export function CarouselCard({
   const center = index * snap - centerOffset
   const inputRange = [center - snap, center, center + snap]
 
-  // One shared value, four style keys, all on the UI thread. No re-render per
+  // One shared value, five style keys, all on the UI thread. No re-render per
   // frame, so the row stays smooth regardless of how many cards are mounted.
+  //
+  // rotateY turns the card away from the viewer as it leaves the center, so the
+  // row reads as posters standing on a curved surface rather than a flat strip.
+  // The sign flips across the center stop: the card on the left turns its right
+  // edge toward the viewer, the card on the right turns its left edge, and the
+  // centered card sits square on at 0. Without the flip both neighbours would
+  // lean the same way and the row would look skewed instead of curved.
   const animatedStyle = useInterpolatedStyle(
     scrollX,
     {
+      rotateY: [CAROUSEL_TILT, 0, -CAROUSEL_TILT],
       scale: [0.84, 1, 0.84],
       opacity: [0.45, 1, 0.45],
       translateY: [18, 0, 18],
@@ -77,44 +92,77 @@ export function CarouselCard({
   const cardStyle = animatedStyle as ViewStyle
 
   return (
-    <Motion.View style={[styles.slot, { width }, cardStyle]}>
-      <Pressable
-        onPress={() => router.push(`/movie/${movie.id}`)}
-        accessibilityRole="button"
-        accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
-        style={[styles.card, { backgroundColor: theme.colors.surfaceContainerHigh }]}
-      >
-        {uri ? (
-          <Image source={{ uri }} style={styles.poster} resizeMode="cover" />
-        ) : (
-          <View
-            style={[
-              styles.poster,
-              styles.fallback,
-              { backgroundColor: theme.colors.surfaceVariant },
-            ]}
-          >
-            <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
-              No poster
+    /*
+      Two elements, because perspective and rotateY cannot share one here.
+      useInterpolatedStyle builds the whole `transform` array itself, so a
+      static `perspective` entry in the same style array is overwritten rather
+      than merged, and the rotation renders as a flat horizontal squash with no
+      depth. Putting perspective on the parent instead makes it the projection
+      for the child's rotation, which is what gives the card its near and far
+      edge. The parent also keeps the layout box (width and gap) unrotated, so
+      the slot pitch the ScrollView snaps to never changes.
+    */
+    <View style={[styles.slot, { width }, styles.stage]}>
+      <Motion.View style={cardStyle}>
+        {/*
+          The press scale lives on its own Motion.Pressable INSIDE the
+          scroll-driven wrapper, rather than on the wrapper itself. Both effects
+          write `transform`, so sharing one element would mean the gesture layer
+          and the scroll interpolation overwrite each other's scale every frame.
+          Nesting composes them: the outer element owns the scroll position, the
+          inner one owns the touch response.
+        */}
+        <Motion.Pressable
+          onPress={() => router.push(`/movie/${movie.id}`)}
+          accessibilityRole="button"
+          accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
+          gesture={{
+            hovered: { scale: 1.03 },
+            pressed: { scale: 0.97 },
+          }}
+          transition={{ pressed: 'press', hovered: 'hover' }}
+          style={[styles.card, { backgroundColor: theme.colors.surfaceContainerHigh }]}
+        >
+          {uri ? (
+            <Image source={{ uri }} style={styles.poster} resizeMode="cover" />
+          ) : (
+            <View
+              style={[
+                styles.poster,
+                styles.fallback,
+                { backgroundColor: theme.colors.surfaceVariant },
+              ]}
+            >
+              <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
+                No poster
+              </Typography>
+            </View>
+          )}
+
+          <View style={styles.meta}>
+            <Typography variant="titleSmall" numberOfLines={1}>
+              {movie.title}
+            </Typography>
+            <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+              {metaLine(movie.vote_average, movie.release_date)}
             </Typography>
           </View>
-        )}
-
-        <View style={styles.meta}>
-          <Typography variant="titleSmall" numberOfLines={1}>
-            {movie.title}
-          </Typography>
-          <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
-            {metaLine(movie.vote_average, movie.release_date)}
-          </Typography>
-        </View>
-      </Pressable>
-    </Motion.View>
+        </Motion.Pressable>
+      </Motion.View>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   slot: { marginRight: CAROUSEL_SPACING },
+  /**
+   * The projection the child's rotateY is drawn through. A larger number moves
+   * the viewer away and flattens the turn; a smaller one exaggerates it until
+   * the far edge distorts. 800 keeps the near edge only slightly larger than
+   * the far one, which is the effect we want — a card resting on an incline,
+   * not a card seen through a wide lens.
+   */
+  stage: { transform: [{ perspective: 800 }] },
   card: { borderRadius: 20, overflow: 'hidden' },
   poster: { width: '100%', aspectRatio: 2 / 3 },
   fallback: { alignItems: 'center', justifyContent: 'center' },
