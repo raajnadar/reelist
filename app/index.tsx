@@ -1,6 +1,8 @@
+import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
+import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -14,6 +16,7 @@ type Row = { title: string; movies: Movie[] }
 
 export default function HomeScreen() {
   const theme = useTheme()
+  const router = useRouter()
   const insets = useSafeAreaInsets()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,9 +61,20 @@ export default function HomeScreen() {
         { backgroundColor: theme.colors.background, paddingTop: insets.top },
       ]}
     >
-      <Typography variant="headlineMedium" style={styles.title}>
-        Reelist
-      </Typography>
+      <View style={styles.header}>
+        <Typography variant="headlineMedium" style={styles.title}>
+          Reelist
+        </Typography>
+        {/* An IconButton rather than an AppBar `action`: this screen draws its
+            own title with the top inset above it, and swapping in an AppBar
+            would change the home layout to add one button. */}
+        <IconButton
+          icon="magnify"
+          variant="standard"
+          accessibilityLabel="Search movies"
+          onPress={() => router.push('/search')}
+        />
+      </View>
 
       {/*
         Presence animates the swap between the three states. Each branch needs
@@ -131,6 +145,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 8,
+  },
   title: { paddingHorizontal: 16, paddingVertical: 12 },
   centered: { marginTop: 48, alignItems: 'center' },
 })

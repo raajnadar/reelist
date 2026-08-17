@@ -61,8 +61,7 @@ export const getMovie = async (id: number): Promise<Movie | null> => {
   }
 }
 
-// TODO: no caller yet. This waits for the search screen. Delete it with this
-// comment if that screen is dropped, so the seam does not collect dead code.
+/** Called by app/search.tsx, once the typing in the box stops. */
 export const searchMovies = async (query: string): Promise<Paged> => {
   const q = query.trim()
   // TMDB answers an empty query with a 422. Return early instead, so a cleared

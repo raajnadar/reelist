@@ -167,11 +167,14 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/api.test.ts`                   | The response mapping and the error branches        |
 | `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent        |
 | `lib/motion.test.ts`                | The transition tokens and the stagger ceiling      |
+| `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value      |
 | `components/MovieCard.test.tsx`     | The poster size and the fixed card height          |
 | `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths         |
 | `components/Skeleton.test.ts`       | The placeholder count against the screen width     |
 | `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs |
 | `__tests__/app/movie/[id].test.tsx` | The detail screen: 7 states, every error           |
+| `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness |
+| `__tests__/app/index.test.tsx`      | The home screen's search entry point               |
 | `proxy/api/tmdb.test.ts`            | The allowlist, and that the key never comes back   |
 | `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open |
 
@@ -187,6 +190,7 @@ deployed. It is not part of `yarn test`, because it needs a real key and network
 app/                     # Expo Router: one file is one screen
 ├── _layout.tsx          # Root layout with the ThemeProvider
 ├── index.tsx            # Home screen
+├── search.tsx           # Search screen, debounced as you type
 └── movie/[id].tsx       # Film detail screen
 components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
@@ -203,6 +207,7 @@ lib/
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels
 ├── motion.ts            # The shared transition tokens and the stagger
+├── useDebounced.ts      # Delays a value until it stops changing
 └── test-utils.tsx       # render() wrapped in the app's providers
 proxy/                   # The TMDB proxy. Deploys on its own
 ├── api/tmdb.ts          # The function that holds the key
