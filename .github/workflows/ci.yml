@@ -18,13 +18,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Node 24 is the current Active LTS, and the version the developers run.
       # CI and the development machine then share one major version, so a
       # failure here reproduces locally. Keep this number, .nvmrc, and the
       # `engines` field in package.json equal.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: yarn
