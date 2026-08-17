@@ -160,16 +160,20 @@ yarn test --selectProjects proxy     # the proxy only
 Jest runs two projects, because the proxy is server code that uses the Web
 `Request` and `Response` API rather than the React Native runtime.
 
-| Suite                               | Covers                                           |
-| ----------------------------------- | ------------------------------------------------ |
-| `lib/format.test.ts`                | Both TMDB sentinels, alone and together          |
-| `lib/images.test.ts`                | URL building, and null for a film with no art    |
-| `lib/api.test.ts`                   | The response mapping and the error branches      |
-| `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent      |
-| `components/MovieCard.test.tsx`     | The poster size and the fixed card height        |
-| `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths       |
-| `__tests__/app/movie/[id].test.tsx` | The detail screen: 7 states, every error         |
-| `proxy/api/tmdb.test.ts`            | The allowlist, and that the key never comes back |
+| Suite                               | Covers                                             |
+| ----------------------------------- | -------------------------------------------------- |
+| `lib/format.test.ts`                | Both TMDB sentinels, alone and together            |
+| `lib/images.test.ts`                | URL building, and null for a film with no art      |
+| `lib/api.test.ts`                   | The response mapping and the error branches        |
+| `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent        |
+| `lib/motion.test.ts`                | The transition tokens and the stagger ceiling      |
+| `components/MovieCard.test.tsx`     | The poster size and the fixed card height          |
+| `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths         |
+| `components/Skeleton.test.ts`       | The placeholder count against the screen width     |
+| `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs |
+| `__tests__/app/movie/[id].test.tsx` | The detail screen: 7 states, every error           |
+| `proxy/api/tmdb.test.ts`            | The allowlist, and that the key never comes back   |
+| `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open |
 
 No test needs a key or a network. The proxy tests mock `fetch`, and the screen
 tests mock `lib/api`.
@@ -188,7 +192,8 @@ components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
 ├── CarouselCard.tsx     # One card in the carousel
 ├── MovieRow.tsx         # A compact horizontal row
-└── MovieCard.tsx        # One card in a row
+├── MovieCard.tsx        # One card in a row
+└── Skeleton.tsx         # The loading placeholders
 lib/
 ├── api.ts               # The seam. The only data file a screen imports
 ├── tmdb.ts              # The transport. Calls the proxy
@@ -197,9 +202,11 @@ lib/
 ├── mock.ts              # Static film data, now a test fixture only
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels
+├── motion.ts            # The shared transition tokens and the stagger
 └── test-utils.tsx       # render() wrapped in the app's providers
 proxy/                   # The TMDB proxy. Deploys on its own
 ├── api/tmdb.ts          # The function that holds the key
+├── api/rate-limit.ts    # The per-caller request ceiling
 └── smoke.sh             # Checks a running proxy
 __tests__/               # Tests that do not sit beside their subject
 scripts/                 # generate-route-types.js
@@ -243,6 +250,7 @@ purpose. The mock data and the live data share one type.
 - React Native 0.81 and React 19
 - `@rootnative/core` — the theme system with Material Design 3 tokens
 - `@rootnative/components` — the UI components
+- `@rootnative/inertia` — the animation primitives, over Reanimated
 - TypeScript
 - Jest and `@testing-library/react-native`
 - Vercel Functions, for the proxy
@@ -271,7 +279,7 @@ npx eas update --branch main --message "What changed"
 
 ### Setup that this repository cannot do for itself
 
-Five steps need a web interface:
+Six steps need a web interface:
 
 1. **Turn on Pages.** In `Settings → Pages`, set **Source** to **GitHub
    Actions**. The deploy workflow fails until this is set.
@@ -286,7 +294,12 @@ Five steps need a web interface:
    cannot load data without it.
 4. **Give the proxy its key.** `vercel env add TMDB_API_KEY production`, then
    deploy again. See [proxy/README.md](proxy/README.md).
-5. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
+5. **Give the proxy its Redis credentials.** Create a database at
+   [console.upstash.com](https://console.upstash.com/), then add
+   `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Without them the
+   proxy runs with **no rate limit** and reports nothing. See
+   [proxy/README.md](proxy/README.md).
+6. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
    mark the `check` job as required. Until then CI reports a failure but does not
    stop a merge.
 
