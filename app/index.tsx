@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { BrandMark } from '../components/BrandMark'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
 import { SkeletonRow } from '../components/Skeleton'
@@ -62,9 +63,12 @@ export default function HomeScreen() {
       ]}
     >
       <View style={styles.header}>
-        <Typography variant="headlineMedium" style={styles.title}>
-          Reelist
-        </Typography>
+        <View style={styles.brand}>
+          <BrandMark size={26} />
+          <Typography variant="headlineMedium" style={styles.title}>
+            Reelist
+          </Typography>
+        </View>
         {/* An IconButton rather than an AppBar `action`: this screen draws its
             own title with the top inset above it, and swapping in an AppBar
             would change the home layout to add one button. */}
@@ -151,6 +155,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingRight: 8,
   },
-  title: { paddingHorizontal: 16, paddingVertical: 12 },
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingLeft: 16,
+  },
+  title: { paddingVertical: 12 },
   centered: { marginTop: 48, alignItems: 'center' },
 })

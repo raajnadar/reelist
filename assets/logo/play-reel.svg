@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Reelist mark: Play Reel, flat. Use fill to recolor. -->
+  <mask id="m">
+    <rect x="-10" y="-10" width="120" height="120" fill="#fff"/>
+    <circle cx="50" cy="18.5" r="6.5" fill="#000"/>
+    <circle cx="77.3" cy="34.2" r="6.5" fill="#000"/>
+    <circle cx="77.3" cy="65.8" r="6.5" fill="#000"/>
+    <circle cx="50" cy="81.5" r="6.5" fill="#000"/>
+    <circle cx="22.7" cy="65.8" r="6.5" fill="#000"/>
+    <circle cx="22.7" cy="34.2" r="6.5" fill="#000"/>
+    <path d="M44.5 37.5 L66.5 50 L44.5 62.5 Z" fill="#000" stroke="#000" stroke-width="7" stroke-linejoin="round"/>
+  </mask>
+  <circle cx="50" cy="50" r="45" fill="#BE123C" mask="url(#m)"/>
+</svg>
