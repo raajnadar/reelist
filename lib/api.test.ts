@@ -1,4 +1,4 @@
-import { getMovie, getTrending, searchMovies } from './api'
+import { getGenres, getMovie, getMoviesByGenre, getTrending, searchMovies } from './api'
 import { TmdbError } from './tmdb'
 
 // These tests check the mapping and the error branches, not TMDB itself. The
@@ -77,7 +77,11 @@ describe('the mapping to Movie', () => {
   it('returns an empty list when the response has no results key', async () => {
     tmdbFetch.mockResolvedValue({})
 
-    await expect(getTrending()).resolves.toEqual({ results: [] })
+    await expect(getTrending()).resolves.toEqual({
+      results: [],
+      page: 1,
+      total_pages: 1,
+    })
   })
 })
 
@@ -100,7 +104,11 @@ describe('getMovie', () => {
 describe('searchMovies', () => {
   // TMDB answers an empty query with 422. A cleared search box is not an error.
   it('returns an empty list without calling TMDB for a blank query', async () => {
-    await expect(searchMovies('   ')).resolves.toEqual({ results: [] })
+    await expect(searchMovies('   ')).resolves.toEqual({
+      results: [],
+      page: 1,
+      total_pages: 1,
+    })
     expect(tmdbFetch).not.toHaveBeenCalled()
   })
 
@@ -110,5 +118,109 @@ describe('searchMovies', () => {
     await searchMovies('  fight club  ')
 
     expect(tmdbFetch).toHaveBeenCalledWith('/search/movie', { query: 'fight club' })
+  })
+})
+
+describe('the paging fields', () => {
+  it('reports the page and the total from the response', async () => {
+    tmdbFetch.mockResolvedValue({ results: [], page: 3, total_pages: 12 })
+
+    await expect(getMoviesByGenre(28, 3)).resolves.toMatchObject({
+      page: 3,
+      total_pages: 12,
+    })
+  })
+
+  // The unpaged endpoints omit both keys. A screen reads `page < total_pages`
+  // to decide whether to ask for more, so the default has to say "complete".
+  it('defaults an unpaged response to a single finished page', async () => {
+    tmdbFetch.mockResolvedValue({ results: [] })
+
+    await expect(getTrending()).resolves.toMatchObject({ page: 1, total_pages: 1 })
+  })
+
+  /**
+   * TMDB answers a request past page 500 with a 422, however large
+   * `total_pages` is. Without the clamp an endless scroll through a popular
+   * genre would turn into an error at the 501st page.
+   */
+  it('clamps a total above the TMDB page ceiling', async () => {
+    tmdbFetch.mockResolvedValue({ results: [], page: 1, total_pages: 43892 })
+
+    await expect(getMoviesByGenre(28)).resolves.toMatchObject({ total_pages: 500 })
+  })
+})
+
+describe('getGenres', () => {
+  it('maps the genre list', async () => {
+    tmdbFetch.mockResolvedValue({
+      genres: [
+        { id: 28, name: 'Action' },
+        { id: 35, name: 'Comedy' },
+      ],
+    })
+
+    await expect(getGenres()).resolves.toEqual([
+      { id: 28, name: 'Action' },
+      { id: 35, name: 'Comedy' },
+    ])
+  })
+
+  // Same reason as the results key: mapping over undefined would throw where
+  // an empty chip row is correct.
+  it('returns an empty list when the response has no genres key', async () => {
+    tmdbFetch.mockResolvedValue({})
+
+    await expect(getGenres()).resolves.toEqual([])
+  })
+
+  it('drops a field the app does not declare', async () => {
+    tmdbFetch.mockResolvedValue({ genres: [{ id: 28, name: 'Action', unused: true }] })
+
+    const genres = await getGenres()
+
+    expect(genres[0]).not.toHaveProperty('unused')
+  })
+})
+
+describe('getMoviesByGenre', () => {
+  it('sends the genre and the page as strings', async () => {
+    tmdbFetch.mockResolvedValue({ results: [] })
+
+    await getMoviesByGenre(28, 2)
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/discover/movie', {
+      with_genres: '28',
+      page: '2',
+    })
+  })
+
+  // The screen loads the first page without naming it.
+  it('defaults to the first page', async () => {
+    tmdbFetch.mockResolvedValue({ results: [] })
+
+    await getMoviesByGenre(28)
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/discover/movie', {
+      with_genres: '28',
+      page: '1',
+    })
+  })
+
+  it('maps the results to Movie', async () => {
+    tmdbFetch.mockResolvedValue({ results: [rawMovie], page: 1, total_pages: 1 })
+
+    const { results } = await getMoviesByGenre(28)
+
+    expect(results[0].title).toBe('Fight Club')
+    expect(results[0]).not.toHaveProperty('belongs_to_collection')
+  })
+
+  // A failure here is not a missing film: the screen reports it rather than
+  // showing an empty genre, so it must not be swallowed the way getMovie's 404 is.
+  it('rethrows a failed request', async () => {
+    tmdbFetch.mockRejectedValue(new TmdbError('Service offline', 503))
+
+    await expect(getMoviesByGenre(28)).rejects.toThrow('Service offline')
   })
 })

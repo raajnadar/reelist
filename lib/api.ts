@@ -1,5 +1,5 @@
 import { tmdbFetch } from './tmdb'
-import type { Movie, Paged } from './types'
+import type { Genre, Movie, Paged } from './types'
 
 /**
  * The single seam between the UI and the data source. Every screen imports from
@@ -32,10 +32,30 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
   overview: (raw.overview as string) ?? '',
 })
 
-type RawPaged = { results?: Record<string, unknown>[] }
+type RawPaged = {
+  results?: Record<string, unknown>[]
+  page?: number
+  total_pages?: number
+}
 
+/**
+ * TMDB refuses a page above 500 on the paged endpoints with a 422, whatever
+ * `total_pages` says — a popular genre reports tens of thousands. Clamping here
+ * rather than in the screen keeps the rule with the API that imposes it, and
+ * means the screen's "am I at the end?" check is the only one it needs.
+ */
+const MAX_PAGE = 500
+
+/**
+ * `page` and `total_pages` default to 1, not 0. The unpaged endpoints omit both,
+ * and a screen comparing `page < total_pages` must read "one page, already
+ * complete" from that — a 0 would make the first page look like a page before
+ * the beginning.
+ */
 const toPaged = (raw: RawPaged): Paged => ({
   results: (raw.results ?? []).map(toMovie),
+  page: raw.page ?? 1,
+  total_pages: Math.min(raw.total_pages ?? 1, MAX_PAGE),
 })
 
 export const getTrending = async (): Promise<Paged> =>
@@ -66,6 +86,34 @@ export const searchMovies = async (query: string): Promise<Paged> => {
   const q = query.trim()
   // TMDB answers an empty query with a 422. Return early instead, so a cleared
   // search box is not an error state.
-  if (!q) return { results: [] }
+  if (!q) return { results: [], page: 1, total_pages: 1 }
   return toPaged(await tmdbFetch<RawPaged>('/search/movie', { query: q }))
 }
+
+/**
+ * The genre list that names the chips on the home screen and titles the genre
+ * screen. TMDB returns roughly 19 genres and changes them rarely, so the proxy
+ * cache absorbs almost every call.
+ */
+export const getGenres = async (): Promise<Genre[]> => {
+  const raw = await tmdbFetch<{ genres?: { id: number; name: string }[] }>(
+    '/genre/movie/list',
+  )
+  return (raw.genres ?? []).map((g) => ({ id: g.id, name: g.name }))
+}
+
+/**
+ * One page of films in one genre.
+ *
+ * `page` is 1-based, which is what TMDB expects; the caller passes the next page
+ * it wants rather than an offset. An id that names no genre is not an error:
+ * TMDB ignores `with_genres` it cannot parse and answers with an unfiltered
+ * list, so the screen shows films rather than a failure.
+ */
+export const getMoviesByGenre = async (genreId: number, page = 1): Promise<Paged> =>
+  toPaged(
+    await tmdbFetch<RawPaged>('/discover/movie', {
+      with_genres: String(genreId),
+      page: String(page),
+    }),
+  )
