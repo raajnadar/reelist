@@ -27,12 +27,19 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
  *
  * `/movie/{id}` is matched by a pattern because the id is unbounded. The
  * pattern requires digits, so `/movie/../account` cannot pass through it.
+ *
+ * `/discover/movie` takes the genre id as the `with_genres` parameter rather
+ * than in the path, so it needs no pattern of its own. TMDB ignores a value it
+ * does not recognise there and answers with an unfiltered list, so a bad id is
+ * a poor result rather than an error.
  */
 const ALLOWED_EXACT = new Set([
   '/trending/movie/week',
   '/movie/popular',
   '/movie/top_rated',
   '/search/movie',
+  '/genre/movie/list',
+  '/discover/movie',
 ])
 
 const ALLOWED_PATTERNS = [/^\/movie\/\d+$/]
@@ -45,7 +52,7 @@ const isAllowed = (path: string): boolean =>
  * rather than forwarded, so a caller cannot append `api_key` of their own or
  * reach a TMDB feature this app does not use.
  */
-const ALLOWED_PARAMS = new Set(['query', 'page'])
+const ALLOWED_PARAMS = new Set(['query', 'page', 'with_genres'])
 
 /**
  * How long a response stays cached, in seconds.

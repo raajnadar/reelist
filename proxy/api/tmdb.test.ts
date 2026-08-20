@@ -49,6 +49,8 @@ describe('the allowlist', () => {
     '/movie/top_rated',
     '/search/movie',
     '/movie/550',
+    '/genre/movie/list',
+    '/discover/movie',
   ])('forwards %s', async (path) => {
     const response = await get(`path=${encodeURIComponent(path)}`)
 
@@ -64,6 +66,8 @@ describe('the allowlist', () => {
     ['/movie/550/../../account', 'a traversal attempt'],
     ['/movie/abc', 'a non-numeric id'],
     ['/movie/', 'an empty id'],
+    ['/discover/tv', 'a discover path the app does not use'],
+    ['/genre/tv/list', 'a genre path the app does not use'],
   ])('rejects %s (%s)', async (path) => {
     const response = await get(`path=${encodeURIComponent(path)}`)
 
@@ -111,6 +115,25 @@ describe('the key', () => {
     const params = upstreamUrl().searchParams
     expect(params.get('query')).toBe('dune')
     expect(params.has('language')).toBe(false)
+  })
+
+  // The genre screen sends both: the genre to filter by, and the page to page
+  // through. A dropped `with_genres` would answer every genre with the same
+  // unfiltered list, which reads as a working screen showing the wrong films.
+  it('forwards the genre filter and the page', async () => {
+    await get('path=%2Fdiscover%2Fmovie&with_genres=28&page=2')
+
+    const params = upstreamUrl().searchParams
+    expect(params.get('with_genres')).toBe('28')
+    expect(params.get('page')).toBe('2')
+  })
+
+  // `with_genres` is now on the list, so it must still be dropped where it
+  // does not belong rather than forwarded on any path a caller names.
+  it('still drops an unknown parameter on the discover path', async () => {
+    await get('path=%2Fdiscover%2Fmovie&with_genres=28&sort_by=revenue.desc')
+
+    expect(upstreamUrl().searchParams.has('sort_by')).toBe(false)
   })
 
   it('reports a missing server key without saying why', async () => {
