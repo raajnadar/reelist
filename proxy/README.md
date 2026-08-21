@@ -142,16 +142,23 @@ GET /api/tmdb?path=/movie/popular
 GET /api/tmdb?path=/search/movie&query=dune
 ```
 
-| Path                   | Used by                       |
-| ---------------------- | ----------------------------- |
-| `/trending/movie/week` | The home carousel             |
-| `/movie/popular`       | The "Popular" row             |
-| `/movie/top_rated`     | The "Top rated" row           |
-| `/movie/{id}`          | The detail screen             |
-| `/search/movie`        | `searchMovies`, no screen yet |
+| Path                   | Used by                            |
+| ---------------------- | ---------------------------------- |
+| `/trending/movie/week` | The home carousel                  |
+| `/movie/popular`       | The "Popular" row                  |
+| `/movie/top_rated`     | The "Top rated" row                |
+| `/movie/{id}`          | The detail screen                  |
+| `/search/movie`        | The search screen                  |
+| `/genre/movie/list`    | The genre chips on the home screen |
+| `/discover/movie`      | The genre screen                   |
 
-Only `query` and `page` are forwarded. Any other parameter is dropped, including
-an `api_key` supplied by the caller.
+Only `query`, `page`, and `with_genres` are forwarded. Any other parameter is
+dropped, including an `api_key` supplied by the caller.
+
+`/discover/movie` is the one path whose filter travels as a parameter rather
+than in the path. TMDB ignores a `with_genres` value it cannot parse and answers
+with an unfiltered list, so `app/genre/[id].tsx` checks the id before it asks —
+an unchecked bad id would render as a working screen showing every film.
 
 | Status | Meaning                                                       |
 | ------ | ------------------------------------------------------------- |

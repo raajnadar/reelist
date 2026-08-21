@@ -164,7 +164,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | ----------------------------------- | -------------------------------------------------- |
 | `lib/format.test.ts`                | Both TMDB sentinels, alone and together            |
 | `lib/images.test.ts`                | URL building, and null for a film with no art      |
-| `lib/api.test.ts`                   | The response mapping and the error branches        |
+| `lib/api.test.ts`                   | The mapping, the error branches, and the paging    |
 | `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent        |
 | `lib/motion.test.ts`                | The transition tokens and the stagger ceiling      |
 | `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value      |
@@ -174,7 +174,8 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs |
 | `__tests__/app/movie/[id].test.tsx` | The detail screen: 7 states, every error           |
 | `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness |
-| `__tests__/app/index.test.tsx`      | The home screen's search entry point               |
+| `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips |
+| `__tests__/app/genre/[id].test.tsx` | The genre grid: paging, a bad id, a stale page     |
 | `proxy/api/tmdb.test.ts`            | The allowlist, and that the key never comes back   |
 | `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open |
 
@@ -191,18 +192,20 @@ app/                     # Expo Router: one file is one screen
 ├── _layout.tsx          # Root layout with the ThemeProvider
 ├── index.tsx            # Home screen
 ├── search.tsx           # Search screen, debounced as you type
+├── genre/[id].tsx       # One genre, as an endless grid
 └── movie/[id].tsx       # Film detail screen
 components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
 ├── CarouselCard.tsx     # One card in the carousel
 ├── MovieRow.tsx         # A compact horizontal row
 ├── MovieCard.tsx        # One card in a row
+├── GenreChips.tsx       # The genre shortcuts under the home header
 └── Skeleton.tsx         # The loading placeholders
 lib/
 ├── api.ts               # The seam. The only data file a screen imports
 ├── tmdb.ts              # The transport. Calls the proxy
 ├── config.ts            # Reads the proxy URL from the environment
-├── types.ts             # Movie and Paged, in the TMDB field shape
+├── types.ts             # Movie, Paged, and Genre, in the TMDB field shape
 ├── mock.ts              # Static film data, now a test fixture only
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels
