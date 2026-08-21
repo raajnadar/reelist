@@ -7,11 +7,12 @@ import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from '../components/BrandMark'
+import { GenreChips } from '../components/GenreChips'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
 import { SkeletonRow } from '../components/Skeleton'
-import { getPopular, getTopRated, getTrending } from '../lib/api'
-import type { Movie } from '../lib/types'
+import { getGenres, getPopular, getTopRated, getTrending } from '../lib/api'
+import type { Genre, Movie } from '../lib/types'
 
 type Row = { title: string; movies: Movie[] }
 
@@ -22,6 +23,7 @@ export default function HomeScreen() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [genres, setGenres] = useState<Genre[]>([])
 
   // Promise.all and the loading state do nothing useful against static data.
   // That is the point: when lib/api.ts starts hitting the network, this screen
@@ -55,6 +57,32 @@ export default function HomeScreen() {
     }
   }, [])
 
+  /**
+   * The genres load on their own, deliberately not inside the Promise.all above.
+   *
+   * Joining them would tie the whole screen to the weakest request: one failed
+   * genre call would take the `.catch` branch and replace three loaded film rows
+   * with an error message. Here a failure only empties the list, and GenreChips
+   * renders nothing for an empty list — so the chips are simply absent and the
+   * rest of the screen is untouched.
+   */
+  useEffect(() => {
+    let active = true
+
+    getGenres()
+      .then((list) => {
+        if (active) setGenres(list)
+      })
+      .catch(() => {
+        // Swallowed on purpose. There is no message to show for a missing
+        // shortcut row, and reporting it would suggest the screen is broken.
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   return (
     <View
       style={[
@@ -79,6 +107,11 @@ export default function HomeScreen() {
           onPress={() => router.push('/search')}
         />
       </View>
+
+      {/* Outside the Presence block below, for the reason the search button is:
+          the chips do not depend on the film rows, so they must not wait for
+          them, disappear while they load, or vanish when they fail. */}
+      <GenreChips genres={genres} />
 
       {/*
         Presence animates the swap between the three states. Each branch needs

@@ -19,16 +19,21 @@ jest.mock('../../lib/api', () => ({
   getTrending: jest.fn(),
   getPopular: jest.fn(),
   getTopRated: jest.fn(),
+  getGenres: jest.fn(),
 }))
 
 const api = jest.requireMock('../../lib/api')
 
 beforeEach(() => {
   jest.clearAllMocks()
-  const paged = { results: mockMovies }
+  const paged = { results: mockMovies, page: 1, total_pages: 1 }
   api.getTrending.mockResolvedValue(paged)
   api.getPopular.mockResolvedValue(paged)
   api.getTopRated.mockResolvedValue(paged)
+  api.getGenres.mockResolvedValue([
+    { id: 28, name: 'Action' },
+    { id: 35, name: 'Comedy' },
+  ])
 })
 
 it('opens the search screen from the header button', async () => {
@@ -57,4 +62,52 @@ it('still shows the search button when the rows fail to load', async () => {
   await waitFor(() => expect(screen.getByText('TMDB is unavailable')).toBeTruthy())
   // Search does not depend on the rows, so a failed home load must not remove it.
   expect(screen.getByLabelText('Search movies')).toBeTruthy()
+})
+
+describe('the genre chips', () => {
+  it('opens the genre screen with the id and the name', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Action')).toBeTruthy())
+    fireEvent.press(screen.getByText('Action'))
+
+    // The name travels in the query so the genre screen can title itself
+    // without fetching the genre list again.
+    expect(mockPush).toHaveBeenCalledWith('/genre/28?name=Action')
+  })
+
+  /**
+   * The reason the genres load in their own effect. A failure here must cost
+   * the chips and nothing else — the three film rows are the primary content
+   * and they loaded fine.
+   */
+  it('keeps the film rows when the genres fail to load', async () => {
+    api.getGenres.mockRejectedValue(new Error('Genres unavailable'))
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+    // No chips, and no error either: a missing shortcut row says nothing.
+    expect(screen.queryByText('Action')).toBeNull()
+    expect(screen.queryByText('Genres unavailable')).toBeNull()
+  })
+
+  // The chips sit outside the Presence block, so a slow film request must not
+  // hold them back.
+  it('shows the chips while the film rows are still loading', async () => {
+    api.getTrending.mockReturnValue(new Promise(() => {}))
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Action')).toBeTruthy())
+  })
+
+  it('renders no chip row when the genre list is empty', async () => {
+    api.getGenres.mockResolvedValue([])
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+    expect(screen.queryByText('Action')).toBeNull()
+  })
 })
