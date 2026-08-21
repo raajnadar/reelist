@@ -45,6 +45,9 @@ type Check = (request: Request) => Promise<{ ok: boolean; retryAfter?: number }>
 const loadCheck = (): Check => {
   let check!: Check
   jest.isolateModules(() => {
+    // require(), not import(): isolateModules is synchronous, and import()
+    // throws without --experimental-vm-modules. See the comment above.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     check = (require('./rate-limit') as { check: Check }).check
   })
   return check

@@ -13,8 +13,12 @@
 // factory that closed over an outer `const` would read it before it was set.
 jest.mock('./rate-limit', () => ({ check: jest.fn() }))
 
+// Below the jest.mock above, not above it. The mock has to be registered before
+// ./tmdb is evaluated, because ./tmdb imports ./rate-limit at its own top level.
+/* eslint-disable import/first */
 import handler from './tmdb'
 import { check } from './rate-limit'
+/* eslint-enable import/first */
 
 const mockRateLimit = check as jest.MockedFunction<typeof check>
 

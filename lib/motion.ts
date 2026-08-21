@@ -49,6 +49,10 @@ export const transitions = {
  * any string and a typo falls through to a dev-time warning at runtime.
  */
 declare module '@rootnative/inertia' {
+  // The empty body is the mechanism, not an oversight: the augmentation works by
+  // extending Record with the transition names, and a member of its own would
+  // add a key that is not one of them.
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface RegisteredTransitions extends Record<keyof typeof transitions, true> {}
 }
 

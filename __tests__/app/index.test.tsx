@@ -1,4 +1,4 @@
-import { fireEvent, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
 import HomeScreen from '../../app/index'
@@ -44,14 +44,22 @@ it('opens the search screen from the header button', async () => {
   // The literal path is the assertion. `yarn typecheck` proves the route exists;
   // this proves the button is wired to it.
   expect(mockPush).toHaveBeenCalledWith('/search')
+
+  await act(async () => {})
 })
 
-it('keeps the search button reachable while the rows are still loading', () => {
+it('keeps the search button reachable while the rows are still loading', async () => {
   const screen = renderWithProviders(<HomeScreen />)
 
-  // The button sits outside the Presence block, so it must not wait for data.
-  // Inside it, a slow network would leave the user with no way to search.
+  // Asserted before any await, which is the point: the button has to be there
+  // while the requests are still in flight. The button sits outside the
+  // Presence block, so it must not wait for data — inside it, a slow network
+  // would leave the user with no way to search.
   expect(screen.getByLabelText('Search movies')).toBeTruthy()
+
+  // Then let the mocked requests settle. Without this they resolve after the
+  // test ends and React reports the state updates as outside act().
+  await act(async () => {})
 })
 
 it('still shows the search button when the rows fail to load', async () => {

@@ -6,8 +6,12 @@ const load = (url: string) => {
   jest.resetModules()
   process.env.EXPO_PUBLIC_TMDB_PROXY_URL = url
   return {
+    // require(), not import: the call has to run per test, after the env is
+    // set. A top-level import would be hoisted above every line here.
+    /* eslint-disable @typescript-eslint/no-require-imports */
     ...(require('./tmdb') as typeof import('./tmdb')),
     config: require('./config') as typeof import('./config'),
+    /* eslint-enable @typescript-eslint/no-require-imports */
   }
 }
 
