@@ -1548,11 +1548,6 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@material/material-color-utilities@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@material/material-color-utilities/-/material-color-utilities-0.4.0.tgz#bf7151aadf482a2534ac03c8e746e17625c0ec51"
-  integrity sha512-dlq6VExJReb8dhjj3a/yTigr3ncNwoFmL5Iy2ENtbDX03EmNeOEdZ+vsaGrj7RTuO+mB7L58II4LCsl4NpM8uw==
-
 "@napi-rs/wasm-runtime@^1.1.4":
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.2.3.tgz#97e3d45d7424dc5da1d4e32f3bf3b292f6c1b44c"
@@ -1952,20 +1947,20 @@
   dependencies:
     nanoid "^3.3.11"
 
-"@rootnative/components@0.0.0-alpha.12":
-  version "0.0.0-alpha.12"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.12.tgz#0cd108da98a1f70300ccdc61b9907a895e6cbd03"
-  integrity sha512-Dvcwml08ceGxTS5JYJ4PZrQ22UziK5Xwl5N0gwiduEpb84Cs0rEr/mJF88zFGtd1csoQc+kUQv/ATSsmb8QSMg==
+"@rootnative/components@0.0.0-alpha.14":
+  version "0.0.0-alpha.14"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.14.tgz#07c658f438b0da1619bd78729ca49ae8d7516278"
+  integrity sha512-GxZ0NA6enZfz0XBvj30kYgBGLcV/fIftjLnrPulIJJr8CBC/3aI8tQJINQfCvvhrtaZtiEbwvbqX5C8tInH/KQ==
 
-"@rootnative/core@0.0.0-alpha.12":
-  version "0.0.0-alpha.12"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.12.tgz#61f40172d4ef6b692fd91330afa0a9cce8bfdc2f"
-  integrity sha512-Hv+z3dtxBxSA7SvCANAMWcqPX1ntGuMZcAc5XN/klZK1P0+hgWKSzf0yy6B3wJkHK5RiJNqEHcsVjmkQrxqF9Q==
+"@rootnative/core@0.0.0-alpha.14":
+  version "0.0.0-alpha.14"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.14.tgz#caeb273a78d3d8ded253c048e7a3b0f4e5439354"
+  integrity sha512-E+bH7D1jEAErKUVuqRB9YkRaO27hUQi6ZS9+pWaDTHTmIAiIEAROVzbb6a6ca/o0KY9Upc8U45/CsOUIu1JZrA==
 
-"@rootnative/inertia@0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.7.tgz#a7fdd0f893d522a5ebc125b0f26f76144c502c77"
-  integrity sha512-g63he988LCs4x6mfr5kTMK41AvfzEzaphghzyI0Ol55DnPmSYRmWtSUzIumY4D0tngsFIlhgTgElC1fXq/nghg==
+"@rootnative/inertia@0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.8.tgz#fdec3a0d608f02bd13b57fd2a6b3e610c9a74af6"
+  integrity sha512-ak4pgHm3APNDo8QGZ7uXjxxrn7cTNND762yV7MlkcftR9zBY27pC//QLUaLCHsCE83bLcOJ2OxfUNhNMlBTmAA==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"

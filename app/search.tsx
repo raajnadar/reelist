@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard, CARD_WIDTH } from '../components/MovieCard'
-import { SkeletonCard } from '../components/Skeleton'
+import { SkeletonGrid } from '../components/Skeleton'
 import { searchMovies } from '../lib/api'
 import { useDebounced } from '../lib/useDebounced'
 import type { Movie } from '../lib/types'
@@ -138,11 +138,7 @@ export default function SearchScreen() {
           // A grid of placeholders, not a spinner: it holds the shape the
           // results will take, so the layout does not jump when they arrive.
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
-            <View style={styles.skeletonGrid}>
-              {Array.from({ length: columns * 2 }, (_, i) => (
-                <SkeletonCard key={i} index={i} />
-              ))}
-            </View>
+            <SkeletonGrid />
           </Motion.View>
         ) : error ? (
           <Motion.View
@@ -208,13 +204,4 @@ const styles = StyleSheet.create({
   centered: { marginTop: 48, alignItems: 'center', paddingHorizontal: PADDING },
   list: { paddingHorizontal: PADDING, gap: GAP },
   column: { gap: GAP },
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: GAP,
-    paddingHorizontal: PADDING,
-    // Clips the row that crosses the bottom edge, the same way SkeletonRow
-    // clips the card past the right edge.
-    overflow: 'hidden',
-  },
 })

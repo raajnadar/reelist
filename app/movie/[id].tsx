@@ -1,6 +1,12 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Motion, Presence, useInterpolatedStyle, useScroll } from '@rootnative/inertia'
+import {
+  Motion,
+  Presence,
+  Stagger,
+  useInterpolatedStyle,
+  useScroll,
+} from '@rootnative/inertia'
 // The hero drives its own interpolated style rather than an `animate` prop, so
 // it needs Reanimated's animated Image. A `Motion.Image` carrying only `style`
 // has no motion prop, takes the library's zero-cost plain path, and renders a
@@ -15,9 +21,16 @@ import { AppBar } from '@rootnative/components/appbar'
 import { metaLine } from '../../lib/format'
 import { getMovie } from '../../lib/api'
 import { backdropUrl, posterUrl } from '../../lib/images'
-import { entranceTransition } from '../../lib/motion'
-import { Skeleton } from '../../components/Skeleton'
+import { Skeleton } from '@rootnative/components/skeleton'
 import type { Movie } from '../../lib/types'
+
+/**
+ * Milliseconds between consecutive lines in a staggered entrance.
+ *
+ * One value for both cascades on this screen — the loading blocks and the
+ * content that replaces them — so the two read as the same movement.
+ */
+const STAGGER_INTERVAL = 60
 
 export default function MovieScreen() {
   const theme = useTheme()
@@ -110,11 +123,23 @@ export default function MovieScreen() {
       <Presence>
         {loading ? (
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
-            <Skeleton style={{ width: '100%', height: heroHeight, borderRadius: 0 }} />
+            <Skeleton height={heroHeight} shape="rectangle" />
+            {/*
+              `<Stagger>` owns the cascade, so no block carries its own delay.
+              It assigns child `i` a delay of `i * interval` from render order,
+              which is what the three hand-written `delay` values did — but
+              re-derived every render, so adding or removing a line cannot
+              leave a stale offset behind.
+            */}
             <View style={styles.body}>
-              <Skeleton style={styles.skeletonTitle} delay={80} />
-              <Skeleton style={styles.skeletonMeta} delay={140} />
-              <Skeleton style={styles.skeletonParagraph} delay={200} />
+              {/* `delay` holds the whole cascade back so the hero block lands
+                  before the first line moves, which is what the old 80ms
+                  starting offset did. `interval` then spaces the rest. */}
+              <Stagger interval={STAGGER_INTERVAL} delay={STAGGER_INTERVAL}>
+                <Skeleton height={26} width="70%" />
+                <Skeleton height={16} width="40%" />
+                <Skeleton height={76} style={styles.skeletonParagraph} />
+              </Stagger>
             </View>
           </Motion.View>
         ) : error ? (
@@ -171,45 +196,54 @@ export default function MovieScreen() {
             </View>
 
             <View style={styles.body}>
-              {/* Each line rises in just behind the one above it. The delays
-                  come from the same stagger the card rows use. */}
-              <Motion.View
-                initial={{ opacity: 0, translateY: 16 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={entranceTransition(0)}
-              >
-                <Typography variant="headlineSmallEmphasized">{movie.title}</Typography>
-              </Motion.View>
+              {/*
+                Each line rises in just behind the one above it.
 
-              <Motion.View
-                initial={{ opacity: 0, translateY: 16 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={entranceTransition(1)}
-              >
-                <Typography variant="labelLarge" color={theme.colors.onSurfaceVariant}>
-                  {metaLine(movie.vote_average, movie.release_date)}
-                </Typography>
-              </Motion.View>
+                `<Stagger>` owns the offsets, so no line names its own
+                position. That is what the hardcoded 0 / 1 / 2 indices did, and
+                the positions now re-derive from render order — so reordering
+                these blocks, or making one conditional, cannot leave a line
+                animating on another line's delay.
+              */}
+              <Stagger interval={STAGGER_INTERVAL}>
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                >
+                  <Typography variant="headlineSmallEmphasized">{movie.title}</Typography>
+                </Motion.View>
 
-              <Motion.View
-                initial={{ opacity: 0, translateY: 16 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={entranceTransition(2)}
-              >
-                {movie.overview ? (
-                  <Typography variant="bodyMedium" style={styles.overview}>
-                    {movie.overview}
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                >
+                  <Typography variant="labelLarge" color={theme.colors.onSurfaceVariant}>
+                    {metaLine(movie.vote_average, movie.release_date)}
                   </Typography>
-                ) : (
-                  <Typography
-                    variant="bodyMedium"
-                    color={theme.colors.onSurfaceVariant}
-                    style={styles.overview}
-                  >
-                    No overview yet.
-                  </Typography>
-                )}
-              </Motion.View>
+                </Motion.View>
+
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                >
+                  {movie.overview ? (
+                    <Typography variant="bodyMedium" style={styles.overview}>
+                      {movie.overview}
+                    </Typography>
+                  ) : (
+                    <Typography
+                      variant="bodyMedium"
+                      color={theme.colors.onSurfaceVariant}
+                      style={styles.overview}
+                    >
+                      No overview yet.
+                    </Typography>
+                  )}
+                </Motion.View>
+              </Stagger>
             </View>
           </Motion.ScrollView>
         ) : null}
@@ -239,7 +273,5 @@ const styles = StyleSheet.create({
   fallback: { alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 6 },
   overview: { marginTop: 10 },
-  skeletonTitle: { height: 26, width: '70%' },
-  skeletonMeta: { height: 16, width: '40%' },
-  skeletonParagraph: { height: 76, width: '100%', marginTop: 10 },
+  skeletonParagraph: { marginTop: 10 },
 })

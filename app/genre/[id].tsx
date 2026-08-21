@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard, CARD_WIDTH } from '../../components/MovieCard'
-import { SkeletonCard } from '../../components/Skeleton'
+import { SkeletonGrid } from '../../components/Skeleton'
 import { getMoviesByGenre } from '../../lib/api'
 import type { Movie } from '../../lib/types'
 
@@ -187,11 +187,7 @@ export default function GenreScreen() {
           // A grid of placeholders, not a spinner: it holds the shape the
           // results will take, so the layout does not jump when they arrive.
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
-            <View style={styles.skeletonGrid}>
-              {Array.from({ length: columns * 2 }, (_, i) => (
-                <SkeletonCard key={i} index={i} />
-              ))}
-            </View>
+            <SkeletonGrid />
           </Motion.View>
         ) : error ? (
           <Motion.View
@@ -264,13 +260,4 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: PADDING, gap: GAP },
   column: { gap: GAP },
   footer: { paddingVertical: 20 },
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: GAP,
-    paddingHorizontal: PADDING,
-    // Clips the row that crosses the bottom edge, the same way SkeletonRow
-    // clips the card past the right edge.
-    overflow: 'hidden',
-  },
 })
