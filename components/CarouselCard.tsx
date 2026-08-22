@@ -2,7 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { Image, StyleSheet, View, type ViewStyle } from 'react-native'
+import { Image, StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
 import { posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
@@ -85,12 +85,6 @@ export function CarouselCard({
     { inputRange },
   )
 
-  // The hook returns Reanimated's DefaultStyle, a union that also covers text
-  // keys, so it does not narrow to ViewStyle inside a style array. The map above
-  // emits only transform and opacity, so the cast is safe. Remove it when
-  // @rootnative/inertia types the return against the map it was given.
-  const cardStyle = animatedStyle as ViewStyle
-
   return (
     /*
       Two elements, because perspective and rotateY cannot share one here.
@@ -103,7 +97,7 @@ export function CarouselCard({
       the slot pitch the ScrollView snaps to never changes.
     */
     <View style={[styles.slot, { width }, styles.stage]}>
-      <Motion.View style={cardStyle}>
+      <Motion.View style={animatedStyle}>
         {/*
           The press scale lives on its own Motion.Pressable INSIDE the
           scroll-driven wrapper, rather than on the wrapper itself. Both effects

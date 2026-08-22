@@ -21,7 +21,6 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
-  type ImageStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppBar } from '@rootnative/components/appbar'
@@ -238,10 +237,7 @@ export default function MovieScreen() {
               {backdrop || poster ? (
                 <Animated.Image
                   source={{ uri: (backdrop ?? poster) as string }}
-                  // The cast mirrors the one in CarouselCard: the hook returns
-                  // Reanimated's DefaultStyle union, which does not narrow to
-                  // ImageStyle inside a style array.
-                  style={[styles.backdrop, heroStyle as ImageStyle]}
+                  style={[styles.backdrop, heroStyle]}
                   resizeMode="cover"
                 />
               ) : (

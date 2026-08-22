@@ -1957,10 +1957,10 @@
   resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.14.tgz#caeb273a78d3d8ded253c048e7a3b0f4e5439354"
   integrity sha512-E+bH7D1jEAErKUVuqRB9YkRaO27hUQi6ZS9+pWaDTHTmIAiIEAROVzbb6a6ca/o0KY9Upc8U45/CsOUIu1JZrA==
 
-"@rootnative/inertia@0.0.8":
-  version "0.0.8"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.8.tgz#fdec3a0d608f02bd13b57fd2a6b3e610c9a74af6"
-  integrity sha512-ak4pgHm3APNDo8QGZ7uXjxxrn7cTNND762yV7MlkcftR9zBY27pC//QLUaLCHsCE83bLcOJ2OxfUNhNMlBTmAA==
+"@rootnative/inertia@0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.9.tgz#b14b67fe3cb50a98c80e2320b9e4eece20d8a384"
+  integrity sha512-jymEk7NUqkjeoztN7FKywvxp8u23NxpnfiL+z9DpBPFemEiXeDndPBBCAp+eEJl2JPbExqYvo8H/riU/zvZSIA==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"

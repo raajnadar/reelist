@@ -27,7 +27,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@rootnative/components": "0.0.0-alpha.14",
     "@rootnative/core": "0.0.0-alpha.14",
-    "@rootnative/inertia": "0.0.8",
+    "@rootnative/inertia": "0.0.9",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",
