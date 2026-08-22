@@ -1,5 +1,5 @@
 import { tmdbFetch } from './tmdb'
-import type { Genre, Movie, Paged } from './types'
+import type { Genre, Movie, MovieDetail, Paged } from './types'
 
 /**
  * The single seam between the UI and the data source. Every screen imports from
@@ -30,6 +30,24 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
   vote_average: (raw.vote_average as number) ?? 0,
   release_date: (raw.release_date as string) ?? '',
   overview: (raw.overview as string) ?? '',
+})
+
+/**
+ * The detail endpoint adds three fields the list endpoints never send.
+ *
+ * Each one has a documented absent form: `genres` is missing for a film with
+ * none classified, `runtime` is `null` until a cut exists, and `tagline` is
+ * `""`. They map to an empty array and the `0` / `""` sentinels `lib/format.ts`
+ * already reads as "do not print this".
+ */
+const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => ({
+  ...toMovie(raw),
+  genres: ((raw.genres as { id: number; name: string }[] | undefined) ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+  })),
+  runtime: (raw.runtime as number | null) ?? 0,
+  tagline: (raw.tagline as string) ?? '',
 })
 
 type RawPaged = {
@@ -72,9 +90,9 @@ export const getTopRated = async (): Promise<Paged> =>
  * screen already separates "no such film" from "the request failed", and it
  * prints a different message for each.
  */
-export const getMovie = async (id: number): Promise<Movie | null> => {
+export const getMovie = async (id: number): Promise<MovieDetail | null> => {
   try {
-    return toMovie(await tmdbFetch<Record<string, unknown>>(`/movie/${id}`))
+    return toMovieDetail(await tmdbFetch<Record<string, unknown>>(`/movie/${id}`))
   } catch (e) {
     if (e instanceof Error && 'status' in e && e.status === 404) return null
     throw e

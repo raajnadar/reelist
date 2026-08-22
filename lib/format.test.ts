@@ -1,4 +1,4 @@
-import { metaLine, ratingLabel, releaseYear } from './format'
+import { metaLine, ratingLabel, releaseYear, runtimeLabel } from './format'
 
 // The two TMDB sentinel values drive every case here: an empty `release_date`
 // for an unreleased film, and a `0` rating for an unrated one. Both must never
@@ -36,6 +36,30 @@ describe('ratingLabel', () => {
   })
 })
 
+describe('runtimeLabel', () => {
+  it('splits minutes into hours and minutes', () => {
+    expect(runtimeLabel(167)).toBe('2h 47m')
+  })
+
+  it('drops the hour part under an hour', () => {
+    expect(runtimeLabel(48)).toBe('48m')
+  })
+
+  it('drops the minute part on an exact hour', () => {
+    expect(runtimeLabel(120)).toBe('2h')
+  })
+
+  it('returns null for the 0 runtime TMDB sends for a film with no cut yet', () => {
+    expect(runtimeLabel(0)).toBeNull()
+  })
+
+  // Defensive: TMDB has no negative runtime, but a null mapped through
+  // arithmetic could produce one, and "-1m" on screen is worse than no segment.
+  it('returns null for a negative runtime', () => {
+    expect(runtimeLabel(-5)).toBeNull()
+  })
+})
+
 describe('metaLine', () => {
   it('joins the rating and the year', () => {
     expect(metaLine(8.1, '2023-07-19')).toBe('★ 8.1 · 2023')
@@ -53,5 +77,25 @@ describe('metaLine', () => {
   // the fallback is ever dropped, which looks like a layout bug, not a data gap.
   it('falls back to "Not rated" when both are absent', () => {
     expect(metaLine(0, '')).toBe('Not rated')
+  })
+
+  // The runtime is the third segment and optional, because only the detail
+  // endpoint sends it. The cards call this with two arguments.
+  it('appends the runtime when one is given', () => {
+    expect(metaLine(8.1, '2023-07-19', 181)).toBe('★ 8.1 · 2023 · 3h 1m')
+  })
+
+  it('omits the runtime when the caller passes none', () => {
+    expect(metaLine(8.1, '2023-07-19')).toBe('★ 8.1 · 2023')
+  })
+
+  it('drops the runtime segment for a film with no runtime', () => {
+    expect(metaLine(8.1, '2023-07-19', 0)).toBe('★ 8.1 · 2023')
+  })
+
+  // The runtime alone still carries the line, so a film with no rating and no
+  // date does not fall back to "Not rated" when it does have a length.
+  it('reports the runtime alone when the other two are absent', () => {
+    expect(metaLine(0, '', 95)).toBe('1h 35m')
   })
 })

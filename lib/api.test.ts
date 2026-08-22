@@ -85,6 +85,71 @@ describe('the mapping to Movie', () => {
   })
 })
 
+// The three fields only `/movie/{id}` sends. Each is tested against its absent
+// form as well as its present one: the screen drops a line rather than printing
+// an empty one, and it can only do that if the mapping keeps the sentinel.
+describe('the mapping to MovieDetail', () => {
+  it('maps the genres, the runtime, and the tagline', async () => {
+    tmdbFetch.mockResolvedValue({
+      ...rawMovie,
+      genres: [{ id: 18, name: 'Drama' }],
+      runtime: 139,
+      tagline: 'Mischief. Mayhem. Soap.',
+    })
+
+    const movie = await getMovie(550)
+
+    expect(movie).toMatchObject({
+      genres: [{ id: 18, name: 'Drama' }],
+      runtime: 139,
+      tagline: 'Mischief. Mayhem. Soap.',
+    })
+  })
+
+  // The base fields still map, so the detail mapper cannot drift from the list
+  // one. `belongs_to_collection` is in rawMovie and must not survive.
+  it('keeps the narrowing the list mapper does', async () => {
+    tmdbFetch.mockResolvedValue({ ...rawMovie, genres: [], runtime: 139, tagline: '' })
+
+    const movie = await getMovie(550)
+
+    expect(movie).not.toHaveProperty('belongs_to_collection')
+    expect(movie?.title).toBe('Fight Club')
+  })
+
+  it('maps a missing genre list to an empty array', async () => {
+    tmdbFetch.mockResolvedValue(rawMovie)
+
+    await expect(getMovie(550)).resolves.toMatchObject({ genres: [] })
+  })
+
+  // TMDB sends null for a film with no cut yet. `lib/format.ts` reads 0 as
+  // absent, so null must arrive there as 0 rather than as null.
+  it('maps a null runtime to 0', async () => {
+    tmdbFetch.mockResolvedValue({ ...rawMovie, runtime: null })
+
+    await expect(getMovie(550)).resolves.toMatchObject({ runtime: 0 })
+  })
+
+  it('keeps the empty tagline TMDB sends for a film with none', async () => {
+    tmdbFetch.mockResolvedValue({ ...rawMovie, tagline: '' })
+
+    await expect(getMovie(550)).resolves.toMatchObject({ tagline: '' })
+  })
+
+  // A genre object carries more than an id and a name. Only those two may pass.
+  it('narrows each genre to its id and name', async () => {
+    tmdbFetch.mockResolvedValue({
+      ...rawMovie,
+      genres: [{ id: 18, name: 'Drama', unused: 'field' }],
+    })
+
+    const movie = await getMovie(550)
+
+    expect(movie?.genres[0]).toEqual({ id: 18, name: 'Drama' })
+  })
+})
+
 describe('getMovie', () => {
   it('returns null for a film that does not exist', async () => {
     tmdbFetch.mockRejectedValue(new TmdbError('Not found', 404))

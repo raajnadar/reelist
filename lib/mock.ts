@@ -1,4 +1,4 @@
-import type { Movie } from './types'
+import type { Movie, MovieDetail } from './types'
 
 /**
  * Poster paths are real TMDB paths, so the images load without an API key.
@@ -95,3 +95,21 @@ export const mockMovies: Movie[] = [
     overview: 'Exercises the empty release date and zero rating branches.',
   },
 ]
+
+/**
+ * One film in the shape `/movie/{id}` returns, which is what the detail screen
+ * reads.
+ *
+ * Separate from `mockMovies` rather than added to it. Those entries stand in for
+ * the list endpoints, which never send `genres`, `runtime`, or `tagline` — giving
+ * them those fields would let a card test pass against data the API never sends.
+ */
+export const mockMovieDetail: MovieDetail = {
+  ...mockMovies[0],
+  genres: [
+    { id: 878, name: 'Science Fiction' },
+    { id: 12, name: 'Adventure' },
+  ],
+  runtime: 167,
+  tagline: 'Long live the fighters.',
+}

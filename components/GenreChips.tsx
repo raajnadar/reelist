@@ -16,20 +16,34 @@ import type { Genre } from '../lib/types'
  * `suggestion` is the variant, not `filter`: these chips navigate to another
  * screen rather than narrow what is on this one, and a filter chip carries a
  * selected state that would never be set here.
+ *
+ * `inset` is the row's own horizontal padding, which the home screen needs and
+ * the detail screen does not: there the chips sit inside a body that already
+ * pads itself, and a second inset would step them in from the title above them.
+ * `gutter` is the space below the row, for the same reason — the detail body
+ * spaces its own children.
  */
-export function GenreChips({ genres }: { genres: Genre[] }) {
+export function GenreChips({
+  genres,
+  inset = 16,
+  gutter = 20,
+}: {
+  genres: Genre[]
+  inset?: number
+  gutter?: number
+}) {
   const router = useRouter()
 
   if (!genres.length) return null
 
   return (
-    <View style={styles.row}>
+    <View style={{ marginBottom: gutter }}>
       <FlatList
         data={genres}
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(g) => String(g.id)}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ paddingHorizontal: inset }}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item, index }) => (
           // The same staggered entrance the cards use, so the chips arrive as
@@ -55,7 +69,5 @@ export function GenreChips({ genres }: { genres: Genre[] }) {
 }
 
 const styles = StyleSheet.create({
-  row: { marginBottom: 20 },
-  list: { paddingHorizontal: 16 },
   separator: { width: 8 },
 })

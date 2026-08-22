@@ -1,5 +1,5 @@
 import { Typography } from '@rootnative/components/typography'
-import { useTheme } from '@rootnative/core'
+import { useBreakpointValue, useTheme } from '@rootnative/core'
 import {
   Motion,
   Presence,
@@ -15,14 +15,22 @@ import {
 import { Animated } from '@rootnative/inertia/reanimated'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { StyleSheet, useWindowDimensions, View, type ImageStyle } from 'react-native'
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type ImageStyle,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppBar } from '@rootnative/components/appbar'
+import { GenreChips } from '../../components/GenreChips'
 import { metaLine } from '../../lib/format'
 import { getMovie } from '../../lib/api'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import { Skeleton } from '@rootnative/components/skeleton'
-import type { Movie } from '../../lib/types'
+import type { MovieDetail } from '../../lib/types'
 
 /**
  * Milliseconds between consecutive lines in a staggered entrance.
@@ -31,6 +39,19 @@ import type { Movie } from '../../lib/types'
  * content that replaces them — so the two read as the same movement.
  */
 const STAGGER_INTERVAL = 60
+
+/**
+ * The widest the body ever grows, whatever the window does.
+ *
+ * A line of text is comfortable to read at roughly 60 to 75 characters. On a
+ * 1600px window a full-width paragraph runs past 150, which is the complaint
+ * this cap answers. The value is the body box, not the hero: the backdrop stays
+ * full-bleed, so the picture still uses the whole window.
+ */
+const MAX_BODY_WIDTH = 1100
+
+/** The poster column width in the two-column arrangement. */
+const POSTER_WIDTH = 260
 
 export default function MovieScreen() {
   const theme = useTheme()
@@ -44,7 +65,7 @@ export default function MovieScreen() {
   const movieId = Number(id)
   const validId = Number.isInteger(movieId)
 
-  const [movie, setMovie] = useState<Movie | null>(null)
+  const [movie, setMovie] = useState<MovieDetail | null>(null)
   const [loading, setLoading] = useState(validId)
   const [error, setError] = useState<string | null>(
     validId ? null : 'That link is not a valid movie',
@@ -78,13 +99,30 @@ export default function MovieScreen() {
   const backdrop = movie ? backdropUrl(movie.backdrop_path) : null
   const poster = movie ? posterUrl(movie.poster_path, 'w500') : null
 
-  // The hero height. The image is 16:9, so one screen width gives it
-  // `width * 9 / 16`. On a wide window — a desktop browser — that number grows
-  // past the viewport and pushes the title and the overview below the fold, so
-  // it is capped at 55% of the window height. The cap never applies on a phone,
-  // where a 16:9 strip is always shorter than the screen.
   const { width, height } = useWindowDimensions()
-  const heroHeight = Math.min(width * (9 / 16), height * 0.55)
+
+  /**
+   * Two columns — poster beside the text — only from `expanded` up.
+   *
+   * `medium` is a tablet: wide enough to want a longer measure than a phone, not
+   * wide enough to put a 260px poster next to it and leave a readable column.
+   * There the layout stays stacked and only the body cap applies.
+   */
+  const twoColumn = useBreakpointValue({ compact: false, medium: false, expanded: true })
+
+  /**
+   * The share of the window height the backdrop may take.
+   *
+   * On a phone the 16:9 strip is always shorter than this, so the cap never
+   * fires and the mobile hero is exactly what it was. On a desktop window the
+   * 16:9 height runs past the fold, and the old 55% still left the title and the
+   * overview below it — hence 40% once there is a poster to carry the page.
+   */
+  const heroShare = useBreakpointValue({ compact: 0.55, medium: 0.5, expanded: 0.4 })
+
+  // The image is 16:9, so one window width gives it `width * 9 / 16`. The share
+  // above caps that on a window too wide for the ratio to stay on screen.
+  const heroHeight = Math.min(width * (9 / 16), height * heroShare)
 
   // scrollY drives the hero on the UI thread, so the parallax holds during a
   // fling without a re-render per frame.
@@ -99,6 +137,12 @@ export default function MovieScreen() {
   //
   // `extrapolate: 'extend'` is required for the stretch: the default 'clamp'
   // would freeze the scale at 1 and the pull-down would do nothing.
+  //
+  // It is native-only on purpose. The stretch answers a rubber-band overscroll,
+  // which is a touch gesture — a browser scrolls to 0 and stops, so on web the
+  // extended range is unreachable and any value it produced would come from a
+  // scroll position the user cannot reach. 'clamp' there keeps the drift-and-fade
+  // half, which a mouse wheel does drive.
   const heroStyle = useInterpolatedStyle(
     scrollY,
     {
@@ -106,7 +150,10 @@ export default function MovieScreen() {
       translateY: [0, 0, heroHeight * 0.5],
       opacity: [1, 1, 0.25],
     },
-    { inputRange: [-heroHeight, 0, heroHeight], extrapolate: 'extend' },
+    {
+      inputRange: [-heroHeight, 0, heroHeight],
+      extrapolate: Platform.OS === 'web' ? 'clamp' : 'extend',
+    },
   )
 
   return (
@@ -131,15 +178,32 @@ export default function MovieScreen() {
               re-derived every render, so adding or removing a line cannot
               leave a stale offset behind.
             */}
-            <View style={styles.body}>
-              {/* `delay` holds the whole cascade back so the hero block lands
-                  before the first line moves, which is what the old 80ms
-                  starting offset did. `interval` then spaces the rest. */}
-              <Stagger interval={STAGGER_INTERVAL} delay={STAGGER_INTERVAL}>
-                <Skeleton height={26} width="70%" />
-                <Skeleton height={16} width="40%" />
-                <Skeleton height={76} style={styles.skeletonParagraph} />
-              </Stagger>
+            {/*
+              The placeholder holds the same box the content will: capped, centred,
+              and split into two columns at the same breakpoint. A single-column
+              skeleton followed by a two-column body would reflow the whole screen
+              the moment the request lands.
+            */}
+            <View style={[styles.body, styles.bodyCap, twoColumn && styles.bodyRow]}>
+              {twoColumn ? (
+                <Skeleton height={POSTER_WIDTH * (3 / 2)} width={POSTER_WIDTH} />
+              ) : null}
+              <View style={styles.textColumn}>
+                {/* `delay` holds the whole cascade back so the hero block lands
+                    before the first line moves, which is what the old 80ms
+                    starting offset did. `interval` then spaces the rest. */}
+                <Stagger interval={STAGGER_INTERVAL} delay={STAGGER_INTERVAL}>
+                  <Skeleton height={26} width="70%" />
+                  <Skeleton height={16} width="40%" />
+                  {/* The chip row. Two blocks at chip height, so the space the
+                      genres will take is already reserved. */}
+                  <View style={styles.skeletonChips}>
+                    <Skeleton height={32} width={84} shape="rectangle" />
+                    <Skeleton height={32} width={72} shape="rectangle" />
+                  </View>
+                  <Skeleton height={76} style={styles.skeletonParagraph} />
+                </Stagger>
+              </View>
             </View>
           </Motion.View>
         ) : error ? (
@@ -195,7 +259,46 @@ export default function MovieScreen() {
               )}
             </View>
 
-            <View style={styles.body}>
+            {/*
+              The body is capped and centred, so a wide window widens the margins
+              rather than the text. The hero above is deliberately outside this
+              box: the picture is the one element that should stay full-bleed.
+            */}
+            <View style={[styles.body, styles.bodyCap, twoColumn && styles.bodyRow]}>
+              {/*
+                The poster, alongside the text from `expanded` up.
+
+                It is absent on a phone on purpose. The backdrop is already the
+                hero there, and a second image of the same film would push the
+                overview off the fold to say nothing new. On a wide window it is
+                what fills the space beside a capped text column — the reason
+                this layout has two columns at all.
+
+                Rendered only when a poster path exists. There is no placeholder
+                box: an empty rectangle beside the title is worse than a text
+                column that simply uses the width.
+              */}
+              {twoColumn && poster ? (
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                >
+                  <Image
+                    testID="detail-poster"
+                    source={{ uri: poster }}
+                    style={[
+                      styles.poster,
+                      {
+                        borderRadius: theme.shape.cornerLarge,
+                        backgroundColor: theme.colors.surfaceVariant,
+                      },
+                    ]}
+                    resizeMode="cover"
+                  />
+                </Motion.View>
+              ) : null}
+
               {/*
                 Each line rises in just behind the one above it.
 
@@ -204,46 +307,98 @@ export default function MovieScreen() {
                 the positions now re-derive from render order — so reordering
                 these blocks, or making one conditional, cannot leave a line
                 animating on another line's delay.
+
+                `styles.textColumn` carries `flex: 1` and a `flexBasis` of 0. In
+                the row arrangement that is what makes the column take the space
+                the poster leaves instead of sizing to its longest line, and the
+                zero basis stops a long unbroken overview from pushing the poster
+                out of the row.
               */}
-              <Stagger interval={STAGGER_INTERVAL}>
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                >
-                  <Typography variant="headlineSmallEmphasized">{movie.title}</Typography>
-                </Motion.View>
-
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                >
-                  <Typography variant="labelLarge" color={theme.colors.onSurfaceVariant}>
-                    {metaLine(movie.vote_average, movie.release_date)}
-                  </Typography>
-                </Motion.View>
-
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                >
-                  {movie.overview ? (
-                    <Typography variant="bodyMedium" style={styles.overview}>
-                      {movie.overview}
-                    </Typography>
-                  ) : (
+              <View style={styles.textColumn}>
+                <Stagger interval={STAGGER_INTERVAL}>
+                  <Motion.View
+                    initial={{ opacity: 0, translateY: 16 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition="enter"
+                  >
+                    {/* The larger variant only where there is room for it. On a
+                        phone the headline would wrap a long title to three lines. */}
                     <Typography
-                      variant="bodyMedium"
-                      color={theme.colors.onSurfaceVariant}
-                      style={styles.overview}
+                      variant={
+                        twoColumn ? 'headlineMediumEmphasized' : 'headlineSmallEmphasized'
+                      }
                     >
-                      No overview yet.
+                      {movie.title}
                     </Typography>
-                  )}
-                </Motion.View>
-              </Stagger>
+                  </Motion.View>
+
+                  <Motion.View
+                    initial={{ opacity: 0, translateY: 16 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition="enter"
+                  >
+                    <Typography
+                      variant="labelLarge"
+                      color={theme.colors.onSurfaceVariant}
+                    >
+                      {metaLine(movie.vote_average, movie.release_date, movie.runtime)}
+                    </Typography>
+                  </Motion.View>
+
+                  {/*
+                    The tagline, when the film has one. TMDB sends `""` for a film
+                    with none, and `lib/api.ts` keeps that sentinel — so this is a
+                    line that is simply absent rather than an empty row.
+                  */}
+                  {movie.tagline ? (
+                    <Motion.View
+                      initial={{ opacity: 0, translateY: 16 }}
+                      animate={{ opacity: 1, translateY: 0 }}
+                      transition="enter"
+                    >
+                      <Typography
+                        variant="bodyMedium"
+                        color={theme.colors.onSurfaceVariant}
+                        style={styles.tagline}
+                      >
+                        {movie.tagline}
+                      </Typography>
+                    </Motion.View>
+                  ) : null}
+
+                  {/*
+                    The genre row, which doubles as navigation: each chip opens the
+                    genre screen. The film carries its own genres from the detail
+                    endpoint, so this needs no second request.
+
+                    `inset={0}` because the body already pads itself — the default
+                    16 is the home screen's, where the row spans the full width.
+                    GenreChips renders nothing for an empty list, so a film with no
+                    genres leaves no gap.
+                  */}
+                  <GenreChips genres={movie.genres} inset={0} gutter={0} />
+
+                  <Motion.View
+                    initial={{ opacity: 0, translateY: 16 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition="enter"
+                  >
+                    {movie.overview ? (
+                      <Typography variant="bodyMedium" style={styles.overview}>
+                        {movie.overview}
+                      </Typography>
+                    ) : (
+                      <Typography
+                        variant="bodyMedium"
+                        color={theme.colors.onSurfaceVariant}
+                        style={styles.overview}
+                      >
+                        No overview yet.
+                      </Typography>
+                    )}
+                  </Motion.View>
+                </Stagger>
+              </View>
             </View>
           </Motion.ScrollView>
         ) : null}
@@ -272,6 +427,21 @@ const styles = StyleSheet.create({
   },
   fallback: { alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 6 },
+  // Caps the measure and centres what is left over. `width: '100%'` is required
+  // with `maxWidth`: without it the box shrinks to its content on a narrow
+  // window, and `alignSelf: 'center'` then centres a column narrower than the
+  // screen instead of filling it.
+  bodyCap: { width: '100%', maxWidth: MAX_BODY_WIDTH, alignSelf: 'center' },
+  // The two-column arrangement. `alignItems: 'flex-start'` keeps the poster at
+  // its own height rather than stretching it to match the text column.
+  bodyRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 28, paddingTop: 28 },
+  // `flexBasis: 0` with `flex: 1`: the column takes the leftover width rather
+  // than sizing to its content, so a long overview cannot squeeze the poster.
+  textColumn: { flex: 1, flexBasis: 0, gap: 6 },
+  // 2:3 is the TMDB poster ratio, the same one MovieCard's media box uses.
+  poster: { width: POSTER_WIDTH, aspectRatio: 2 / 3 },
+  tagline: { fontStyle: 'italic', marginTop: 2 },
   overview: { marginTop: 10 },
   skeletonParagraph: { marginTop: 10 },
+  skeletonChips: { flexDirection: 'row', gap: 8, marginTop: 4 },
 })
