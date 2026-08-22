@@ -15,13 +15,7 @@ import {
 import { Animated } from '@rootnative/inertia/reanimated'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import {
-  Image,
-  Platform,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { Image, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppBar } from '@rootnative/components/appbar'
 import { GenreChips } from '../../components/GenreChips'
