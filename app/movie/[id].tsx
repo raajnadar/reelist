@@ -18,12 +18,17 @@ import { useEffect, useState } from 'react'
 import { Image, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppBar } from '@rootnative/components/appbar'
+import { Button } from '@rootnative/components/button'
+import { openURL } from 'expo-linking'
+import { CastRow } from '../../components/CastRow'
 import { GenreChips } from '../../components/GenreChips'
+import { MovieRow } from '../../components/MovieRow'
+import { SkeletonRow } from '../../components/Skeleton'
 import { metaLine } from '../../lib/format'
 import { getMovie } from '../../lib/api'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import { Skeleton } from '@rootnative/components/skeleton'
-import type { MovieDetail } from '../../lib/types'
+import type { MovieDetail, Video } from '../../lib/types'
 
 /**
  * Milliseconds between consecutive lines in a staggered entrance.
@@ -45,6 +50,23 @@ const MAX_BODY_WIDTH = 1100
 
 /** The poster column width in the two-column arrangement. */
 const POSTER_WIDTH = 260
+
+/**
+ * Opens the trailer outside the app.
+ *
+ * `lib/api.ts` already established the video is a YouTube trailer, so this
+ * builds the watch URL and nothing more. It takes the nullable type rather than
+ * a narrowed one, because the caller reads `movie.trailer` inside a callback
+ * and the guard around that callback does not narrow a property there.
+ *
+ * A rejected promise means no installed app can open a YouTube link. There is
+ * no better answer than doing nothing, and an uncaught rejection would only
+ * print a warning.
+ */
+const openTrailer = (video: Video | null) => {
+  if (!video) return
+  void openURL(`https://www.youtube.com/watch?v=${video.key}`).catch(() => {})
+}
 
 export default function MovieScreen() {
   const theme = useTheme()
@@ -198,6 +220,11 @@ export default function MovieScreen() {
                 </Stagger>
               </View>
             </View>
+
+            {/* One row placeholder for the two that follow the body. Two would
+                reserve more height than most films fill, and the screen scrolls
+                past the second before the request lands. */}
+            <SkeletonRow />
           </Motion.View>
         ) : error ? (
           <Motion.View
@@ -336,6 +363,38 @@ export default function MovieScreen() {
                   </Motion.View>
 
                   {/*
+                    The trailer, when the film has one on YouTube. `lib/api.ts`
+                    chose it, so this line has no filtering to do and `null`
+                    means the button is simply absent.
+
+                    The link leaves the app. There is no in-app player: a
+                    YouTube video needs the YouTube frame, so an embedded one
+                    would take a new dependency and still hand playback to
+                    YouTube. `openURL` opens the YouTube app when it is
+                    installed and the browser when it is not.
+
+                    A new child needs no delay of its own — `<Stagger>` re-derives
+                    the whole cascade from render order, so the lines below this
+                    one move back by one interval on their own.
+                  */}
+                  {movie.trailer ? (
+                    <Motion.View
+                      initial={{ opacity: 0, translateY: 16 }}
+                      animate={{ opacity: 1, translateY: 0 }}
+                      transition="enter"
+                      style={styles.trailerRow}
+                    >
+                      <Button
+                        variant="tonal"
+                        leadingIcon="play"
+                        onPress={() => openTrailer(movie.trailer)}
+                      >
+                        Watch trailer
+                      </Button>
+                    </Motion.View>
+                  ) : null}
+
+                  {/*
                     The tagline, when the film has one. TMDB sends `""` for a film
                     with none, and `lib/api.ts` keeps that sentinel — so this is a
                     line that is simply absent rather than an empty row.
@@ -390,6 +449,19 @@ export default function MovieScreen() {
                 </Stagger>
               </View>
             </View>
+
+            {/*
+              Both rows sit outside the body box, not inside the text column.
+              They span the full width, and the text column is only the
+              right-hand half once the layout splits in two.
+
+              They also pad themselves, which is why neither is wrapped in
+              `styles.body` — the 16 would double. Each returns nothing for an
+              empty list, so a film with no cast and no recommendation ends at
+              the overview.
+            */}
+            <CastRow title="Cast" cast={movie.cast} />
+            <MovieRow title="More like this" movies={movie.recommendations} />
           </Motion.ScrollView>
         ) : null}
       </Presence>
@@ -430,6 +502,10 @@ const styles = StyleSheet.create({
   textColumn: { flex: 1, flexBasis: 0, gap: 6 },
   // 2:3 is the TMDB poster ratio, the same one MovieCard's media box uses.
   poster: { width: POSTER_WIDTH, aspectRatio: 2 / 3 },
+  // `alignSelf` keeps the button at its own width. A Button in a column with
+  // `flexBasis: 0` stretches to the whole measure otherwise, which reads as a
+  // banner rather than an action.
+  trailerRow: { alignSelf: 'flex-start', marginTop: 8 },
   tagline: { fontStyle: 'italic', marginTop: 2 },
   overview: { marginTop: 10 },
   skeletonParagraph: { marginTop: 10 },

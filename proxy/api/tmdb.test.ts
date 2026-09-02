@@ -140,6 +140,39 @@ describe('the key', () => {
     expect(upstreamUrl().searchParams.has('sort_by')).toBe(false)
   })
 
+  // The detail screen asks for the cast, the videos, and the recommendations
+  // inside the film response, so it stays one request per film.
+  it('forwards the append value the app sends', async () => {
+    await get('path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations')
+
+    expect(upstreamUrl().searchParams.get('append_to_response')).toBe(
+      'credits,videos,recommendations',
+    )
+  })
+
+  /**
+   * `append_to_response` is the one parameter that names a path of its own, so
+   * the name check is not enough. TMDB would answer `reviews`, `images`, or
+   * `watch/providers` here, and forwarding the caller's value would undo the
+   * path allowlist the file above it enforces.
+   */
+  it('drops an append value the app does not use', async () => {
+    await get('path=%2Fmovie%2F550&append_to_response=reviews')
+
+    expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)
+  })
+
+  // A value that starts with the allowed one is still a different value. An
+  // `includes` or a prefix test rather than an exact match would pass this
+  // through, which is the mistake this test exists to catch.
+  it('drops an append value that only starts with the allowed one', async () => {
+    await get(
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Creviews',
+    )
+
+    expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)
+  })
+
   it('reports a missing server key without saying why', async () => {
     delete process.env.TMDB_API_KEY
 

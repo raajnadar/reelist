@@ -164,19 +164,20 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | ----------------------------------- | -------------------------------------------------- |
 | `lib/format.test.ts`                | Both TMDB sentinels, alone and together            |
 | `lib/images.test.ts`                | URL building, and null for a film with no art      |
-| `lib/api.test.ts`                   | The mapping, the error branches, and the paging    |
+| `lib/api.test.ts`                   | The mapping, the paging, and which trailer is used |
 | `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent        |
 | `lib/motion.test.ts`                | The transition tokens and the stagger ceiling      |
 | `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value      |
 | `components/MovieCard.test.tsx`     | The poster size and the fixed card height          |
+| `components/CastCard.test.tsx`      | The photo size, and both reserved text heights     |
 | `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths         |
 | `components/Skeleton.test.ts`       | The placeholder count against the screen width     |
 | `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs |
-| `__tests__/app/movie/[id].test.tsx` | The detail screen: 7 states, every error           |
+| `__tests__/app/movie/[id].test.tsx` | The detail screen: every state and every error     |
 | `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness |
 | `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips |
 | `__tests__/app/genre/[id].test.tsx` | The genre grid: paging, a bad id, a stale page     |
-| `proxy/api/tmdb.test.ts`            | The allowlist, and that the key never comes back   |
+| `proxy/api/tmdb.test.ts`            | The allowlist, the append value, and the key       |
 | `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open |
 
 No test needs a key or a network. The proxy tests mock `fetch`, and the screen
@@ -199,13 +200,15 @@ components/
 ├── CarouselCard.tsx     # One card in the carousel
 ├── MovieRow.tsx         # A compact horizontal row
 ├── MovieCard.tsx        # One card in a row
+├── CastRow.tsx          # The billed cast on the detail screen
+├── CastCard.tsx         # One person in the cast row
 ├── GenreChips.tsx       # The genre shortcuts under the home header
 └── Skeleton.tsx         # The loading placeholders
 lib/
 ├── api.ts               # The seam. The only data file a screen imports
 ├── tmdb.ts              # The transport. Calls the proxy
 ├── config.ts            # Reads the proxy URL from the environment
-├── types.ts             # Movie, Paged, and Genre, in the TMDB field shape
+├── types.ts             # Movie, Paged, Genre, CastMember, Video
 ├── mock.ts              # Static film data, now a test fixture only
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels
@@ -239,9 +242,17 @@ Moving to the live TMDB API changed `lib/api.ts` and added `lib/tmdb.ts` beneath
 it. Moving from a direct TMDB call to the proxy changed `lib/tmdb.ts` and
 `lib/config.ts`. **Neither change touched a screen.**
 
+Adding the cast, the trailer, and the "More like this" row was a different kind
+of proof. The detail screen draws three new sections, so that file did change.
+What did not change is the way it loads them: no second request, no extra state,
+and no extra effect. TMDB includes all three inside the film response when the
+request carries `append_to_response`, so `getMovie` returns three more fields on
+the type it already returned. The compiler then named every file that had to
+follow, starting with `lib/mock.ts`.
+
 | File            | Function                                                             |
 | --------------- | -------------------------------------------------------------------- |
-| `lib/api.ts`    | The seam. Maps a TMDB response to the `Movie` type.                  |
+| `lib/api.ts`    | The seam. Maps a TMDB response to the app's own types.               |
 | `lib/tmdb.ts`   | The transport. Calls the proxy and turns a bad status into an error. |
 | `lib/config.ts` | Reads the proxy URL. Throws `MissingProxyUrlError` when absent.      |
 

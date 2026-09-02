@@ -1,4 +1,4 @@
-import { waitFor } from '@testing-library/react-native'
+import { fireEvent, waitFor } from '@testing-library/react-native'
 import { Dimensions } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
@@ -33,17 +33,26 @@ jest.mock('expo-router', () => ({
   }),
 }))
 
+// The trailer button leaves the app. `openURL` is the one call the screen makes
+// outside itself, and no app file opened a link before this screen did, so
+// there is no shared mock to reuse.
+jest.mock('expo-linking', () => ({ openURL: jest.fn() }))
+
 jest.mock('../../../lib/api', () => ({
   getMovie: jest.fn(),
 }))
 
 const { getMovie } = jest.requireMock('../../../lib/api')
+const { openURL } = jest.requireMock('expo-linking')
 
 // Dune: a film with every field the detail endpoint sends.
 const movie = mockMovieDetail
 
 beforeEach(() => {
   jest.clearAllMocks()
+  // The screen calls `.catch` on the result, so the mock has to answer with a
+  // promise rather than undefined.
+  openURL.mockResolvedValue(true)
 })
 
 it('shows the title, the meta line, and the overview', async () => {
@@ -188,6 +197,95 @@ it('does not render the poster column on a narrow window', async () => {
 
   await screen.findByText(movie.overview)
   expect(screen.queryByTestId('detail-poster')).toBeNull()
+})
+
+/**
+ * The three sections the appended blocks feed. Each one has an absent twin,
+ * because TMDB omits a block whose film has nothing in it and `lib/api.ts` maps
+ * that to an empty list or a null.
+ */
+describe('the trailer button', () => {
+  it('opens the YouTube watch page for the trailer key', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByText('Watch trailer'))
+
+    expect(openURL).toHaveBeenCalledWith(
+      `https://www.youtube.com/watch?v=${movie.trailer?.key}`,
+    )
+  })
+
+  // `lib/api.ts` reports no playable trailer as null, and the button is then
+  // absent rather than disabled: a button that answers nothing reads as broken.
+  it('is absent for a film with no trailer', async () => {
+    const noTrailer = { ...movie, trailer: null }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noTrailer.id) })
+    getMovie.mockResolvedValue(noTrailer)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    // The overview is the marker that the body rendered at all.
+    expect(await screen.findByText(noTrailer.overview)).toBeTruthy()
+    expect(screen.queryByText('Watch trailer')).toBeNull()
+    expect(openURL).not.toHaveBeenCalled()
+  })
+})
+
+describe('the cast row', () => {
+  it('names each performer and the part they play', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('Cast')).toBeTruthy()
+    expect(screen.getByText('Timothée Chalamet')).toBeTruthy()
+    expect(screen.getByText('Paul Atreides')).toBeTruthy()
+  })
+
+  // CastRow returns null for an empty list, so an announced film with nobody
+  // billed shows no heading above nothing.
+  it('is absent for a film with no billed cast', async () => {
+    const noCast = { ...movie, cast: [] }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noCast.id) })
+    getMovie.mockResolvedValue(noCast)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(noCast.overview)).toBeTruthy()
+    expect(screen.queryByText('Cast')).toBeNull()
+  })
+})
+
+describe('the recommendation row', () => {
+  it('shows the films TMDB recommends', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('More like this')).toBeTruthy()
+    expect(screen.getByText(movie.recommendations[0].title)).toBeTruthy()
+  })
+
+  /**
+   * The dead end this row answers. A film TMDB recommends nothing for has to
+   * end at the overview rather than at an empty heading — MovieRow returns null
+   * for an empty list, which is the same rule the home screen rows follow.
+   */
+  it('is absent for a film with no recommendations', async () => {
+    const noRecs = { ...movie, recommendations: [] }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noRecs.id) })
+    getMovie.mockResolvedValue(noRecs)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(noRecs.overview)).toBeTruthy()
+    expect(screen.queryByText('More like this')).toBeNull()
+  })
 })
 
 // The wide layout. `useBreakpointValue` reads `useWindowDimensions`, so widening

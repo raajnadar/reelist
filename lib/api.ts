@@ -1,5 +1,5 @@
 import { tmdbFetch } from './tmdb'
-import type { Genre, Movie, MovieDetail, Paged } from './types'
+import type { CastMember, Genre, Movie, MovieDetail, Paged, Video } from './types'
 
 /**
  * The single seam between the UI and the data source. Every screen imports from
@@ -33,22 +33,103 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
 })
 
 /**
- * The detail endpoint adds three fields the list endpoints never send.
+ * The sub-resources the detail request asks TMDB to include in its answer.
+ *
+ * This string must stay identical to the one allowed value in
+ * `ALLOWED_PARAM_VALUES` in `proxy/api/tmdb.ts`. The proxy checks this
+ * parameter by value, because TMDB would answer `reviews`, `images`, or
+ * `watch/providers` here too and the path allowlist alone would not stop it.
+ *
+ * A mismatch fails silently: the proxy drops the parameter, TMDB answers with a
+ * plain detail response, and the cast row, the trailer button, and the
+ * recommendation row all go absent with no error to report.
+ */
+const APPEND = 'credits,videos,recommendations'
+
+/**
+ * One performer from the `credits` block.
+ *
+ * TMDB sends `profile_path: null` for a person with no photo, and omits
+ * `character` for an uncredited role. Both absent forms keep the sentinel
+ * `lib/types.ts` declares rather than a placeholder string, so the card decides
+ * what to draw.
+ */
+const toCastMember = (raw: Record<string, unknown>): CastMember => ({
+  id: raw.id as number,
+  name: (raw.name as string) ?? '',
+  character: (raw.character as string) ?? '',
+  profile_path: (raw.profile_path as string | null) ?? null,
+})
+
+const toVideo = (raw: Record<string, unknown>): Video => ({
+  id: (raw.id as string) ?? '',
+  key: (raw.key as string) ?? '',
+  name: (raw.name as string) ?? '',
+  site: (raw.site as string) ?? '',
+  type: (raw.type as string) ?? '',
+  official: (raw.official as boolean) ?? false,
+})
+
+/**
+ * The one video the screen can play, out of everything TMDB lists.
+ *
+ * The choice belongs here rather than in the screen, for the reason `MAX_PAGE`
+ * below does: the rule comes from the shape of the response. A film carries
+ * teasers, clips, featurettes, and behind-the-scenes reels beside its trailer,
+ * and TMDB lists Vimeo entries the app cannot open. Filtering in the screen
+ * would repeat that knowledge in the UI.
+ *
+ * An official trailer wins over an unofficial one. TMDB marks a studio upload
+ * `official: true`, and the rest are fan cuts and reaction videos of varying
+ * quality. The first match is the fallback, because TMDB lists videos newest
+ * first and a re-release trailer is a better answer than nothing.
+ */
+const pickTrailer = (raws: Record<string, unknown>[]): Video | null => {
+  const trailers = raws
+    .map(toVideo)
+    .filter((v) => v.site === 'YouTube' && v.type === 'Trailer')
+
+  return trailers.find((v) => v.official) ?? trailers[0] ?? null
+}
+
+/**
+ * The detail endpoint adds six fields the list endpoints never send.
  *
  * Each one has a documented absent form: `genres` is missing for a film with
  * none classified, `runtime` is `null` until a cut exists, and `tagline` is
  * `""`. They map to an empty array and the `0` / `""` sentinels `lib/format.ts`
  * already reads as "do not print this".
+ *
+ * The last three arrive because the request carries `append_to_response`, which
+ * nests each sub-resource under its own key. TMDB omits a block whose film has
+ * nothing in it, so each read needs the `?? {}` guard before the field below it.
+ * A film with no cast is common — an announced film has none — and reaching
+ * into an absent block would throw where an empty row is the right answer.
+ *
+ * `recommendations` arrives as a full paged envelope. It goes through `toPaged`
+ * and keeps only the results, because the screen shows one row rather than a
+ * grid it can page through.
  */
-const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => ({
-  ...toMovie(raw),
-  genres: ((raw.genres as { id: number; name: string }[] | undefined) ?? []).map((g) => ({
-    id: g.id,
-    name: g.name,
-  })),
-  runtime: (raw.runtime as number | null) ?? 0,
-  tagline: (raw.tagline as string) ?? '',
-})
+const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
+  const credits = (raw.credits as { cast?: Record<string, unknown>[] }) ?? {}
+  const videos = (raw.videos as { results?: Record<string, unknown>[] }) ?? {}
+  const recommendations = (raw.recommendations as RawPaged) ?? {}
+
+  return {
+    ...toMovie(raw),
+    genres: ((raw.genres as { id: number; name: string }[] | undefined) ?? []).map(
+      (g) => ({
+        id: g.id,
+        name: g.name,
+      }),
+    ),
+    runtime: (raw.runtime as number | null) ?? 0,
+    tagline: (raw.tagline as string) ?? '',
+    cast: (credits.cast ?? []).map(toCastMember),
+    trailer: pickTrailer(videos.results ?? []),
+    recommendations: toPaged(recommendations).results,
+  }
+}
 
 type RawPaged = {
   results?: Record<string, unknown>[]
@@ -92,7 +173,11 @@ export const getTopRated = async (): Promise<Paged> =>
  */
 export const getMovie = async (id: number): Promise<MovieDetail | null> => {
   try {
-    return toMovieDetail(await tmdbFetch<Record<string, unknown>>(`/movie/${id}`))
+    return toMovieDetail(
+      await tmdbFetch<Record<string, unknown>>(`/movie/${id}`, {
+        append_to_response: APPEND,
+      }),
+    )
   } catch (e) {
     if (e instanceof Error && 'status' in e && e.status === 404) return null
     throw e

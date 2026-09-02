@@ -50,4 +50,44 @@ export type MovieDetail = Movie & {
   genres: Genre[]
   runtime: number
   tagline: string
+  cast: CastMember[]
+  trailer: Video | null
+  recommendations: Movie[]
+}
+
+/**
+ * One credited performer, from the `credits` block of the detail response.
+ *
+ * `profile_path` is nullable for the reason `poster_path` is: a person with no
+ * photo is a real state, and the card draws a placeholder for it rather than a
+ * broken image. `character` follows the string convention instead, because TMDB
+ * omits it for an uncredited role and `''` already reads as "do not print
+ * this".
+ */
+export type CastMember = {
+  id: number
+  name: string
+  character: string
+  profile_path: string | null
+}
+
+/**
+ * One video, from the `videos` block.
+ *
+ * `id` is a string here, not a number. TMDB identifies a video by a hash while
+ * it identifies a film by an integer, so this type cannot borrow the shape of
+ * the others.
+ *
+ * `site` and `type` stay as plain strings rather than a union. TMDB adds a
+ * video type when it likes — `Featurette` and `Behind the Scenes` arrived after
+ * the rest — and a union would turn a new value into a compile error in a file
+ * that only ever filters on the two values it knows.
+ */
+export type Video = {
+  id: string
+  key: string
+  name: string
+  site: string
+  type: string
+  official: boolean
 }

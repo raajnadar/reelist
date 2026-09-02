@@ -57,6 +57,10 @@ check 200 'path=/trending/movie/week' 'trending'
 check 200 'path=/movie/popular' 'popular'
 check 200 'path=/movie/top_rated' 'top rated'
 check 200 'path=/movie/550' 'one film'
+# The detail screen's real request. A wrong append value cannot be checked here:
+# the proxy drops an unknown parameter and still answers 200, so that case lives
+# in api/tmdb.test.ts instead.
+check 200 'path=/movie/550&append_to_response=credits,videos,recommendations' 'one film with its extras'
 check 200 'path=/search/movie&query=dune' 'search'
 
 echo

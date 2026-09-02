@@ -1,4 +1,4 @@
-import type { Movie, MovieDetail } from './types'
+import type { CastMember, Movie, MovieDetail } from './types'
 
 /**
  * Poster paths are real TMDB paths, so the images load without an API key.
@@ -97,12 +97,42 @@ export const mockMovies: Movie[] = [
 ]
 
 /**
+ * The billed cast, in the order TMDB bills it.
+ *
+ * The last entry carries `profile_path: null` and an empty `character`, which
+ * are the two absent forms `/movie/{id}/credits` reports: a person with no
+ * photo on file, and an uncredited part. A cast card test that never sees them
+ * would pass against data TMDB does not send.
+ */
+export const mockCast: CastMember[] = [
+  {
+    id: 1082047,
+    name: 'Timothée Chalamet',
+    character: 'Paul Atreides',
+    profile_path: '/BE2sdjpgsa2rNTFa66f7upkaOP.jpg',
+  },
+  {
+    id: 1023139,
+    name: 'Zendaya',
+    character: 'Chani',
+    profile_path: '/utBcHc6QaGCoqYUOMHhDBiFcazJ.jpg',
+  },
+  {
+    id: 1826315,
+    name: 'An Uncredited Extra',
+    character: '',
+    profile_path: null,
+  },
+]
+
+/**
  * One film in the shape `/movie/{id}` returns, which is what the detail screen
  * reads.
  *
  * Separate from `mockMovies` rather than added to it. Those entries stand in for
- * the list endpoints, which never send `genres`, `runtime`, or `tagline` — giving
- * them those fields would let a card test pass against data the API never sends.
+ * the list endpoints, which never send `genres`, `runtime`, `tagline`, or any of
+ * the three appended blocks — giving them those fields would let a card test
+ * pass against data the API never sends.
  */
 export const mockMovieDetail: MovieDetail = {
   ...mockMovies[0],
@@ -112,4 +142,16 @@ export const mockMovieDetail: MovieDetail = {
   ],
   runtime: 167,
   tagline: 'Long live the fighters.',
+  cast: mockCast,
+  trailer: {
+    id: '65d1b1e1c0c1b40163a4b4a1',
+    key: 'Way9Dexny3w',
+    name: 'Official Trailer',
+    site: 'YouTube',
+    type: 'Trailer',
+    official: true,
+  },
+  // The recommendation row reads plain `Movie` entries, so it reuses the list
+  // fixtures rather than repeating them.
+  recommendations: mockMovies.slice(1, 4),
 }

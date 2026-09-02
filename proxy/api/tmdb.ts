@@ -52,7 +52,25 @@ const isAllowed = (path: string): boolean =>
  * rather than forwarded, so a caller cannot append `api_key` of their own or
  * reach a TMDB feature this app does not use.
  */
-const ALLOWED_PARAMS = new Set(['query', 'page', 'with_genres'])
+const ALLOWED_PARAMS = new Set(['query', 'page', 'with_genres', 'append_to_response'])
+
+/**
+ * A few parameters carry a path of their own, so the name check above is not
+ * enough for them.
+ *
+ * `append_to_response` names the sub-resources TMDB includes in a film detail
+ * response, and TMDB accepts any of them there: `reviews`, `images`,
+ * `keywords`, `watch/providers`. Forwarding the caller's value would undo the
+ * path allowlist, because one allowed path would then reach every sub-resource
+ * below it. So this parameter is checked by value.
+ *
+ * The one allowed value must stay identical to `APPEND` in `lib/api.ts`. A
+ * mismatch is silent: the parameter is dropped, TMDB answers with a plain
+ * detail response, and the new sections render empty with no error.
+ */
+const ALLOWED_PARAM_VALUES = new Map([
+  ['append_to_response', new Set(['credits,videos,recommendations'])],
+])
 
 /**
  * How long a response stays cached, in seconds.
@@ -136,7 +154,10 @@ export default async function handler(request: Request): Promise<Response> {
 
   const upstream = new URL(TMDB_BASE_URL + path)
   for (const [key, value] of new URL(request.url).searchParams) {
-    if (ALLOWED_PARAMS.has(key)) upstream.searchParams.set(key, value)
+    if (!ALLOWED_PARAMS.has(key)) continue
+    const values = ALLOWED_PARAM_VALUES.get(key)
+    if (values && !values.has(value)) continue
+    upstream.searchParams.set(key, value)
   }
   upstream.searchParams.set('api_key', apiKey)
 

@@ -150,6 +150,196 @@ describe('the mapping to MovieDetail', () => {
   })
 })
 
+/**
+ * The cast, the trailer, and the recommendations arrive inside the detail
+ * response, under their own keys, because the request carries
+ * `append_to_response`. TMDB omits a block whose film has nothing in it, so
+ * every test here has an absent-block twin.
+ */
+describe('the appended blocks', () => {
+  const rawCast = {
+    id: 819,
+    name: 'Edward Norton',
+    character: 'The Narrator',
+    profile_path: '/face.jpg',
+    known_for_department: 'Acting',
+  }
+
+  it('asks TMDB for all three blocks in one request', async () => {
+    tmdbFetch.mockResolvedValue(rawMovie)
+
+    await getMovie(550)
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/movie/550', {
+      append_to_response: 'credits,videos,recommendations',
+    })
+  })
+
+  /**
+   * The value has to match `ALLOWED_PARAM_VALUES` in the proxy exactly. The
+   * proxy drops a value it does not know, TMDB then answers a plain detail
+   * response, and all three sections go absent with no error to report — so
+   * this string is asserted on its own rather than only inside the call above.
+   */
+  it('sends the exact value the proxy allows', async () => {
+    tmdbFetch.mockResolvedValue(rawMovie)
+
+    await getMovie(550)
+
+    expect(tmdbFetch.mock.calls[0][1].append_to_response).toBe(
+      'credits,videos,recommendations',
+    )
+  })
+
+  describe('the cast', () => {
+    it('maps each performer to the four fields the card reads', async () => {
+      tmdbFetch.mockResolvedValue({ ...rawMovie, credits: { cast: [rawCast] } })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.cast).toEqual([
+        {
+          id: 819,
+          name: 'Edward Norton',
+          character: 'The Narrator',
+          profile_path: '/face.jpg',
+        },
+      ])
+    })
+
+    // The crew is in the same block and is far longer than the cast. None of it
+    // may reach the row.
+    it('drops the crew', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        credits: { cast: [rawCast], crew: [{ id: 7467, name: 'David Fincher' }] },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.cast).toHaveLength(1)
+      expect(movie).not.toHaveProperty('crew')
+    })
+
+    // An announced film has no cast yet, and TMDB omits the whole block. Reading
+    // into it would throw where an absent row is the right answer.
+    it('maps an absent credits block to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ cast: [] })
+    })
+
+    // A person with no photo on file, and an uncredited part. Both keep the
+    // sentinel lib/types.ts declares.
+    it('keeps the absent forms TMDB reports for one person', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        credits: { cast: [{ id: 1, name: 'Nobody' }] },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.cast[0]).toEqual({
+        id: 1,
+        name: 'Nobody',
+        character: '',
+        profile_path: null,
+      })
+    })
+  })
+
+  describe('the trailer', () => {
+    const video = (over: Record<string, unknown>) => ({
+      id: 'abc',
+      key: 'k',
+      name: 'A video',
+      site: 'YouTube',
+      type: 'Trailer',
+      official: false,
+      ...over,
+    })
+
+    /**
+     * The choice, in one test. The screen shows one button, so the seam has to
+     * reduce a mixed list to one video: not the Vimeo entry, which the app
+     * cannot open; not the teaser or the featurette, which are not the trailer;
+     * and the studio upload rather than the fan cut.
+     */
+    it('picks the official YouTube trailer out of a mixed list', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: {
+          results: [
+            video({ key: 'vimeo', site: 'Vimeo', official: true }),
+            video({ key: 'teaser', type: 'Teaser', official: true }),
+            video({ key: 'featurette', type: 'Featurette', official: true }),
+            video({ key: 'fan-cut' }),
+            video({ key: 'studio', official: true }),
+          ],
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.trailer?.key).toBe('studio')
+    })
+
+    // A film can carry a trailer that no studio uploaded. It is a better answer
+    // than no button at all.
+    it('falls back to an unofficial trailer', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: { results: [video({ key: 'fan-cut' })] },
+      })
+
+      await expect(getMovie(550)).resolves.toMatchObject({
+        trailer: expect.objectContaining({ key: 'fan-cut' }),
+      })
+    })
+
+    // null, not undefined and not an empty object: the screen hides the button
+    // on this value.
+    it('reports no trailer as null', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: { results: [video({ type: 'Clip' })] },
+      })
+
+      await expect(getMovie(550)).resolves.toMatchObject({ trailer: null })
+    })
+
+    it('reports an absent videos block as null', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ trailer: null })
+    })
+  })
+
+  describe('the recommendations', () => {
+    // The block is a full paged envelope. The row shows one page and cannot
+    // page, so only the results survive.
+    it('maps the results to Movie and drops the paging', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        recommendations: { results: [rawMovie], page: 1, total_pages: 12 },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.recommendations).toHaveLength(1)
+      expect(movie?.recommendations[0].title).toBe('Fight Club')
+      expect(movie?.recommendations[0]).not.toHaveProperty('belongs_to_collection')
+      expect(movie).not.toHaveProperty('total_pages')
+    })
+
+    it('maps an absent recommendations block to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ recommendations: [] })
+    })
+  })
+})
+
 describe('getMovie', () => {
   it('returns null for a film that does not exist', async () => {
     tmdbFetch.mockRejectedValue(new TmdbError('Not found', 404))

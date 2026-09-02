@@ -152,8 +152,26 @@ GET /api/tmdb?path=/search/movie&query=dune
 | `/genre/movie/list`    | The genre chips on the home screen |
 | `/discover/movie`      | The genre screen                   |
 
-Only `query`, `page`, and `with_genres` are forwarded. Any other parameter is
-dropped, including an `api_key` supplied by the caller.
+Only `query`, `page`, `with_genres`, and `append_to_response` are forwarded. Any
+other parameter is dropped, including an `api_key` supplied by the caller.
+
+`append_to_response` is checked by value, not only by name. It is the one
+parameter that names a path of its own: TMDB uses it to include a sub-resource
+of the film in the detail response, and it accepts `reviews`, `images`,
+`keywords`, or `watch/providers` there as readily as the three the app asks for.
+Forwarding the caller's value would undo the path allowlist, so the proxy allows
+one exact string:
+
+```
+append_to_response=credits,videos,recommendations
+```
+
+That is how the detail screen gets the cast, the trailer, and the "More like
+this" row without a second request — which is what keeps one film at one request
+against the rate limit. The string must stay identical to `APPEND` in
+[lib/api.ts](../lib/api.ts). A mismatch is silent: the proxy drops the
+parameter, TMDB answers a plain detail response, and the three sections render
+absent with no error.
 
 `/discover/movie` is the one path whose filter travels as a parameter rather
 than in the path. TMDB ignores a `with_genres` value it cannot parse and answers
@@ -174,7 +192,9 @@ an unchecked bad id would render as a working screen showing every film.
 
 Add a path to `ALLOWED_EXACT` or `ALLOWED_PATTERNS` in
 [api/tmdb.ts](api/tmdb.ts) when a screen needs a new endpoint, and add a case to
-[api/tmdb.test.ts](api/tmdb.test.ts) to cover it.
+[api/tmdb.test.ts](api/tmdb.test.ts) to cover it. Add a parameter to
+`ALLOWED_PARAMS`, and to `ALLOWED_PARAM_VALUES` as well if its value names
+anything TMDB would treat as a path.
 
 ## Deploy it
 
