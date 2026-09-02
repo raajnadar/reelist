@@ -766,16 +766,6 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
-"@expo-google-fonts/archivo@^0.4.2":
-  version "0.4.2"
-  resolved "https://registry.yarnpkg.com/@expo-google-fonts/archivo/-/archivo-0.4.2.tgz#e64ff92c11c00d829d80652a18630970946bec7c"
-  integrity sha512-FLhI4/ZVIFSHHxx15Z7Rr4QX/4ZrJozEebBEFSdHSRRwULGCuSIpbb3dz56Hslux6LZEnJ1mVpZ6CyVpUzLwIg==
-
-"@expo-google-fonts/inter@^0.4.2":
-  version "0.4.2"
-  resolved "https://registry.yarnpkg.com/@expo-google-fonts/inter/-/inter-0.4.2.tgz#2d37ffb1cb16600cff616b6c4c0efee9b6c47c28"
-  integrity sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==
-
 "@expo-google-fonts/material-symbols@^0.4.1":
   version "0.4.45"
   resolved "https://registry.yarnpkg.com/@expo-google-fonts/material-symbols/-/material-symbols-0.4.45.tgz#2536d34796127ef209d80ffd8b8b248b2a3fd1ee"
@@ -3848,11 +3838,6 @@ expo-keep-awake@~57.0.1:
   version "57.0.1"
   resolved "https://registry.yarnpkg.com/expo-keep-awake/-/expo-keep-awake-57.0.1.tgz#75dfd3d6faeb0f32eb8b670d6b736375fdf2cdb8"
   integrity sha512-28lkFImeXTS+bhAjuCFV7w7tW5bXg27BJVrxv+nC/nyYa86qEa0oFeHwqol6ha5k4pdVDQgBF09GM4A1k76Ssg==
-
-expo-linear-gradient@~57.0.1:
-  version "57.0.1"
-  resolved "https://registry.yarnpkg.com/expo-linear-gradient/-/expo-linear-gradient-57.0.1.tgz#6dac2dc25842a97e35f52a1b843b8f30c8f20146"
-  integrity sha512-CpS8eMqoIWcHVGKV66zbDvzotCw9qYp3f8CuI9N+h1LaO0tMLUzBpkhAKePUsXlpN3yolYlHFSPkfVZ/uSh+iA==
 
 expo-linking@~57.0.9:
   version "57.0.9"
