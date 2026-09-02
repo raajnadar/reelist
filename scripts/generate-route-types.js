@@ -18,9 +18,8 @@ const fs = require('node:fs')
 const path = require('node:path')
 const {
   getTypedRoutesDeclarationFile,
-} = require('expo-router/build/typed-routes/generate')
-const requireContext =
-  require('expo-router/build/testing-library/require-context-ponyfill').default
+} = require('@expo/router-server/build/typed-routes/generate')
+const { requireContext } = require('expo-router/internal/testing')
 const { EXPO_ROUTER_CTX_IGNORE } = require('expo-router/_ctx-shared')
 
 const appRoot = path.join(__dirname, '..', 'app')

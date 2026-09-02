@@ -28,7 +28,7 @@ If the code does not scan, open this link on the phone:
 exp://u.expo.dev/7fe1b9fe-fa75-406c-aaf9-ae330957fc46?channel-name=main
 ```
 
-The app runs on Expo Go SDK 54. Update Expo Go if it reports a version mismatch.
+The app runs on Expo Go SDK 57. Update Expo Go if it reports a version mismatch.
 
 ### In a browser
 
@@ -254,7 +254,7 @@ purpose. The mock data and the live data share one type.
 
 ## Technology
 
-- Expo SDK 54 and Expo Router 6
+- Expo SDK 57 and Expo Router 57
 - React Native 0.81 and React 19
 - `@rootnative/core` — the theme system with Material Design 3 tokens
 - `@rootnative/components` — the UI components

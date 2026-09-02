@@ -1,4 +1,4 @@
-// `jest-expo` supplies the Expo SDK 54 preset: the React Native transform, the
+// `jest-expo` supplies the Expo SDK 57 preset: the React Native transform, the
 // module mocks, and the platform-aware resolver. Do not replace it with a plain
 // `babel-jest` setup — the app imports native modules that only this preset
 // stubs.
@@ -25,9 +25,15 @@ const appProject = {
   // an `import` statement.
   // `@rootnative/*` and `@material/material-color-utilities` are ESM-only, and
   // the theme pulls in both. They are the two entries here that are not part of
-  // the stock Expo list.
+  // the stock Expo list. `standard-navigation` is part of the stock list: it is
+  // an ESM-only package that expo-router imports from its own entry point.
   transformIgnorePatterns: [
-    'node_modules/(?!(?:jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@rootnative/.*|@material/material-color-utilities)',
+    'node_modules/(?!(?:jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|standard-navigation|@rootnative/.*|@material/material-color-utilities)',
+    // The Reanimated Babel plugin is part of the transformer, so transforming it
+    // makes Babel report a reentrant plugin. Same for the RN Babel preset. Both
+    // entries come from the jest-expo preset, which the line above replaces.
+    '/node_modules/react-native-reanimated/plugin/',
+    '/node_modules/@react-native/babel-preset/',
   ],
 
   // `@rootnative/*` ships ESM only — the package `main` is an `.mjs` file with
@@ -39,6 +45,10 @@ const appProject = {
   transform: {
     '^.+\\.mjs$': 'babel-jest',
   },
+
+  // See jest.resolver.js: react-native-worklets needs its stub native module
+  // in Jest, and that only happens through a resolver.
+  resolver: '<rootDir>/jest.resolver.js',
 
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 

@@ -2,7 +2,12 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    // TypeScript 6 stopped adding every `@types/*` package automatically. Each
+    // global type package the project needs must be named here, or `describe`,
+    // `expect` and `global` resolve to nothing and every test file fails to
+    // typecheck.
+    "types": ["jest", "node", "react"]
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }
