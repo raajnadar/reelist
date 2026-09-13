@@ -34,7 +34,7 @@ export function Scrim({ color, stops }: { color: string; stops: readonly ScrimSt
   const gradientId = `scrim-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
 
   return (
-    <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Svg style={styles.scrim}>
       <Defs>
         {/* x1 = x2 and y1 -> y2 is the vertical sweep, top to bottom. */}
         <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -47,3 +47,17 @@ export function Scrim({ color, stops }: { color: string; stops: readonly ScrimSt
     </Svg>
   )
 }
+
+const styles = StyleSheet.create({
+  // `pointerEvents` sits in the style rather than in a prop of the same name:
+  // React Native deprecated the prop form, and react-native-web reports it on
+  // every render.
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+})

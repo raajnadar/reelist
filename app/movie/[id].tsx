@@ -322,10 +322,7 @@ export default function MovieScreen() {
 
               <Scrim color={theme.colors.background} stops={BACKDROP_SCRIM} />
 
-              <View
-                style={[styles.topScrim, { height: headerSpace }]}
-                pointerEvents="none"
-              >
+              <View style={[styles.topScrim, { height: headerSpace }]}>
                 <Scrim color={theme.colors.scrim} stops={TOP_SCRIM} />
               </View>
             </View>
@@ -536,7 +533,13 @@ const styles = StyleSheet.create({
   fallback: { alignItems: 'center', justifyContent: 'center' },
   // Pinned to the top of the frame rather than filling it, so the wash under
   // the status bar ends where the header does.
-  topScrim: { position: 'absolute', top: 0, left: 0, right: 0 },
+  topScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    pointerEvents: 'none',
+  },
   body: { paddingHorizontal: 16, gap: 20 },
   // Caps the measure and centres what is left over. `width: '100%'` is required
   // with `maxWidth`: without it the box shrinks to its content on a narrow

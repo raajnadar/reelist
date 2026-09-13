@@ -71,19 +71,19 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
   const discStyle = useInterpolatedStyle(scrollY, { opacity: [1, 0] }, { inputRange })
 
   return (
-    // `box-none` so the hero scrolls under the transparent part of the bar. A
-    // plain View would swallow every touch across the top of the screen.
-    <View style={[styles.header, { paddingTop: insets.top }]} pointerEvents="box-none">
+    // `styles.header` carries `box-none`, so the hero scrolls under the
+    // transparent part of the bar. A plain View would swallow every touch
+    // across the top of the screen.
+    <View style={[styles.header, { paddingTop: insets.top }]}>
       <Animated.View
         style={[
-          StyleSheet.absoluteFill,
+          styles.barBackground,
           { backgroundColor: theme.colors.surface },
           barStyle,
         ]}
-        pointerEvents="none"
       />
 
-      <View style={styles.bar} pointerEvents="box-none">
+      <View style={styles.bar}>
         <View style={styles.backSlot}>
           <Animated.View
             style={[
@@ -91,7 +91,6 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
               { backgroundColor: theme.colors.surfaceContainerHighest },
               discStyle,
             ]}
-            pointerEvents="none"
           />
           {/*
             `standard` — the disc behind it is the container. The icon keeps
@@ -127,8 +126,32 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
 const styles = StyleSheet.create({
   // Absolute, so the artwork runs under the status bar instead of starting
   // below it. The hero is the one element on the screen that should.
-  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2 },
-  bar: { height: HEADER_HEIGHT, flexDirection: 'row', alignItems: 'center' },
+  //
+  // `pointerEvents` belongs in the style rather than in a prop of the same
+  // name. React Native deprecated the prop form, and react-native-web reports
+  // it on every render.
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    pointerEvents: 'box-none',
+  },
+  barBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  bar: {
+    height: HEADER_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    pointerEvents: 'box-none',
+  },
   // Holds the disc and the button in one stack. The button sizes the slot; the
   // disc fills it from behind.
   backSlot: { marginLeft: 4, alignItems: 'center', justifyContent: 'center' },
@@ -138,6 +161,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    pointerEvents: 'none',
     borderRadius: 9999,
   },
   // `flex: 1` with a zero basis, so a long title ellipsizes instead of pushing
