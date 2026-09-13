@@ -4,7 +4,7 @@ import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from '../components/BrandMark'
 import { GenreChips } from '../components/GenreChips'
@@ -155,7 +155,14 @@ export default function HomeScreen() {
             // no flex collapses to its content height and kills the scroll.
             style={styles.fill}
           >
-            <ScrollView
+            {/*
+              Motion.ScrollView, not the plain one: it publishes its scroll
+              offset to its descendants, which is what lets each MovieRow below
+              ask `useInView` whether it has been reached. On native there is no
+              IntersectionObserver, so a row outside a Motion scroller would
+              treat itself as visible from mount and animate unseen.
+            */}
+            <Motion.ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
             >
@@ -171,7 +178,7 @@ export default function HomeScreen() {
                   <MovieRow key={row.title} title={row.title} movies={row.movies} />
                 ),
               )}
-            </ScrollView>
+            </Motion.ScrollView>
           </Motion.View>
         )}
       </Presence>

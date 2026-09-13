@@ -1,10 +1,15 @@
 import { Card } from '@rootnative/components/card'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Motion } from '@rootnative/inertia'
+import {
+  Motion,
+  useInterpolatedStyle,
+  useMotionValue,
+  type SharedValue,
+} from '@rootnative/inertia'
 import { Image, StyleSheet, View } from 'react-native'
 import { profileUrl } from '../lib/images'
-import { entranceTransition } from '../lib/motion'
+import { cascadeWindow, entranceTransition } from '../lib/motion'
 import type { CastMember } from '../lib/types'
 
 // Narrower than CARD_WIDTH in MovieCard. A headshot carries a name and a role
@@ -12,18 +17,42 @@ import type { CastMember } from '../lib/types'
 // faces on a phone where five belong.
 export const CAST_CARD_WIDTH = 120
 
-export function CastCard({ member, index = 0 }: { member: CastMember; index?: number }) {
+type Props = {
+  member: CastMember
+  index?: number
+  /**
+   * The parent row's 0-1 in-view sweep, when the row drives the entrance.
+   *
+   * Given one, the card takes its slice of the sweep (see cascadeWindow) and
+   * animates when the row reaches the screen. Without one it falls back to the
+   * mount stagger, which is correct for a card that stands on its own.
+   */
+  progress?: SharedValue<number>
+}
+
+export function CastCard({ member, index = 0, progress }: Props) {
   const theme = useTheme()
   const uri = profileUrl(member.profile_path)
+
+  // The hook runs either way — a hook cannot be conditional — so a resting 1
+  // stands in when there is no row. That resolves to the end of the range, so
+  // the style below is inert on the fallback path and `animate` owns the
+  // movement instead.
+  const resting = useMotionValue(1)
+  const entrance = useInterpolatedStyle(
+    progress ?? resting,
+    { opacity: [0, 1], translateY: [24, 0] },
+    { inputRange: cascadeWindow(index) },
+  )
 
   return (
     // The same split as MovieCard: Card owns the M3 surface, Motion.View owns
     // the movement.
     <Motion.View
-      initial={{ opacity: 0, translateY: 24 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={entranceTransition(index)}
-      style={styles.slot}
+      initial={progress ? undefined : { opacity: 0, translateY: 24 }}
+      animate={progress ? undefined : { opacity: 1, translateY: 0 }}
+      transition={progress ? undefined : entranceTransition(index)}
+      style={progress ? [styles.slot, entrance] : styles.slot}
     >
       {/*
         No `onPress`, and so no `gesture` layer either. There is no screen for

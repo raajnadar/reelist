@@ -1,13 +1,32 @@
 import { Typography } from '@rootnative/components/typography'
+import { useInView } from '@rootnative/inertia'
+import { useRef } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
 import type { Movie } from '../lib/types'
 import { MovieCard } from './MovieCard'
 
 export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) {
+  const ref = useRef<View>(null)
+
+  /*
+    The row, not the card, owns the trigger.
+
+    useInView reads the NEAREST scroll container, and a MovieCard's nearest one
+    is the horizontal FlatList below — which knows nothing about whether the row
+    has been scrolled past vertically. Asking here, one level up, binds to the
+    vertical scroller the row actually sits in. The cards then read the row's
+    answer through `progress`.
+
+    `amount` is low on purpose: a row is taller than its heading, and waiting
+    for a fixed fraction of it would start the cascade only once the posters
+    were well onto the screen.
+  */
+  const progress = useInView(ref, { amount: 0.1, transition: 'cascade' })
+
   if (!movies.length) return null
 
   return (
-    <View style={styles.row}>
+    <View ref={ref} style={styles.row}>
       <Typography variant="titleMediumEmphasized" style={styles.heading}>
         {title}
       </Typography>
@@ -21,7 +40,9 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(m) => String(m.id)}
-        renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
+        renderItem={({ item, index }) => (
+          <MovieCard movie={item} index={index} progress={progress} />
+        )}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />

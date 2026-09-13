@@ -32,6 +32,16 @@ export const transitions = {
   enter: { type: 'spring', tension: 120, friction: 20 },
 
   /**
+   * The sweep that drives a scroll-triggered row. Timing, not spring, and this
+   * is the one place the distinction is load-bearing: `cascadeWindow` cuts the
+   * 0-1 sweep into one window per card, so a spring that overshoots past 1
+   * would drive the late cards backwards before it settled.
+   *
+   * The duration covers the whole cascade, not one card. See cascadeWindow.
+   */
+  cascade: { type: 'timing', duration: 900 },
+
+  /**
    * Content leaving. Timing and quick: an exit that springs holds the old
    * content on screen while the new content is already arriving.
    */
@@ -87,4 +97,28 @@ export function entranceTransition(index: number) {
   const config = { ...transitions.enter, delay: stagger(index) } as const
 
   return { opacity: config, translateY: config }
+}
+
+/**
+ * The slice of a row's 0-1 in-view sweep that belongs to card `index`.
+ *
+ * A row below the fold cannot stagger its cards with `delay`. The delay counts
+ * from mount, and the cards mount with the screen — so by the time the user
+ * scrolls down, every entrance has already finished off screen. `useInView`
+ * fixes when the movement starts, but it reports one value for the whole row.
+ *
+ * Cutting that value into overlapping windows puts the stagger back: card 0
+ * animates over the first half of the sweep, card 1 over a slightly later
+ * half, and so on. `useInterpolatedStyle` clamps outside its input range, so a
+ * card sits at its start value until its window opens and holds the end value
+ * after it closes.
+ *
+ * The cap matches `stagger` above and is there for the same reason: without it
+ * a row of twenty posters would spread the last window past the end of the
+ * sweep, where it could never open.
+ */
+export function cascadeWindow(index: number, step = 0.08, span = 0.5, max = 6) {
+  const start = Math.min(index, max) * step
+
+  return [start, start + span] as const
 }
