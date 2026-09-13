@@ -7,8 +7,9 @@ import {
   useMotionValue,
   type SharedValue,
 } from '@rootnative/inertia'
-import { Image, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { profileUrl } from '../lib/images'
+import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
 import type { CastMember } from '../lib/types'
 
@@ -61,16 +62,16 @@ export function CastCard({ member, index = 0, progress }: Props) {
       */}
       <Card variant="filled" style={styles.card}>
         {/* 2:3, the ratio TMDB uses for a profile image as well as a poster.
-          The Image carries its own width and ratio for the reason MovieCard
-          explains: React Native does not measure a remote image before it
-          loads, so an Image with no size lays out at zero height. */}
+          The image carries its own width and ratio for the reason MovieCard
+          explains: a remote picture has no measurable size until it loads, so
+          one with no size lays out at zero height. */}
         <Card.Media aspectRatio={2 / 3}>
           {uri ? (
-            <Image
+            <RemoteImage
               testID="cast-photo"
-              source={{ uri }}
+              uri={uri}
+              recyclingKey={String(member.id)}
               style={styles.photo}
-              resizeMode="cover"
             />
           ) : (
             <View

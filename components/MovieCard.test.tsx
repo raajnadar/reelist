@@ -19,15 +19,17 @@ describe('the poster', () => {
   it('builds the TMDB url from the path fragment', () => {
     const screen = renderWithProviders(<MovieCard movie={movie} />)
 
-    expect(screen.getByTestId('movie-poster').props.source).toEqual({
-      uri: 'https://image.tmdb.org/t/p/w342/poster.jpg',
-    })
+    // `source` arrives as an array: expo-image normalises a single source
+    // into the list it selects from at render.
+    expect(screen.getByTestId('movie-poster').props.source).toEqual([
+      { uri: 'https://image.tmdb.org/t/p/w342/poster.jpg' },
+    ])
   })
 
   /**
-   * The regression this file exists for. React Native does not measure a remote
-   * image before it loads, so an Image with no width and height lays out at
-   * zero and the poster never appears — which is what happened to the Popular
+   * The regression this file exists for. A remote picture has no measurable size
+   * until it loads, so an image with no width and height lays out at zero
+   * and the poster never appears — which is what happened to the Popular
    * and Top rated rows while the carousel looked fine.
    *
    * The assertion is on the resolved style, so it fails whether the size is
@@ -40,6 +42,18 @@ describe('the poster', () => {
 
     expect(style.width).toBe('100%')
     expect(style.aspectRatio).toBe(2 / 3)
+  })
+
+  /**
+   * The row is a FlatList, which hands one host view to a different film as it
+   * scrolls. Without the key the recycled view keeps the previous poster until
+   * the new one downloads, so a fast scroll shows the wrong film under the
+   * right title.
+   */
+  it('keys the poster to the film, so a recycled row cannot show the last one', () => {
+    const screen = renderWithProviders(<MovieCard movie={movie} />)
+
+    expect(screen.getByTestId('movie-poster').props.recyclingKey).toBe(String(movie.id))
   })
 
   // A film with no artwork must show the label instead of an empty slot.

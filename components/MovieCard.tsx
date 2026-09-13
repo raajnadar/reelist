@@ -8,8 +8,9 @@ import {
   type SharedValue,
 } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { Image, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
+import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
 import { posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
@@ -90,18 +91,19 @@ export function MovieCard({ movie, index = 0, progress }: Props) {
         >
           {/* 2:3 is the TMDB poster ratio.
 
-          The Image needs its own size. React Native does not measure a remote
-          image before it loads, so an Image with no dimensions lays out at zero
+          The image needs its own size. A remote picture has no measurable
+          size until it loads, so one with no dimensions lays out at zero
           height and the poster never appears, whatever the parent sets. The
           fallback View below is fine with `flex: 1`, because a View has no
           intrinsic size to wait for. */}
           <Card.Media aspectRatio={2 / 3}>
             {uri ? (
-              <Image
+              <RemoteImage
                 testID="movie-poster"
-                source={{ uri }}
+                uri={uri}
+                // The row recycles this view as it scrolls. See RemoteImage.
+                recyclingKey={String(movie.id)}
                 style={styles.poster}
-                resizeMode="cover"
               />
             ) : (
               <View

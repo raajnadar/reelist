@@ -6,13 +6,14 @@ import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
 import { openURL } from 'expo-linking'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CastRow } from '../../components/CastRow'
 import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
 import { Scrim, type ScrimStop } from '../../components/Scrim'
+import { RemoteImage } from '../../components/RemoteImage'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMovie } from '../../lib/api'
@@ -369,18 +370,33 @@ export default function MovieScreen() {
             */}
             <View style={[styles.heroArt, { height: heroHeight }]}>
               {artwork ? (
-                // A slow settle out of a slight zoom, played once on arrival.
-                // `Motion.Image` takes the animated path because `animate` is
-                // present; a style-only Motion primitive would not.
-                <Motion.Image
-                  testID="detail-backdrop"
-                  source={{ uri: artwork }}
+                /*
+                  A slow settle out of a slight zoom, played once on arrival.
+                  The wrapper owns it rather than the picture: `Motion.View`
+                  takes the animated path because `animate` is present, and
+                  RemoteImage is not a Motion primitive.
+
+                  The zoom is all the wrapper does. The fade belongs to the
+                  image, which cross-dissolves when the bytes land — timed to
+                  the download rather than to the mount, so a slow connection
+                  no longer fades an empty box in and then snaps the picture
+                  into it.
+                */
+                <Motion.View
                   style={styles.fill}
-                  resizeMode="cover"
-                  initial={{ opacity: 0, scale: 1.06 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ scale: 1.06 }}
+                  animate={{ scale: 1 }}
                   transition="enter"
-                />
+                >
+                  <RemoteImage
+                    testID="detail-backdrop"
+                    uri={artwork}
+                    recyclingKey={String(movieId)}
+                    // The picture the screen is built around.
+                    priority="high"
+                    style={styles.fill}
+                  />
+                </Motion.View>
               ) : (
                 <View
                   style={[
@@ -426,9 +442,11 @@ export default function MovieScreen() {
                     rectangle reads as a broken one.
                   */}
                   {poster ? (
-                    <Image
+                    <RemoteImage
                       testID="detail-poster"
-                      source={{ uri: poster }}
+                      uri={poster}
+                      recyclingKey={String(movieId)}
+                      priority="high"
                       style={[
                         styles.poster,
                         {
@@ -438,7 +456,6 @@ export default function MovieScreen() {
                           borderColor: theme.colors.outlineVariant,
                         },
                       ]}
-                      resizeMode="cover"
                     />
                   ) : null}
 

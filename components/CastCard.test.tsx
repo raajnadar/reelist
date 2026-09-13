@@ -14,15 +14,17 @@ describe('the photo', () => {
   it('builds the TMDB url at the profile size', () => {
     const screen = renderWithProviders(<CastCard member={member} />)
 
-    expect(screen.getByTestId('cast-photo').props.source).toEqual({
-      uri: 'https://image.tmdb.org/t/p/w185/face.jpg',
-    })
+    // `source` arrives as an array: expo-image normalises a single source
+    // into the list it selects from at render.
+    expect(screen.getByTestId('cast-photo').props.source).toEqual([
+      { uri: 'https://image.tmdb.org/t/p/w185/face.jpg' },
+    ])
   })
 
   /**
-   * The same regression MovieCard guards against. React Native does not measure
-   * a remote image before it loads, so an Image with no width and height lays
-   * out at zero and the photo never appears.
+   * The same regression MovieCard guards against. A remote picture has no measurable
+   * size until it loads, so an image with no width and height lays out at
+   * zero and the photo never appears.
    */
   it('gives the image a real size, not a zero-height box', () => {
     const screen = renderWithProviders(<CastCard member={member} />)
@@ -35,6 +37,14 @@ describe('the photo', () => {
 
   // TMDB has no photo on file for many of the people it bills, so this is the
   // common case rather than an edge one.
+  // The same guard MovieCard carries: the cast row recycles its views too, and
+  // a stale photo under the right name is worse than a blank box.
+  it('keys the photo to the person, so a recycled card cannot show the last one', () => {
+    const screen = renderWithProviders(<CastCard member={member} />)
+
+    expect(screen.getByTestId('cast-photo').props.recyclingKey).toBe(String(member.id))
+  })
+
   it('shows the fallback when the person has no photo', () => {
     const screen = renderWithProviders(
       <CastCard member={{ ...member, profile_path: null }} />,

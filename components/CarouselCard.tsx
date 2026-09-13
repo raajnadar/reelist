@@ -2,8 +2,9 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { Image, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
+import { RemoteImage } from './RemoteImage'
 import { posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
 
@@ -118,7 +119,17 @@ export function CarouselCard({
           style={[styles.card, { backgroundColor: theme.colors.surfaceContainerHigh }]}
         >
           {uri ? (
-            <Image source={{ uri }} style={styles.poster} resizeMode="cover" />
+            <RemoteImage
+              testID="carousel-poster"
+              uri={uri}
+              // The carousel is a FlatList too, so it recycles the same way a
+              // row does. See RemoteImage.
+              recyclingKey={String(movie.id)}
+              // The featured row is the first thing on the home screen, so its
+              // posters are the ones worth downloading first.
+              priority="high"
+              style={styles.poster}
+            />
           ) : (
             <View
               style={[

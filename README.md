@@ -175,6 +175,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `components/Skeleton.test.ts`       | The placeholder count against the screen width         |
 | `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs     |
 | `components/StateMessage.test.tsx`  | The shared failure block, and its half-declared action |
+| `components/RemoteImage.test.tsx`   | The image tuning: recycling, caching, and the fade     |
 | `__tests__/app/movie/[id].test.tsx` | The detail screen: every state and every error         |
 | `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness     |
 | `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips     |
@@ -209,6 +210,7 @@ components/
 ├── Scrim.tsx            # The gradient that dissolves the detail masthead
 ├── BrandMark.tsx        # The app mark beside the home title
 ├── StateMessage.tsx     # The shared failure, empty, and prompt block
+├── RemoteImage.tsx      # Every TMDB picture, cached and cross-dissolved
 └── Skeleton.tsx         # The loading placeholders
 lib/
 ├── api.ts               # The seam. The only data file a screen imports
@@ -277,6 +279,7 @@ purpose. The mock data and the live data share one type.
 - `@rootnative/core` — the theme system with Material Design 3 tokens
 - `@rootnative/components` — the UI components
 - `@rootnative/inertia` — the animation primitives, over Reanimated
+- `expo-image` — every remote picture: the memory cache and the load fade
 - TypeScript
 - Jest and `@testing-library/react-native`
 - Vercel Functions, for the proxy
