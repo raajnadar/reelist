@@ -160,25 +160,27 @@ yarn test --selectProjects proxy     # the proxy only
 Jest runs two projects, because the proxy is server code that uses the Web
 `Request` and `Response` API rather than the React Native runtime.
 
-| Suite                               | Covers                                             |
-| ----------------------------------- | -------------------------------------------------- |
-| `lib/format.test.ts`                | Both TMDB sentinels, alone and together            |
-| `lib/images.test.ts`                | URL building, and null for a film with no art      |
-| `lib/api.test.ts`                   | The mapping, the paging, and which trailer is used |
-| `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent        |
-| `lib/motion.test.ts`                | The transition tokens and the stagger ceiling      |
-| `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value      |
-| `components/MovieCard.test.tsx`     | The poster size and the fixed card height          |
-| `components/CastCard.test.tsx`      | The photo size, and both reserved text heights     |
-| `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths         |
-| `components/Skeleton.test.ts`       | The placeholder count against the screen width     |
-| `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs |
-| `__tests__/app/movie/[id].test.tsx` | The detail screen: every state and every error     |
-| `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness |
-| `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips |
-| `__tests__/app/genre/[id].test.tsx` | The genre grid: paging, a bad id, a stale page     |
-| `proxy/api/tmdb.test.ts`            | The allowlist, the append value, and the key       |
-| `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open |
+| Suite                               | Covers                                                 |
+| ----------------------------------- | ------------------------------------------------------ |
+| `lib/format.test.ts`                | Both TMDB sentinels, alone and together                |
+| `lib/images.test.ts`                | URL building, and null for a film with no art          |
+| `lib/api.test.ts`                   | The mapping, the paging, and which trailer is used     |
+| `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent            |
+| `lib/motion.test.ts`                | The transition tokens and the stagger ceiling          |
+| `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value          |
+| `lib/errors.test.ts`                | Which failures may offer a retry, and which may not    |
+| `components/MovieCard.test.tsx`     | The poster size and the fixed card height              |
+| `components/CastCard.test.tsx`      | The photo size, and both reserved text heights         |
+| `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths             |
+| `components/Skeleton.test.ts`       | The placeholder count against the screen width         |
+| `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs     |
+| `components/StateMessage.test.tsx`  | The shared failure block, and its half-declared action |
+| `__tests__/app/movie/[id].test.tsx` | The detail screen: every state and every error         |
+| `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness     |
+| `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips     |
+| `__tests__/app/genre/[id].test.tsx` | The genre grid: paging, a bad id, a stale page         |
+| `proxy/api/tmdb.test.ts`            | The allowlist, the append value, and the key           |
+| `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open     |
 
 No test needs a key or a network. The proxy tests mock `fetch`, and the screen
 tests mock `lib/api`.
@@ -203,6 +205,10 @@ components/
 ├── CastRow.tsx          # The billed cast on the detail screen
 ├── CastCard.tsx         # One person in the cast row
 ├── GenreChips.tsx       # The genre shortcuts under the home header
+├── DetailHeader.tsx     # The floating bar that arrives with the scroll
+├── Scrim.tsx            # The gradient that dissolves the detail masthead
+├── BrandMark.tsx        # The app mark beside the home title
+├── StateMessage.tsx     # The shared failure, empty, and prompt block
 └── Skeleton.tsx         # The loading placeholders
 lib/
 ├── api.ts               # The seam. The only data file a screen imports
@@ -212,6 +218,7 @@ lib/
 ├── mock.ts              # Static film data, now a test fixture only
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels
+├── errors.ts            # Sorts a failure into transient, setup, or missing
 ├── motion.ts            # The shared transition tokens and the stagger
 ├── useDebounced.ts      # Delays a value until it stops changing
 └── test-utils.tsx       # render() wrapped in the app's providers

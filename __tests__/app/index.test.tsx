@@ -2,6 +2,7 @@ import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
 import HomeScreen from '../../app/index'
+import { MissingProxyUrlError } from '../../lib/config'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
@@ -70,6 +71,57 @@ it('still shows the search button when the rows fail to load', async () => {
   await waitFor(() => expect(screen.getByText('TMDB is unavailable')).toBeTruthy())
   // Search does not depend on the rows, so a failed home load must not remove it.
   expect(screen.getByLabelText('Search movies')).toBeTruthy()
+})
+
+describe('the failure state', () => {
+  it('offers a retry that loads the rows again', async () => {
+    api.getTrending.mockRejectedValueOnce(new Error('TMDB is unavailable'))
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Could not load movies')).toBeTruthy())
+
+    fireEvent.press(screen.getByText('Try again'))
+
+    // The second call succeeds, which is what the mock above arranges. Without
+    // `attempt` in the effect's dependencies the press would change no input
+    // the effect reads, and the failure would stay on screen forever.
+    await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+    expect(api.getTrending).toHaveBeenCalledTimes(2)
+  })
+
+  /**
+   * The chips fail silently, so a reader has no way to ask for them on their
+   * own. The one retry on the screen has to cover them, or a network drop
+   * would cost the shortcut row for the rest of the session.
+   */
+  it('reloads the genre chips as well', async () => {
+    api.getTrending.mockRejectedValueOnce(new Error('TMDB is unavailable'))
+    api.getGenres.mockRejectedValueOnce(new Error('Genres unavailable'))
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Could not load movies')).toBeTruthy())
+    expect(screen.queryByText('Action')).toBeNull()
+
+    fireEvent.press(screen.getByText('Try again'))
+
+    await waitFor(() => expect(screen.getByText('Action')).toBeTruthy())
+  })
+
+  /**
+   * An unset proxy URL is fixed in a file on the developer's disk, followed by
+   * a restart. A button that fires the same request again cannot apply that,
+   * so the state offers none.
+   */
+  it('offers no retry for a setup mistake', async () => {
+    api.getTrending.mockRejectedValue(new MissingProxyUrlError())
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Setup needed')).toBeTruthy())
+    expect(screen.queryByText('Try again')).toBeNull()
+  })
 })
 
 describe('the genre chips', () => {

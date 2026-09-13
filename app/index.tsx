@@ -11,10 +11,30 @@ import { GenreChips } from '../components/GenreChips'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
 import { SkeletonRow } from '../components/Skeleton'
+import { StateMessage } from '../components/StateMessage'
 import { getGenres, getPopular, getTopRated, getTrending } from '../lib/api'
+import { toFailure, type Failure, type FailureKind } from '../lib/errors'
 import type { Genre, Movie } from '../lib/types'
 
 type Row = { title: string; movies: Movie[] }
+
+/**
+ * How each kind of failure is presented. The action itself is bound inside the
+ * screen, because only `transient` has one here — an unset proxy URL is fixed
+ * in a file on the developer's disk, and no button on this screen can do it.
+ *
+ * `missing` cannot occur: the screen asks for three fixed lists, not for an id.
+ * It is listed so the record stays exhaustive and a new kind is a type error
+ * rather than a blank state.
+ */
+const REPORTS: Record<
+  FailureKind,
+  { icon: string; tone: 'error' | 'neutral'; title: string }
+> = {
+  transient: { icon: 'cloud-off-outline', tone: 'error', title: 'Could not load movies' },
+  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
+  missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
+}
 
 export default function HomeScreen() {
   const theme = useTheme()
@@ -22,8 +42,24 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [failure, setFailure] = useState<Failure | null>(null)
   const [genres, setGenres] = useState<Genre[]>([])
+
+  /**
+   * Bumped by the retry button, and read by both effects below as a dependency.
+   *
+   * A counter rather than a callback that re-runs the fetch: the effects already
+   * own the request and its cleanup, and a second path to the same request would
+   * have to repeat the `active` guard that keeps a late answer off a screen the
+   * reader has left.
+   */
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = () => {
+    setLoading(true)
+    setFailure(null)
+    setAttempt((n) => n + 1)
+  }
 
   // Promise.all and the loading state do nothing useful against static data.
   // That is the point: when lib/api.ts starts hitting the network, this screen
@@ -42,11 +78,11 @@ export default function HomeScreen() {
       })
       .catch((e: unknown) => {
         if (!active) return
-        // A MissingKeyError and a TmdbError both carry a message written for
-        // the person who sees it: the first says how to set the key, the
-        // second repeats what TMDB reported. Only an unknown throw falls back
-        // to the generic line.
-        setError(e instanceof Error ? e.message : 'Could not load movies')
+        // A MissingProxyUrlError and a TmdbError both carry a message written
+        // for the person who sees it: the first says how to set the proxy URL,
+        // the second repeats what TMDB reported. toFailure also says which of
+        // the two a second attempt can clear. See lib/errors.ts.
+        setFailure(toFailure(e, 'Could not load movies'))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -55,7 +91,7 @@ export default function HomeScreen() {
     return () => {
       active = false
     }
-  }, [])
+  }, [attempt])
 
   /**
    * The genres load on their own, deliberately not inside the Promise.all above.
@@ -81,7 +117,10 @@ export default function HomeScreen() {
     return () => {
       active = false
     }
-  }, [])
+    // `attempt` is here so the retry button reloads the chips as well. They
+    // fail silently, so a reader who presses it after a network drop would
+    // otherwise get the rows back and keep an empty chip row for the session.
+  }, [attempt])
 
   return (
     <View
@@ -133,18 +172,24 @@ export default function HomeScreen() {
             <SkeletonRow />
             <SkeletonRow />
           </Motion.View>
-        ) : error ? (
-          <Motion.View
+        ) : failure ? (
+          /*
+            The failure states differ in more than their words. A dropped
+            request offers the retry; an unset proxy URL is a setup mistake and
+            offers nothing, because the fix is a file on the developer's disk
+            and a restart, not a second request.
+          */
+          <StateMessage
             key="error"
-            initial={{ opacity: 0, translateY: 12 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition="enter"
-            style={styles.centered}
-          >
-            <Typography variant="bodyMedium" color={theme.colors.error}>
-              {error}
-            </Typography>
-          </Motion.View>
+            testID="home-error"
+            icon={REPORTS[failure.kind].icon}
+            tone={REPORTS[failure.kind].tone}
+            title={REPORTS[failure.kind].title}
+            body={failure.message}
+            actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
+            actionIcon="refresh"
+            onAction={failure.kind === 'transient' ? retry : undefined}
+          />
         ) : (
           <Motion.View
             key="content"
@@ -202,5 +247,4 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   title: { paddingVertical: 12 },
-  centered: { marginTop: 48, alignItems: 'center' },
 })

@@ -3,6 +3,7 @@ import { Dimensions } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import MovieScreen from '../../../app/movie/[id]'
+import { MissingProxyUrlError } from '../../../lib/config'
 
 // This test mirrors the path of the screen it covers, but it stays outside
 // `app/`. Expo Router builds the route table with `require.context('./app')`,
@@ -22,13 +23,16 @@ const mockUseLocalSearchParams = jest.fn()
 // genre screen on a press. A mock missing the method throws inside the chip row
 // rather than failing an assertion, so the whole screen renders as nothing.
 const mockPush = jest.fn()
+// Named, because the failure states offer a way home and the press has to be
+// checked: a "Go home" button that calls nothing is a dead end on a deep link.
+const mockReplace = jest.fn()
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockUseLocalSearchParams(),
   useRouter: () => ({
     push: mockPush,
     back: jest.fn(),
-    replace: jest.fn(),
+    replace: mockReplace,
     canGoBack: () => true,
   }),
 }))
@@ -88,7 +92,7 @@ it('reports an id that matches no film', async () => {
 
   const screen = renderWithProviders(<MovieScreen />)
 
-  expect(await screen.findByText('That movie is not in the list')).toBeTruthy()
+  expect(await screen.findByText('TMDB has no movie with that id.')).toBeTruthy()
 })
 
 // A non-numeric id is a bad link. The screen must not call the data layer at
@@ -99,8 +103,63 @@ it('rejects a non-numeric id without calling the data layer', async () => {
 
   const screen = renderWithProviders(<MovieScreen />)
 
-  expect(await screen.findByText('That link is not a valid movie')).toBeTruthy()
+  expect(await screen.findByText('That link does not point at a movie.')).toBeTruthy()
   expect(getMovie).not.toHaveBeenCalled()
+})
+
+describe('the failure state', () => {
+  it('offers a retry that loads the film again', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockRejectedValueOnce(new Error('Network is down'))
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    await waitFor(() => expect(screen.getByText('Could not load the movie')).toBeTruthy())
+
+    fireEvent.press(screen.getByText('Try again'))
+
+    // The id is unchanged, so only `attempt` can re-run the effect. Without it
+    // in the dependency list the press would change nothing the effect reads.
+    // The overview, not the title: DetailHeader draws the title as well, so a
+    // single-match query finds two nodes once the film loads.
+    await waitFor(() => expect(screen.getByText(movie.overview)).toBeTruthy())
+    expect(getMovie).toHaveBeenCalledTimes(2)
+  })
+
+  // Same reason as the other screens: the fix is a file on disk and a restart,
+  // and a second request cannot apply it.
+  it('offers no retry for a setup mistake', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockRejectedValue(new MissingProxyUrlError())
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    await waitFor(() => expect(screen.getByText('Setup needed')).toBeTruthy())
+    expect(screen.queryByText('Try again')).toBeNull()
+  })
+
+  /**
+   * A bad id and an id TMDB has nothing for both leave no film to load, so a
+   * retry would repeat the same nothing. The screen offers the way out — and it
+   * has to, because a deep link makes this the first entry in the history.
+   */
+  it.each([
+    ['a bad id', 'abc', null],
+    ['an id with no film', '999999', null],
+  ])('offers a way home for %s', async (_name, id) => {
+    mockUseLocalSearchParams.mockReturnValue({ id })
+    getMovie.mockResolvedValue(null)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    await waitFor(() => expect(screen.getByText('Movie not found')).toBeTruthy())
+    expect(screen.queryByText('Try again')).toBeNull()
+
+    fireEvent.press(screen.getByText('Go home'))
+
+    expect(mockReplace).toHaveBeenCalledWith('/')
+  })
 })
 
 it('reports a failure from the data layer', async () => {

@@ -4,6 +4,7 @@ import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovies } from '../../../lib/mock'
 import GenreScreen, { genreColumnCount, mergePages } from '../../../app/genre/[id]'
 import { CARD_WIDTH } from '../../../components/MovieCard'
+import { MissingProxyUrlError } from '../../../lib/config'
 import type { Movie } from '../../../lib/types'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: Expo Router builds
@@ -131,9 +132,54 @@ describe('the screen states', () => {
 
     const screen = renderWithProviders(<GenreScreen />)
 
-    await waitFor(() =>
-      expect(screen.getByText('No movies in this genre yet')).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByText('Nothing here yet')).toBeTruthy())
+  })
+
+  describe('the failure state', () => {
+    it('offers a retry that loads the first page again', async () => {
+      getMoviesByGenre.mockRejectedValueOnce(new Error('TMDB is unavailable'))
+      getMoviesByGenre.mockResolvedValue(pageOf(1, 3))
+
+      const screen = renderWithProviders(<GenreScreen />)
+
+      await waitFor(() => expect(screen.getByText('Could not load movies')).toBeTruthy())
+
+      fireEvent.press(screen.getByText('Try again'))
+
+      await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+      expect(getMoviesByGenre).toHaveBeenCalledTimes(2)
+      expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1)
+    })
+
+    // Same reason as the other screens: the fix is a file on disk and a
+    // restart, and a second request cannot apply it.
+    it('offers no retry for a setup mistake', async () => {
+      getMoviesByGenre.mockRejectedValue(new MissingProxyUrlError())
+
+      const screen = renderWithProviders(<GenreScreen />)
+
+      await waitFor(() => expect(screen.getByText('Setup needed')).toBeTruthy())
+      expect(screen.queryByText('Try again')).toBeNull()
+    })
+
+    /**
+     * A bad id has no genre to load, so a retry would repeat the same nothing.
+     * The screen offers the way out instead — and it has to, because a deep
+     * link makes this the first entry in the history and `canGoBack` is the
+     * only other exit.
+     */
+    it('offers a way home for a broken link', async () => {
+      mockParams = { id: 'abc' }
+
+      const screen = renderWithProviders(<GenreScreen />)
+
+      await waitFor(() => expect(screen.getByText('Broken link')).toBeTruthy())
+      expect(screen.queryByText('Try again')).toBeNull()
+
+      fireEvent.press(screen.getByText('Go home'))
+
+      expect(mockReplace).toHaveBeenCalledWith('/')
+    })
   })
 
   /**
@@ -147,7 +193,7 @@ describe('the screen states', () => {
     const screen = renderWithProviders(<GenreScreen />)
 
     await waitFor(() =>
-      expect(screen.getByText('That genre does not exist.')).toBeTruthy(),
+      expect(screen.getByText('That link does not point at a genre.')).toBeTruthy(),
     )
     expect(getMoviesByGenre).not.toHaveBeenCalled()
   })

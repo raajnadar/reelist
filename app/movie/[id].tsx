@@ -14,7 +14,14 @@ import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
 import { Scrim, type ScrimStop } from '../../components/Scrim'
 import { SkeletonRow } from '../../components/Skeleton'
+import { StateMessage } from '../../components/StateMessage'
 import { getMovie } from '../../lib/api'
+import {
+  missingFailure,
+  toFailure,
+  type Failure,
+  type FailureKind,
+} from '../../lib/errors'
 import { ratingLabel, releaseLine } from '../../lib/format'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import type { MovieDetail, Video } from '../../lib/types'
@@ -36,6 +43,42 @@ const STAGGER_INTERVAL = 60
  * the whole window.
  */
 const MAX_BODY_WIDTH = 1100
+
+/**
+ * How each kind of failure is presented, and what it offers.
+ *
+ * The three never share an action: a dropped request retries, an unset proxy
+ * URL is a setup mistake with no request to repeat, and a link that names no
+ * film — a bad id, or an id TMDB has nothing for — leaves only the way out.
+ * A record keyed by kind rather than three nested conditions spread across five
+ * props.
+ */
+const REPORTS: Record<
+  FailureKind,
+  {
+    icon: string
+    tone: 'error' | 'neutral'
+    title: string
+    actionLabel?: string
+    actionIcon?: string
+  }
+> = {
+  transient: {
+    icon: 'cloud-off-outline',
+    tone: 'error',
+    title: 'Could not load the movie',
+    actionLabel: 'Try again',
+    actionIcon: 'refresh',
+  },
+  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
+  missing: {
+    icon: 'link-off',
+    tone: 'error',
+    title: 'Movie not found',
+    actionLabel: 'Go home',
+    actionIcon: 'home-outline',
+  },
+}
 
 /**
  * The scrim that dissolves the backdrop into the page.
@@ -95,9 +138,25 @@ export default function MovieScreen() {
 
   const [movie, setMovie] = useState<MovieDetail | null>(null)
   const [loading, setLoading] = useState(validId)
-  const [error, setError] = useState<string | null>(
-    validId ? null : 'That link is not a valid movie',
+  const [failure, setFailure] = useState<Failure | null>(
+    // A bad route parameter is a failure with no request behind it, so it is
+    // classified here as permanent rather than lifted from a rejection.
+    validId ? null : missingFailure('That link does not point at a movie.'),
   )
+
+  /**
+   * Bumped by the retry button, and read by the effect below as a dependency.
+   * The effect already owns the request and the `active` guard that keeps a
+   * late answer off a screen the reader has left, so a second path to the same
+   * request would only have to repeat both.
+   */
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = () => {
+    setLoading(true)
+    setFailure(null)
+    setAttempt((n) => n + 1)
+  }
 
   useEffect(() => {
     if (!validId) return
@@ -109,11 +168,14 @@ export default function MovieScreen() {
       .then((result) => {
         if (!active) return
         if (result) setMovie(result)
-        else setError('That movie is not in the list')
+        // A 404 from TMDB, which lib/api.ts turns into `null`. The id parsed
+        // and the request succeeded, so a second attempt would return the same
+        // nothing.
+        else setFailure(missingFailure('TMDB has no movie with that id.'))
       })
       .catch((e: unknown) => {
         if (!active) return
-        setError(e instanceof Error ? e.message : 'Could not load the movie')
+        setFailure(toFailure(e, 'Could not load the movie'))
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -122,7 +184,7 @@ export default function MovieScreen() {
     return () => {
       active = false
     }
-  }, [movieId, validId])
+  }, [movieId, validId, attempt])
 
   const backdrop = movie ? backdropUrl(movie.backdrop_path) : null
   const poster = movie ? posterUrl(movie.poster_path, 'w500') : null
@@ -173,6 +235,15 @@ export default function MovieScreen() {
   // The room the floating header needs, for the states that have no artwork to
   // run under it.
   const headerSpace = insets.top + HEADER_HEIGHT
+
+  // The handler behind REPORTS, which carries only the words. `setup` has none:
+  // the fix is a file on the developer's disk and a restart, and no button on
+  // this screen can apply it.
+  const actions: Record<FailureKind, (() => void) | undefined> = {
+    transient: retry,
+    setup: undefined,
+    missing: () => router.replace('/'),
+  }
 
   const rating = movie ? ratingLabel(movie.vote_average) : null
   const release = movie ? releaseLine(movie.release_date, movie.runtime) : ''
@@ -263,18 +334,22 @@ export default function MovieScreen() {
                 past the second before the request lands. */}
             <SkeletonRow />
           </Motion.View>
-        ) : error ? (
-          <Motion.View
+        ) : failure ? (
+          /* The block centres in the room it is given, so the padding is what
+             keeps it clear of the floating header rather than a top margin
+             that would push it off centre. */
+          <StateMessage
             key="error"
-            initial={{ opacity: 0, translateY: 12 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition="enter"
-            style={[styles.centered, { marginTop: headerSpace + 48 }]}
-          >
-            <Typography variant="bodyMedium" color={theme.colors.error}>
-              {error}
-            </Typography>
-          </Motion.View>
+            testID="detail-error"
+            icon={REPORTS[failure.kind].icon}
+            tone={REPORTS[failure.kind].tone}
+            title={REPORTS[failure.kind].title}
+            body={failure.message}
+            actionLabel={REPORTS[failure.kind].actionLabel}
+            actionIcon={REPORTS[failure.kind].actionIcon}
+            onAction={actions[failure.kind]}
+            style={{ paddingTop: headerSpace }}
+          />
         ) : movie ? (
           <Motion.ScrollView
             key="content"
@@ -526,7 +601,6 @@ export default function MovieScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  centered: { alignItems: 'center' },
   // Clips the scrim and the zoom-out entrance to the frame. Without it the
   // image starts 6% wider than the window and widens the page on web.
   heroArt: { width: '100%', overflow: 'hidden' },

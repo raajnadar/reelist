@@ -4,6 +4,7 @@ import { mockMovies } from '../../lib/mock'
 import SearchScreen, { searchColumnCount } from '../../app/search'
 import { SEARCH_DEBOUNCE_MS } from '../../lib/useDebounced'
 import { CARD_WIDTH } from '../../components/MovieCard'
+import { MissingProxyUrlError } from '../../lib/config'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: Expo Router builds
 // its route table from `require.context('./app')`, so a test file in there
@@ -73,7 +74,7 @@ describe('searchColumnCount', () => {
 it('shows the prompt and searches for nothing before the user types', () => {
   const screen = renderWithProviders(<SearchScreen />)
 
-  expect(screen.getByText('Type to search for a movie')).toBeTruthy()
+  expect(screen.getByText('Search for a movie')).toBeTruthy()
   expect(searchMovies).not.toHaveBeenCalled()
 })
 
@@ -116,8 +117,10 @@ it('reports a search that matched nothing, distinctly from the first prompt', as
   await settle()
 
   // The two empty states share an empty grid and must not share their words.
-  await waitFor(() => expect(screen.getByText('No movies match "zzzzz"')).toBeTruthy())
-  expect(screen.queryByText('Type to search for a movie')).toBeNull()
+  await waitFor(() => expect(screen.getByText('No matches')).toBeTruthy())
+  // The query is quoted back, so the state names the search it answers.
+  expect(screen.getByTestId('search-no-results-body').props.children).toContain('zzzzz')
+  expect(screen.queryByText('Search for a movie')).toBeNull()
 })
 
 it('trims the query before it reaches the data layer', async () => {
@@ -134,7 +137,7 @@ it('treats a whitespace-only box as no search at all', async () => {
   await settle()
 
   expect(searchMovies).not.toHaveBeenCalled()
-  expect(screen.getByText('Type to search for a movie')).toBeTruthy()
+  expect(screen.getByText('Search for a movie')).toBeTruthy()
 })
 
 it('clears the results and returns to the prompt when the box is emptied', async () => {
@@ -151,7 +154,7 @@ it('clears the results and returns to the prompt when the box is emptied', async
   await settle()
 
   // A stale grid under an empty box would contradict the field.
-  await waitFor(() => expect(screen.getByText('Type to search for a movie')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('Search for a movie')).toBeTruthy())
   expect(screen.queryByText(mockMovies[0].title)).toBeNull()
 })
 
@@ -165,6 +168,58 @@ it('shows the message from a failed search', async () => {
   // The screen repeats the error's own message rather than a generic line, so a
   // setup mistake still reads as one. Same contract as the other two screens.
   await waitFor(() => expect(screen.getByText('TMDB is unavailable')).toBeTruthy())
+})
+
+describe('the failure state', () => {
+  it('offers a retry that searches the same query again', async () => {
+    searchMovies.mockRejectedValueOnce(new Error('TMDB is unavailable'))
+    searchMovies.mockResolvedValue({ results: mockMovies.slice(0, 2) })
+
+    const screen = renderWithProviders(<SearchScreen />)
+    fireEvent.changeText(screen.getByLabelText(FIELD), 'dune')
+    await settle()
+
+    await waitFor(() => expect(screen.getByText('Search failed')).toBeTruthy())
+
+    fireEvent.press(screen.getByText('Try again'))
+    await act(async () => {})
+
+    // The query is unchanged, so only `attempt` can re-run the effect. Without
+    // it in the dependency list the press would change nothing the effect
+    // reads, and the failure would stay on screen.
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+    expect(searchMovies).toHaveBeenCalledTimes(2)
+    expect(searchMovies).toHaveBeenLastCalledWith('dune')
+  })
+
+  // Same reason as the home screen: the fix is a file on disk and a restart,
+  // and a second request cannot apply it.
+  it('offers no retry for a setup mistake', async () => {
+    searchMovies.mockRejectedValue(new MissingProxyUrlError())
+
+    const screen = renderWithProviders(<SearchScreen />)
+    fireEvent.changeText(screen.getByLabelText(FIELD), 'dune')
+    await settle()
+
+    await waitFor(() => expect(screen.getByText('Setup needed')).toBeTruthy())
+    expect(screen.queryByText('Try again')).toBeNull()
+  })
+
+  // The request succeeded, so there is nothing to retry. The only thing that
+  // can change the answer is a different query.
+  it('offers a clear rather than a retry when nothing matched', async () => {
+    const screen = renderWithProviders(<SearchScreen />)
+    fireEvent.changeText(screen.getByLabelText(FIELD), 'zzzzz')
+    await settle()
+
+    await waitFor(() => expect(screen.getByText('No matches')).toBeTruthy())
+    expect(screen.queryByText('Try again')).toBeNull()
+
+    fireEvent.press(screen.getByText('Clear search'))
+    await settle()
+
+    await waitFor(() => expect(screen.getByText('Search for a movie')).toBeTruthy())
+  })
 })
 
 it('falls back to a generic message when the throw is not an Error', async () => {
@@ -217,15 +272,15 @@ it('clears the box with the trailing icon', async () => {
   fireEvent.changeText(screen.getByLabelText(FIELD), 'dune')
   await settle()
 
-  fireEvent.press(screen.getByLabelText('Clear search'))
+  fireEvent.press(screen.getByLabelText('Clear the search box'))
   await settle()
 
-  await waitFor(() => expect(screen.getByText('Type to search for a movie')).toBeTruthy())
+  await waitFor(() => expect(screen.getByText('Search for a movie')).toBeTruthy())
 })
 
 it('offers no clear icon while the box is empty', () => {
   const screen = renderWithProviders(<SearchScreen />)
 
   // The icon would be an action that does nothing.
-  expect(screen.queryByLabelText('Clear search')).toBeNull()
+  expect(screen.queryByLabelText('Clear the search box')).toBeNull()
 })

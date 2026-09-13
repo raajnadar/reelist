@@ -1,6 +1,5 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { TextField } from '@rootnative/components/text-field'
-import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
@@ -9,12 +8,31 @@ import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard, CARD_WIDTH } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
+import { StateMessage } from '../components/StateMessage'
 import { searchMovies } from '../lib/api'
+import { toFailure, type Failure, type FailureKind } from '../lib/errors'
 import { useDebounced } from '../lib/useDebounced'
 import type { Movie } from '../lib/types'
 
 const GAP = 12
 const PADDING = 16
+
+/**
+ * How each kind of failure is presented. The action is bound inside the screen:
+ * only `transient` has one, because a search reaches no id and an unset proxy
+ * URL is fixed off the screen.
+ *
+ * `missing` cannot occur — a search with no match is an empty result, not a
+ * failure. It is listed so a new kind is a type error rather than a blank state.
+ */
+const REPORTS: Record<
+  FailureKind,
+  { icon: string; tone: 'error' | 'neutral'; title: string }
+> = {
+  transient: { icon: 'cloud-off-outline', tone: 'error', title: 'Search failed' },
+  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
+  missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
+}
 
 /**
  * How many poster columns fit in `width`.
@@ -57,8 +75,21 @@ export default function SearchScreen() {
   const [outcome, setOutcome] = useState<{
     query: string
     results: Movie[]
-    error: string | null
+    failure: Failure | null
   } | null>(null)
+
+  /**
+   * Bumped by the retry button. The effect below reads it as a dependency, so a
+   * press re-runs the same search without a change to the box.
+   */
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = () => {
+    // Clearing the outcome is what puts the placeholders back: `loading` below
+    // is derived from "a query with no answer yet", not stored.
+    setOutcome(null)
+    setAttempt((n) => n + 1)
+  }
 
   useEffect(() => {
     // An empty box is not a search. Returning before any setState leaves the
@@ -76,23 +107,24 @@ export default function SearchScreen() {
         // "interstellar"; without it the older answer would overwrite the newer
         // one and the grid would contradict the box.
         if (!active) return
-        setOutcome({ query: trimmed, results: paged.results, error: null })
+        setOutcome({ query: trimmed, results: paged.results, failure: null })
       })
       .catch((e: unknown) => {
         if (!active) return
         setOutcome({
           query: trimmed,
           results: [],
-          // Same contract as the other two screens: a MissingProxyUrlError and a
-          // TmdbError each carry a message written for the person reading it.
-          error: e instanceof Error ? e.message : 'Could not search movies',
+          // Same contract as the other screens: a MissingProxyUrlError and a
+          // TmdbError each carry a message written for the person reading it,
+          // and toFailure says which of the two a retry can clear.
+          failure: toFailure(e, 'Could not search movies'),
         })
       })
 
     return () => {
       active = false
     }
-  }, [trimmed])
+  }, [trimmed, attempt])
 
   // The outcome counts only while it describes the query in the box.
   const current = outcome && outcome.query === trimmed ? outcome : null
@@ -100,7 +132,7 @@ export default function SearchScreen() {
   // A `loading` state set inside the effect would be the cascading render the
   // structure above avoids.
   const loading = Boolean(trimmed) && !current
-  const error = current?.error ?? null
+  const failure = current?.failure ?? null
   const results = current?.results ?? []
 
   return (
@@ -125,7 +157,10 @@ export default function SearchScreen() {
           // field does not offer an action that would do nothing.
           trailingIcon={query ? 'close' : undefined}
           onTrailingIconPress={() => setQuery('')}
-          trailingIconAccessibilityLabel="Clear search"
+          // Not "Clear search": the no-results state below draws a button with
+          // that label, and two controls of the same name on one screen give a
+          // screen reader no way to tell them apart.
+          trailingIconAccessibilityLabel="Clear the search box"
           autoFocus
           returnKeyType="search"
           autoCorrect={false}
@@ -140,18 +175,18 @@ export default function SearchScreen() {
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
             <SkeletonGrid />
           </Motion.View>
-        ) : error ? (
-          <Motion.View
+        ) : failure ? (
+          <StateMessage
             key="error"
-            initial={{ opacity: 0, translateY: 12 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition="enter"
-            style={styles.centered}
-          >
-            <Typography variant="bodyMedium" color={theme.colors.error}>
-              {error}
-            </Typography>
-          </Motion.View>
+            testID="search-error"
+            icon={REPORTS[failure.kind].icon}
+            tone={REPORTS[failure.kind].tone}
+            title={REPORTS[failure.kind].title}
+            body={failure.message}
+            actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
+            actionIcon="refresh"
+            onAction={failure.kind === 'transient' ? retry : undefined}
+          />
         ) : results.length ? (
           <Motion.View
             key="results"
@@ -176,21 +211,34 @@ export default function SearchScreen() {
               showsVerticalScrollIndicator={false}
             />
           </Motion.View>
+        ) : current ? (
+          /*
+            Searched, and found nothing. `current` is the signal that separates
+            this from the prompt below: both states show an empty grid, so a
+            count of zero cannot tell them apart.
+
+            The action clears the box rather than repeating the search. The
+            request succeeded — there is nothing to retry — and a new query is
+            the only thing that can change the answer.
+          */
+          <StateMessage
+            key="no-results"
+            testID="search-no-results"
+            icon="movie-search-outline"
+            title="No matches"
+            body={`Nothing here matches "${trimmed}". Check the spelling, or try a shorter title.`}
+            actionLabel="Clear search"
+            actionIcon="close"
+            onAction={() => setQuery('')}
+          />
         ) : (
-          <Motion.View
-            key="empty"
-            initial={{ opacity: 0, translateY: 12 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition="enter"
-            style={styles.centered}
-          >
-            <Typography variant="bodyMedium" color={theme.colors.onSurfaceVariant}>
-              {/* `current` is the "searched and found nothing" signal. Both
-                  empty states show an empty grid, so a count of zero cannot
-                  tell them apart and they must not share their words. */}
-              {current ? `No movies match "${trimmed}"` : 'Type to search for a movie'}
-            </Typography>
-          </Motion.View>
+          <StateMessage
+            key="prompt"
+            testID="search-prompt"
+            icon="movie-open-outline"
+            title="Search for a movie"
+            body="Type a title above. The results appear as you type."
+          />
         )}
       </Presence>
     </View>
@@ -201,7 +249,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
   field: { paddingHorizontal: PADDING, paddingTop: 8, paddingBottom: 12 },
-  centered: { marginTop: 48, alignItems: 'center', paddingHorizontal: PADDING },
   list: { paddingHorizontal: PADDING, gap: GAP },
   column: { gap: GAP },
 })

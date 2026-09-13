@@ -1,5 +1,4 @@
 import { AppBar } from '@rootnative/components/appbar'
-import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -14,11 +13,53 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard, CARD_WIDTH } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
+import { StateMessage } from '../../components/StateMessage'
 import { getMoviesByGenre } from '../../lib/api'
+import {
+  missingFailure,
+  toFailure,
+  type Failure,
+  type FailureKind,
+} from '../../lib/errors'
 import type { Movie } from '../../lib/types'
 
 const GAP = 12
 const PADDING = 16
+
+/**
+ * How each kind of failure is presented, and what it offers.
+ *
+ * The three never share an action: a dropped request retries, an unset proxy
+ * URL is a setup mistake with no request to repeat, and a link that names no
+ * genre leaves only the way out. A record keyed by kind rather than three
+ * nested conditions spread across five props.
+ */
+const REPORTS: Record<
+  FailureKind,
+  {
+    icon: string
+    tone: 'error' | 'neutral'
+    title: string
+    actionLabel?: string
+    actionIcon?: string
+  }
+> = {
+  transient: {
+    icon: 'cloud-off-outline',
+    tone: 'error',
+    title: 'Could not load movies',
+    actionLabel: 'Try again',
+    actionIcon: 'refresh',
+  },
+  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
+  missing: {
+    icon: 'link-off',
+    tone: 'error',
+    title: 'Broken link',
+    actionLabel: 'Go home',
+    actionIcon: 'home-outline',
+  },
+}
 
 /**
  * How many poster columns fit in `width`.
@@ -70,7 +111,7 @@ export default function GenreScreen() {
     movies: Movie[]
     page: number
     totalPages: number
-    error: string | null
+    failure: Failure | null
   } | null>(null)
 
   const [loadingMore, setLoadingMore] = useState(false)
@@ -80,6 +121,20 @@ export default function GenreScreen() {
   // unfiltered list, so the check happens here rather than being left to a
   // response that looks successful.
   const validId = Number.isInteger(genreId) && genreId > 0
+
+  /**
+   * Bumped by the retry button, and read by the first-page effect as a
+   * dependency. `loadMore` needs no equivalent: a failed later page keeps the
+   * films already on screen and tries again on the next scroll to the end.
+   */
+  const [attempt, setAttempt] = useState(0)
+
+  const retry = () => {
+    // Same as the search screen: `loading` is derived from "a genre with no
+    // answer yet", so clearing the outcome is what puts the placeholders back.
+    setOutcome(null)
+    setAttempt((n) => n + 1)
+  }
 
   // The first page. Keyed on the id so opening a second genre from a deep link
   // reloads rather than showing the previous genre's films.
@@ -96,7 +151,7 @@ export default function GenreScreen() {
           movies: paged.results,
           page: paged.page,
           totalPages: paged.total_pages,
-          error: null,
+          failure: null,
         })
       })
       .catch((e: unknown) => {
@@ -108,14 +163,14 @@ export default function GenreScreen() {
           totalPages: 1,
           // The same contract as the other screens: a MissingProxyUrlError and
           // a TmdbError each carry a message written for the person reading it.
-          error: e instanceof Error ? e.message : 'Could not load movies',
+          failure: toFailure(e, 'Could not load movies'),
         })
       })
 
     return () => {
       active = false
     }
-  }, [genreId, validId])
+  }, [genreId, validId, attempt])
 
   // The outcome counts only while it describes the genre being shown. An
   // outcome for the previous genre is ignored rather than cleared.
@@ -124,8 +179,12 @@ export default function GenreScreen() {
   const page = current?.page ?? 1
   const totalPages = current?.totalPages ?? 1
   // Derived, not stored: a bad id is known at render time, and there is a
-  // request outstanding whenever a valid genre has no outcome yet.
-  const error = validId ? (current?.error ?? null) : 'That genre does not exist.'
+  // request outstanding whenever a valid genre has no outcome yet. A bad route
+  // parameter is a failure with no request behind it, so it is classified where
+  // it is found rather than lifted from a rejection.
+  const failure = validId
+    ? (current?.failure ?? null)
+    : missingFailure('That link does not point at a genre.')
   const loading = validId && !current
 
   /**
@@ -139,7 +198,7 @@ export default function GenreScreen() {
    * comparison is the only stop condition the screen needs.
    */
   const loadMore = useCallback(() => {
-    if (loading || loadingMore || error) return
+    if (loading || loadingMore || failure) return
     if (page >= totalPages) return
 
     setLoadingMore(true)
@@ -167,9 +226,18 @@ export default function GenreScreen() {
         // and the next scroll to the end tries again — so this needs no message.
       })
       .finally(() => setLoadingMore(false))
-  }, [genreId, page, totalPages, loading, loadingMore, error])
+  }, [genreId, page, totalPages, loading, loadingMore, failure])
 
   const title = params.name ?? 'Genre'
+
+  // The handler behind REPORTS, which carries only the words. `setup` has none:
+  // the fix is a file on the developer's disk and a restart, and no button on
+  // this screen can apply it.
+  const actions: Record<FailureKind, (() => void) | undefined> = {
+    transient: retry,
+    setup: undefined,
+    missing: () => router.replace('/'),
+  }
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
@@ -189,18 +257,24 @@ export default function GenreScreen() {
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
             <SkeletonGrid />
           </Motion.View>
-        ) : error ? (
-          <Motion.View
+        ) : failure ? (
+          /*
+            Three failures share this branch and none of them share an action.
+            A dropped request retries; an unset proxy URL is a setup mistake
+            with no request to repeat; a bad link has no genre to load at all,
+            and the only move left is out of the screen.
+          */
+          <StateMessage
             key="error"
-            initial={{ opacity: 0, translateY: 12 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition="enter"
-            style={styles.centered}
-          >
-            <Typography variant="bodyMedium" color={theme.colors.error}>
-              {error}
-            </Typography>
-          </Motion.View>
+            testID="genre-error"
+            icon={REPORTS[failure.kind].icon}
+            tone={REPORTS[failure.kind].tone}
+            title={REPORTS[failure.kind].title}
+            body={failure.message}
+            actionLabel={REPORTS[failure.kind].actionLabel}
+            actionIcon={REPORTS[failure.kind].actionIcon}
+            onAction={actions[failure.kind]}
+          />
         ) : movies.length ? (
           <Motion.View
             key="results"
@@ -236,17 +310,16 @@ export default function GenreScreen() {
             />
           </Motion.View>
         ) : (
-          <Motion.View
+          /* The request succeeded and returned nothing, so there is nothing to
+             retry. The AppBar already carries the way back, and a second exit
+             in the middle of the screen would only repeat it. */
+          <StateMessage
             key="empty"
-            initial={{ opacity: 0, translateY: 12 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition="enter"
-            style={styles.centered}
-          >
-            <Typography variant="bodyMedium" color={theme.colors.onSurfaceVariant}>
-              No movies in this genre yet
-            </Typography>
-          </Motion.View>
+            testID="genre-empty"
+            icon="movie-off-outline"
+            title="Nothing here yet"
+            body="TMDB lists no movies in this genre."
+          />
         )}
       </Presence>
     </View>
@@ -256,7 +329,6 @@ export default function GenreScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  centered: { marginTop: 48, alignItems: 'center', paddingHorizontal: PADDING },
   list: { paddingHorizontal: PADDING, gap: GAP },
   column: { gap: GAP },
   footer: { paddingVertical: 20 },
