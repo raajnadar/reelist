@@ -3,7 +3,7 @@ import { Animated } from '@rootnative/inertia/reanimated'
 import { render } from '@testing-library/react-native'
 
 /**
- * A guard for the trap that broke the detail-screen parallax.
+ * A guard for the trap that once broke the detail-screen hero.
  *
  * `Motion.*` primitives take a plain, non-animated fast path when no motion
  * prop (`animate` / `initial` / `gesture` / ...) is present. `style` is
@@ -12,9 +12,10 @@ import { render } from '@testing-library/react-native'
  * the plain host, and the animation silently does nothing — no error, no
  * warning, just a static element.
  *
- * app/movie/[id].tsx therefore renders the hero with Reanimated's
- * `Animated.Image` from the interop subpath, and keeps `Motion.*` for the
- * declarative `animate` / `gesture` flow.
+ * components/DetailHeader.tsx therefore drives its scroll-linked fades with
+ * Reanimated's `Animated.View` / `Animated.Text` from the interop subpath, and
+ * every component with a declarative `animate` / `gesture` flow stays on
+ * `Motion.*`.
  *
  * The assertions below compare the two hosts through the rendered tree, so
  * they track what the library actually does rather than restating a list.
@@ -40,12 +41,13 @@ describe('the Motion plain-path rule', () => {
     expect(plainTree).not.toEqual(animatedTree)
   })
 
-  it('exposes Animated.Image, the host the hero parallax depends on', () => {
-    // The hero passes a `useInterpolatedStyle` result straight to `style`, so
-    // it needs a host that reads an animated style without a motion prop.
-    expect(Animated.Image).toBeDefined()
+  it('exposes the animated hosts the detail header depends on', () => {
+    // The header passes `useInterpolatedStyle` results straight to `style`, so
+    // it needs hosts that read an animated style without a motion prop.
+    expect(Animated.View).toBeDefined()
+    expect(Animated.Text).toBeDefined()
 
-    const tree = render(<Animated.Image source={{ uri: 'x' }} style={{ opacity: 1 }} />)
+    const tree = render(<Animated.View style={{ opacity: 1 }} />)
     expect(tree.toJSON()).toBeTruthy()
   })
 

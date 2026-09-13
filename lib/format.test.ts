@@ -1,4 +1,4 @@
-import { metaLine, ratingLabel, releaseYear, runtimeLabel } from './format'
+import { metaLine, ratingLabel, releaseLine, releaseYear, runtimeLabel } from './format'
 
 // The two TMDB sentinel values drive every case here: an empty `release_date`
 // for an unreleased film, and a `0` rating for an unrated one. Both must never
@@ -97,5 +97,33 @@ describe('metaLine', () => {
   // date does not fall back to "Not rated" when it does have a length.
   it('reports the runtime alone when the other two are absent', () => {
     expect(metaLine(0, '', 95)).toBe('1h 35m')
+  })
+})
+
+/**
+ * The detail screen's line. It is `metaLine` without the rating, because that
+ * screen sets the rating apart as a badge — see app/movie/[id].tsx.
+ */
+describe('releaseLine', () => {
+  it('joins the year and the runtime', () => {
+    expect(releaseLine('2023-07-19', 181)).toBe('2023 · 3h 1m')
+  })
+
+  it('drops the runtime for a film with no cut yet', () => {
+    expect(releaseLine('2023-07-19', 0)).toBe('2023')
+  })
+
+  it('drops the year for an unreleased film', () => {
+    expect(releaseLine('', 181)).toBe('3h 1m')
+  })
+
+  // Both sentinels at once. The empty string is the signal to the caller that
+  // there is no line to draw — a separator on its own would read as a defect.
+  it('returns an empty string when the film has neither', () => {
+    expect(releaseLine('', 0)).toBe('')
+  })
+
+  it('omits the runtime when the caller passes none', () => {
+    expect(releaseLine('2023-07-19')).toBe('2023')
   })
 })

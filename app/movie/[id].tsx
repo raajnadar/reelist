@@ -1,33 +1,22 @@
+import { Button } from '@rootnative/components/button'
+import { Skeleton } from '@rootnative/components/skeleton'
 import { Typography } from '@rootnative/components/typography'
 import { useBreakpointValue, useTheme } from '@rootnative/core'
-import {
-  Motion,
-  Presence,
-  Stagger,
-  useInterpolatedStyle,
-  useScroll,
-} from '@rootnative/inertia'
-// The hero drives its own interpolated style rather than an `animate` prop, so
-// it needs Reanimated's animated Image. A `Motion.Image` carrying only `style`
-// has no motion prop, takes the library's zero-cost plain path, and renders a
-// component that cannot read an animated style — the parallax silently does
-// nothing. This subpath is the documented interop for exactly that case.
-import { Animated } from '@rootnative/inertia/reanimated'
+import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
+import { openURL } from 'expo-linking'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Image, Platform, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppBar } from '@rootnative/components/appbar'
-import { Button } from '@rootnative/components/button'
-import { openURL } from 'expo-linking'
 import { CastRow } from '../../components/CastRow'
+import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
+import { Scrim, type ScrimStop } from '../../components/Scrim'
 import { SkeletonRow } from '../../components/Skeleton'
-import { metaLine } from '../../lib/format'
 import { getMovie } from '../../lib/api'
+import { ratingLabel, releaseLine } from '../../lib/format'
 import { backdropUrl, posterUrl } from '../../lib/images'
-import { Skeleton } from '@rootnative/components/skeleton'
 import type { MovieDetail, Video } from '../../lib/types'
 
 /**
@@ -43,13 +32,37 @@ const STAGGER_INTERVAL = 60
  *
  * A line of text is comfortable to read at roughly 60 to 75 characters. On a
  * 1600px window a full-width paragraph runs past 150, which is the complaint
- * this cap answers. The value is the body box, not the hero: the backdrop stays
- * full-bleed, so the picture still uses the whole window.
+ * this cap answers. The backdrop stays outside it, so the picture still uses
+ * the whole window.
  */
 const MAX_BODY_WIDTH = 1100
 
-/** The poster column width in the two-column arrangement. */
-const POSTER_WIDTH = 260
+/**
+ * The scrim that dissolves the backdrop into the page.
+ *
+ * The stops are weighted to the bottom third: the top half of the frame is left
+ * alone, and the last quarter reaches the page colour before the image ends, so
+ * there is no seam where the picture stops. This is what replaced the parallax —
+ * the hero now reads as part of the page rather than as a panel sliding behind
+ * it.
+ */
+const BACKDROP_SCRIM: readonly ScrimStop[] = [
+  [0, 0],
+  [0.45, 0.08],
+  [0.65, 0.34],
+  [0.82, 0.76],
+  [1, 1],
+]
+
+/**
+ * A short wash under the status bar, so the back button and the clock stay
+ * legible on a bright frame. It is the theme `scrim` (black), not the page
+ * colour: this one darkens the picture rather than fading it out.
+ */
+const TOP_SCRIM: readonly ScrimStop[] = [
+  [0, 0.4],
+  [1, 0],
+]
 
 /**
  * Opens the trailer outside the app.
@@ -113,112 +126,136 @@ export default function MovieScreen() {
 
   const backdrop = movie ? backdropUrl(movie.backdrop_path) : null
   const poster = movie ? posterUrl(movie.poster_path, 'w500') : null
+  // The backdrop is the hero and the poster is the fallback for it, so a film
+  // with only one of the two still gets a complete masthead.
+  const artwork = backdrop ?? poster
 
   const { width, height } = useWindowDimensions()
 
   /**
-   * Two columns — poster beside the text — only from `expanded` up.
+   * The wide arrangement, from `expanded` up.
    *
-   * `medium` is a tablet: wide enough to want a longer measure than a phone, not
-   * wide enough to put a 260px poster next to it and leave a readable column.
-   * There the layout stays stacked and only the body cap applies.
+   * It changes the size of the masthead, not its shape: the poster and the
+   * title sit side by side at every width. `medium` is a tablet, wide enough
+   * for a longer measure than a phone and not wide enough for a 200px poster.
    */
-  const twoColumn = useBreakpointValue({ compact: false, medium: false, expanded: true })
+  const wide = useBreakpointValue({ compact: false, medium: false, expanded: true })
 
   /**
-   * The share of the window height the backdrop may take.
+   * The backdrop height, as a fraction of the window width.
    *
-   * On a phone the 16:9 strip is always shorter than this, so the cap never
-   * fires and the mobile hero is exactly what it was. On a desktop window the
-   * 16:9 height runs past the fold, and the old 55% still left the title and the
-   * overview below it — hence 40% once there is a poster to carry the page.
+   * A phone gets a frame taller than the 16:9 source, cropped at the sides,
+   * because a 16:9 strip on a 390pt window is 219pt — a band rather than a
+   * masthead. A desktop window needs the opposite: the ratio alone would run
+   * the picture past the fold.
    */
-  const heroShare = useBreakpointValue({ compact: 0.55, medium: 0.5, expanded: 0.4 })
+  const heroAspect = useBreakpointValue({ compact: 0.78, medium: 0.6, expanded: 0.46 })
 
-  // The image is 16:9, so one window width gives it `width * 9 / 16`. The share
-  // above caps that on a window too wide for the ratio to stay on screen.
-  const heroHeight = Math.min(width * (9 / 16), height * heroShare)
+  // The window height caps the frame whatever the width asks for, so the title
+  // is always on the first screen.
+  const heroHeight = Math.min(width * heroAspect, height * 0.55)
 
-  // scrollY drives the hero on the UI thread, so the parallax holds during a
+  const posterWidth = wide ? 200 : 112
+
+  /**
+   * How far the poster rides up over the backdrop.
+   *
+   * The overlap is what ties the two images into one masthead. It stays under
+   * half the poster height, so the title beside it lands on the page colour
+   * rather than on the picture and needs no scrim of its own.
+   */
+  const overlap = wide ? 120 : 72
+
+  // scrollY drives the header on the UI thread, so the bar arrives during a
   // fling without a re-render per frame.
   const { scrollY, onScroll } = useScroll()
 
-  // Two behaviours from one value, split at scroll position 0:
-  //
-  // - Pulled DOWN (negative scrollY): the hero grows and stays anchored to the
-  //   top. This is the iOS-style stretch on overscroll.
-  // - Scrolled UP (positive): the hero drifts at half speed and fades, so the
-  //   text slides over it rather than pushing it off screen.
-  //
-  // `extrapolate: 'extend'` is required for the stretch: the default 'clamp'
-  // would freeze the scale at 1 and the pull-down would do nothing.
-  //
-  // It is native-only on purpose. The stretch answers a rubber-band overscroll,
-  // which is a touch gesture — a browser scrolls to 0 and stops, so on web the
-  // extended range is unreachable and any value it produced would come from a
-  // scroll position the user cannot reach. 'clamp' there keeps the drift-and-fade
-  // half, which a mouse wheel does drive.
-  const heroStyle = useInterpolatedStyle(
-    scrollY,
-    {
-      scale: [1.35, 1, 1],
-      translateY: [0, 0, heroHeight * 0.5],
-      opacity: [1, 1, 0.25],
-    },
-    {
-      inputRange: [-heroHeight, 0, heroHeight],
-      extrapolate: Platform.OS === 'web' ? 'clamp' : 'extend',
-    },
-  )
+  // The room the floating header needs, for the states that have no artwork to
+  // run under it.
+  const headerSpace = insets.top + HEADER_HEIGHT
+
+  const rating = movie ? ratingLabel(movie.vote_average) : null
+  const release = movie ? releaseLine(movie.release_date, movie.runtime) : ''
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <AppBar
-        title={movie?.title ?? 'Movie'}
-        insetTop
-        canGoBack
+      {/*
+        Outside the Presence block: the back button has to answer a tap while
+        the film is still loading and while an error is on screen.
+
+        The title reveals as the masthead leaves, which is why it is not also
+        drawn under the bar. The screen showed the title twice before — once
+        here and once in the body — and the two sat on top of each other.
+      */}
+      <DetailHeader
+        title={movie?.title ?? ''}
+        scrollY={scrollY}
+        revealAt={heroHeight - overlap}
         // `router.back` alone dead-ends on a deep link, where this screen is the
         // first entry in the history and there is nothing to go back to.
-        onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       />
 
       <Presence>
         {loading ? (
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
+            {/*
+              The placeholder holds the same box the content will — the same
+              backdrop height, the same poster riding up over it, the same
+              capped body. A different shape would reflow the whole screen the
+              moment the request lands.
+            */}
             <Skeleton height={heroHeight} shape="rectangle" />
-            {/*
-              `<Stagger>` owns the cascade, so no block carries its own delay.
-              It assigns child `i` a delay of `i * interval` from render order,
-              which is what the three hand-written `delay` values did — but
-              re-derived every render, so adding or removing a line cannot
-              leave a stale offset behind.
-            */}
-            {/*
-              The placeholder holds the same box the content will: capped, centred,
-              and split into two columns at the same breakpoint. A single-column
-              skeleton followed by a two-column body would reflow the whole screen
-              the moment the request lands.
-            */}
-            <View style={[styles.body, styles.bodyCap, twoColumn && styles.bodyRow]}>
-              {twoColumn ? (
-                <Skeleton height={POSTER_WIDTH * (3 / 2)} width={POSTER_WIDTH} />
-              ) : null}
-              <View style={styles.textColumn}>
-                {/* `delay` holds the whole cascade back so the hero block lands
-                    before the first line moves, which is what the old 80ms
-                    starting offset did. `interval` then spaces the rest. */}
-                <Stagger interval={STAGGER_INTERVAL} delay={STAGGER_INTERVAL}>
-                  <Skeleton height={26} width="70%" />
-                  <Skeleton height={16} width="40%" />
-                  {/* The chip row. Two blocks at chip height, so the space the
-                      genres will take is already reserved. */}
-                  <View style={styles.skeletonChips}>
-                    <Skeleton height={32} width={84} shape="rectangle" />
-                    <Skeleton height={32} width={72} shape="rectangle" />
-                  </View>
-                  <Skeleton height={76} style={styles.skeletonParagraph} />
-                </Stagger>
+
+            <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
+              <View style={styles.identity}>
+                {/*
+                  The ratio lives on the wrapper, not the block: Skeleton writes
+                  a concrete height ahead of the caller's style, and in React
+                  Native an explicit height beats `aspectRatio`.
+
+                  The wrapper also carries the page colour. The poster
+                  placeholder rides up over the backdrop placeholder, and two
+                  blocks of the same pulsing surface would read as one shape.
+                */}
+                <View
+                  style={[
+                    styles.posterPlaceholder,
+                    {
+                      width: posterWidth,
+                      borderRadius: theme.shape.cornerLarge,
+                      backgroundColor: theme.colors.background,
+                    },
+                  ]}
+                >
+                  <Skeleton
+                    height="100%"
+                    style={{ borderRadius: theme.shape.cornerLarge }}
+                  />
+                </View>
+
+                <View style={styles.identityText}>
+                  {/*
+                    `<Stagger>` owns the cascade, so no block carries its own
+                    delay. It assigns child `i` a delay of `i * interval` from
+                    render order, re-derived every render — so adding or
+                    removing a line cannot leave a stale offset behind.
+                  */}
+                  <Stagger interval={STAGGER_INTERVAL} delay={STAGGER_INTERVAL}>
+                    <Skeleton height={28} width="80%" />
+                    <Skeleton height={18} width="55%" />
+                  </Stagger>
+                </View>
               </View>
+
+              <Skeleton height={40} width={168} shape="rectangle" />
+              {/* The chip row. Two blocks at chip height, so the space the
+                  genres will take is already reserved. */}
+              <View style={styles.skeletonChips}>
+                <Skeleton height={32} width={84} shape="rectangle" />
+                <Skeleton height={32} width={72} shape="rectangle" />
+              </View>
+              <Skeleton height={76} />
             </View>
 
             {/* One row placeholder for the two that follow the body. Two would
@@ -232,7 +269,7 @@ export default function MovieScreen() {
             initial={{ opacity: 0, translateY: 12 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition="enter"
-            style={styles.centered}
+            style={[styles.centered, { marginTop: headerSpace + 48 }]}
           >
             <Typography variant="bodyMedium" color={theme.colors.error}>
               {error}
@@ -245,26 +282,34 @@ export default function MovieScreen() {
             onScroll={onScroll}
             scrollEventThrottle={16}
             style={styles.fill}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           >
             {/*
-              The hero sits in a fixed-height, clipped box. The image inside it
-              is what scales, so the stretch never paints over the body text
-              below — without `overflow: 'hidden'` the grown image would.
+              The masthead: one frame of artwork that fades into the page, with
+              the poster and the title riding up over its lower edge.
+
+              The picture no longer moves against the scroll. A backdrop that
+              drifts at half speed reads as a panel behind the page, and it put
+              the title over a moving image for the whole first screen.
             */}
-            <View style={[styles.heroClip, { height: heroHeight }]}>
-              {/* 16:9 is the TMDB backdrop ratio. The poster is the fallback, so a
-                  film with no backdrop still gets a hero instead of a blank strip. */}
-              {backdrop || poster ? (
-                <Animated.Image
-                  source={{ uri: (backdrop ?? poster) as string }}
-                  style={[styles.backdrop, heroStyle]}
+            <View style={[styles.heroArt, { height: heroHeight }]}>
+              {artwork ? (
+                // A slow settle out of a slight zoom, played once on arrival.
+                // `Motion.Image` takes the animated path because `animate` is
+                // present; a style-only Motion primitive would not.
+                <Motion.Image
+                  testID="detail-backdrop"
+                  source={{ uri: artwork }}
+                  style={styles.fill}
                   resizeMode="cover"
+                  initial={{ opacity: 0, scale: 1.06 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition="enter"
                 />
               ) : (
                 <View
                   style={[
-                    styles.backdrop,
+                    styles.fill,
                     styles.fallback,
                     { backgroundColor: theme.colors.surfaceVariant },
                   ]}
@@ -274,194 +319,206 @@ export default function MovieScreen() {
                   </Typography>
                 </View>
               )}
-            </View>
 
-            {/*
-              The body is capped and centred, so a wide window widens the margins
-              rather than the text. The hero above is deliberately outside this
-              box: the picture is the one element that should stay full-bleed.
-            */}
-            <View style={[styles.body, styles.bodyCap, twoColumn && styles.bodyRow]}>
-              {/*
-                The poster, alongside the text from `expanded` up.
+              <Scrim color={theme.colors.background} stops={BACKDROP_SCRIM} />
 
-                It is absent on a phone on purpose. The backdrop is already the
-                hero there, and a second image of the same film would push the
-                overview off the fold to say nothing new. On a wide window it is
-                what fills the space beside a capped text column — the reason
-                this layout has two columns at all.
-
-                Rendered only when a poster path exists. There is no placeholder
-                box: an empty rectangle beside the title is worse than a text
-                column that simply uses the width.
-              */}
-              {twoColumn && poster ? (
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                >
-                  <Image
-                    testID="detail-poster"
-                    source={{ uri: poster }}
-                    style={[
-                      styles.poster,
-                      {
-                        borderRadius: theme.shape.cornerLarge,
-                        backgroundColor: theme.colors.surfaceVariant,
-                      },
-                    ]}
-                    resizeMode="cover"
-                  />
-                </Motion.View>
-              ) : null}
-
-              {/*
-                Each line rises in just behind the one above it.
-
-                `<Stagger>` owns the offsets, so no line names its own
-                position. That is what the hardcoded 0 / 1 / 2 indices did, and
-                the positions now re-derive from render order — so reordering
-                these blocks, or making one conditional, cannot leave a line
-                animating on another line's delay.
-
-                `styles.textColumn` carries `flex: 1` and a `flexBasis` of 0. In
-                the row arrangement that is what makes the column take the space
-                the poster leaves instead of sizing to its longest line, and the
-                zero basis stops a long unbroken overview from pushing the poster
-                out of the row.
-              */}
-              <View style={styles.textColumn}>
-                <Stagger interval={STAGGER_INTERVAL}>
-                  <Motion.View
-                    initial={{ opacity: 0, translateY: 16 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition="enter"
-                  >
-                    {/* The larger variant only where there is room for it. On a
-                        phone the headline would wrap a long title to three lines. */}
-                    <Typography
-                      variant={
-                        twoColumn ? 'headlineMediumEmphasized' : 'headlineSmallEmphasized'
-                      }
-                    >
-                      {movie.title}
-                    </Typography>
-                  </Motion.View>
-
-                  <Motion.View
-                    initial={{ opacity: 0, translateY: 16 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition="enter"
-                  >
-                    <Typography
-                      variant="labelLarge"
-                      color={theme.colors.onSurfaceVariant}
-                    >
-                      {metaLine(movie.vote_average, movie.release_date, movie.runtime)}
-                    </Typography>
-                  </Motion.View>
-
-                  {/*
-                    The trailer, when the film has one on YouTube. `lib/api.ts`
-                    chose it, so this line has no filtering to do and `null`
-                    means the button is simply absent.
-
-                    The link leaves the app. There is no in-app player: a
-                    YouTube video needs the YouTube frame, so an embedded one
-                    would take a new dependency and still hand playback to
-                    YouTube. `openURL` opens the YouTube app when it is
-                    installed and the browser when it is not.
-
-                    A new child needs no delay of its own — `<Stagger>` re-derives
-                    the whole cascade from render order, so the lines below this
-                    one move back by one interval on their own.
-                  */}
-                  {movie.trailer ? (
-                    <Motion.View
-                      initial={{ opacity: 0, translateY: 16 }}
-                      animate={{ opacity: 1, translateY: 0 }}
-                      transition="enter"
-                      style={styles.trailerRow}
-                    >
-                      <Button
-                        variant="tonal"
-                        leadingIcon="play"
-                        onPress={() => openTrailer(movie.trailer)}
-                      >
-                        Watch trailer
-                      </Button>
-                    </Motion.View>
-                  ) : null}
-
-                  {/*
-                    The tagline, when the film has one. TMDB sends `""` for a film
-                    with none, and `lib/api.ts` keeps that sentinel — so this is a
-                    line that is simply absent rather than an empty row.
-                  */}
-                  {movie.tagline ? (
-                    <Motion.View
-                      initial={{ opacity: 0, translateY: 16 }}
-                      animate={{ opacity: 1, translateY: 0 }}
-                      transition="enter"
-                    >
-                      <Typography
-                        variant="bodyMedium"
-                        color={theme.colors.onSurfaceVariant}
-                        style={styles.tagline}
-                      >
-                        {movie.tagline}
-                      </Typography>
-                    </Motion.View>
-                  ) : null}
-
-                  {/*
-                    The genre row, which doubles as navigation: each chip opens the
-                    genre screen. The film carries its own genres from the detail
-                    endpoint, so this needs no second request.
-
-                    `inset={0}` because the body already pads itself — the default
-                    16 is the home screen's, where the row spans the full width.
-                    GenreChips renders nothing for an empty list, so a film with no
-                    genres leaves no gap.
-                  */}
-                  <GenreChips genres={movie.genres} inset={0} gutter={0} />
-
-                  <Motion.View
-                    initial={{ opacity: 0, translateY: 16 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition="enter"
-                  >
-                    {movie.overview ? (
-                      <Typography variant="bodyMedium" style={styles.overview}>
-                        {movie.overview}
-                      </Typography>
-                    ) : (
-                      <Typography
-                        variant="bodyMedium"
-                        color={theme.colors.onSurfaceVariant}
-                        style={styles.overview}
-                      >
-                        No overview yet.
-                      </Typography>
-                    )}
-                  </Motion.View>
-                </Stagger>
+              <View
+                style={[styles.topScrim, { height: headerSpace }]}
+                pointerEvents="none"
+              >
+                <Scrim color={theme.colors.scrim} stops={TOP_SCRIM} />
               </View>
             </View>
 
             {/*
-              Both rows sit outside the body box, not inside the text column.
-              They span the full width, and the text column is only the
-              right-hand half once the layout splits in two.
-
-              They also pad themselves, which is why neither is wrapped in
-              `styles.body` — the 16 would double. Each returns nothing for an
-              empty list, so a film with no cast and no recommendation ends at
-              the overview.
+              The body is capped and centred, so a wide window widens the
+              margins rather than the text. The negative margin is the overlap:
+              it lifts the whole block over the lower edge of the artwork.
             */}
-            <CastRow title="Cast" cast={movie.cast} />
-            <MovieRow title="More like this" movies={movie.recommendations} />
+            <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
+              <Stagger interval={STAGGER_INTERVAL}>
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                  style={styles.identity}
+                >
+                  {/*
+                    The poster, at every width.
+
+                    It is the anchor of the masthead rather than a second copy
+                    of the artwork: it overlaps the backdrop, carries the
+                    portrait shape the film is sold under, and gives the title
+                    beside it a baseline to sit on. A film with no poster keeps
+                    the arrangement and loses only the image — an empty
+                    rectangle reads as a broken one.
+                  */}
+                  {poster ? (
+                    <Image
+                      testID="detail-poster"
+                      source={{ uri: poster }}
+                      style={[
+                        styles.poster,
+                        {
+                          width: posterWidth,
+                          borderRadius: theme.shape.cornerLarge,
+                          backgroundColor: theme.colors.surfaceVariant,
+                          borderColor: theme.colors.outlineVariant,
+                        },
+                      ]}
+                      resizeMode="cover"
+                    />
+                  ) : null}
+
+                  <View style={styles.identityText}>
+                    {/* The larger variant only where there is room for it. On a
+                        phone the headline would wrap a long title to three lines. */}
+                    <Typography
+                      variant={wide ? 'headlineLargeEmphasized' : 'titleLargeEmphasized'}
+                    >
+                      {movie.title}
+                    </Typography>
+
+                    <View style={styles.metaRow}>
+                      {/*
+                        The rating as a badge rather than the first segment of a
+                        meta line. It is the one number a viewer scans for, and
+                        the cards already print the joined line where there is
+                        no room to set it apart.
+                      */}
+                      {rating ? (
+                        <View
+                          style={[
+                            styles.rating,
+                            {
+                              backgroundColor: theme.colors.primaryContainer,
+                              borderRadius: theme.shape.cornerFull,
+                            },
+                          ]}
+                        >
+                          <Typography
+                            variant="labelLargeEmphasized"
+                            color={theme.colors.onPrimaryContainer}
+                          >
+                            {`★ ${rating}`}
+                          </Typography>
+                        </View>
+                      ) : null}
+
+                      {release ? (
+                        <Typography
+                          variant="labelLarge"
+                          color={theme.colors.onSurfaceVariant}
+                        >
+                          {release}
+                        </Typography>
+                      ) : null}
+                    </View>
+                  </View>
+                </Motion.View>
+
+                {/*
+                  The trailer, when the film has one on YouTube. `lib/api.ts`
+                  chose it, so this line has no filtering to do and `null` means
+                  the button is simply absent.
+
+                  The link leaves the app. There is no in-app player: a YouTube
+                  video needs the YouTube frame, so an embedded one would take a
+                  new dependency and still hand playback to YouTube. `openURL`
+                  opens the YouTube app when it is installed and the browser
+                  when it is not.
+
+                  A new child needs no delay of its own — `<Stagger>` re-derives
+                  the whole cascade from render order, so the lines below this
+                  one move back by one interval on their own.
+                */}
+                {movie.trailer ? (
+                  <Motion.View
+                    initial={{ opacity: 0, translateY: 16 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition="enter"
+                    style={styles.actions}
+                  >
+                    <Button
+                      variant="filled"
+                      size="m"
+                      leadingIcon="play"
+                      onPress={() => openTrailer(movie.trailer)}
+                    >
+                      Watch trailer
+                    </Button>
+                  </Motion.View>
+                ) : null}
+
+                {/*
+                  The genre row, which doubles as navigation: each chip opens the
+                  genre screen. The film carries its own genres from the detail
+                  endpoint, so this needs no second request.
+
+                  `inset={0}` because the body already pads itself — the default
+                  16 is the home screen's, where the row spans the full width.
+                  GenreChips renders nothing for an empty list, so a film with no
+                  genres leaves no gap.
+                */}
+                <GenreChips genres={movie.genres} inset={0} gutter={0} />
+
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                  style={styles.section}
+                >
+                  {/*
+                    A heading, so the overview is a section like the two rows
+                    below it rather than a paragraph that starts without warning.
+                  */}
+                  <Typography variant="titleMediumEmphasized">Overview</Typography>
+
+                  {/*
+                    The tagline, when the film has one. TMDB sends `""` for a
+                    film with none, and `lib/api.ts` keeps that sentinel — so
+                    this is a line that is simply absent rather than an empty row.
+                  */}
+                  {movie.tagline ? (
+                    <Typography
+                      variant="bodyLarge"
+                      color={theme.colors.primary}
+                      style={styles.tagline}
+                    >
+                      {movie.tagline}
+                    </Typography>
+                  ) : null}
+
+                  {movie.overview ? (
+                    <Typography variant="bodyMedium" style={styles.overview}>
+                      {movie.overview}
+                    </Typography>
+                  ) : (
+                    <Typography
+                      variant="bodyMedium"
+                      color={theme.colors.onSurfaceVariant}
+                      style={styles.overview}
+                    >
+                      No overview yet.
+                    </Typography>
+                  )}
+                </Motion.View>
+              </Stagger>
+            </View>
+
+            {/*
+              Both rows sit outside the body box, not inside it: they span the
+              full width and pad themselves, so `styles.body` would double the
+              16. The cap is applied on its own, so on a wide window the rows
+              start where the text above them does instead of at the window edge.
+
+              Each returns nothing for an empty list, so a film with no cast and
+              no recommendation ends at the overview.
+            */}
+            <View style={[styles.bodyCap, styles.rows]}>
+              <CastRow title="Cast" cast={movie.cast} />
+              <MovieRow title="More like this" movies={movie.recommendations} />
+            </View>
           </Motion.ScrollView>
         ) : null}
       </Presence>
@@ -472,42 +529,44 @@ export default function MovieScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  centered: { marginTop: 48, alignItems: 'center' },
-  // Clips the hero so the pull-down stretch cannot paint over the body.
-  heroClip: { width: '100%', overflow: 'hidden' },
-  backdrop: {
-    // The image fills the clip box rather than setting its own height from a
-    // 16:9 aspect ratio. The box is capped on a wide window, so an aspect ratio
-    // here would lay the image out taller than the box and the clip would cut
-    // the frame instead of fitting it. `resizeMode="cover"` keeps the ratio.
-    width: '100%',
-    height: '100%',
-    // Anchors the stretch to the top edge. The default origin is the center,
-    // which would pull the image down off the app bar as it grows and leave a
-    // gap at the top — the opposite of the intended effect.
-    transformOrigin: 'top',
-  },
+  centered: { alignItems: 'center' },
+  // Clips the scrim and the zoom-out entrance to the frame. Without it the
+  // image starts 6% wider than the window and widens the page on web.
+  heroArt: { width: '100%', overflow: 'hidden' },
   fallback: { alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: 16, paddingTop: 16, gap: 6 },
+  // Pinned to the top of the frame rather than filling it, so the wash under
+  // the status bar ends where the header does.
+  topScrim: { position: 'absolute', top: 0, left: 0, right: 0 },
+  body: { paddingHorizontal: 16, gap: 20 },
   // Caps the measure and centres what is left over. `width: '100%'` is required
   // with `maxWidth`: without it the box shrinks to its content on a narrow
   // window, and `alignSelf: 'center'` then centres a column narrower than the
   // screen instead of filling it.
   bodyCap: { width: '100%', maxWidth: MAX_BODY_WIDTH, alignSelf: 'center' },
-  // The two-column arrangement. `alignItems: 'flex-start'` keeps the poster at
-  // its own height rather than stretching it to match the text column.
-  bodyRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 28, paddingTop: 28 },
+  // The poster beside the title. `flex-end` sets the two on one baseline, so
+  // the title sits at the foot of the poster however tall either one is.
+  identity: { flexDirection: 'row', alignItems: 'flex-end', gap: 16 },
   // `flexBasis: 0` with `flex: 1`: the column takes the leftover width rather
-  // than sizing to its content, so a long overview cannot squeeze the poster.
-  textColumn: { flex: 1, flexBasis: 0, gap: 6 },
-  // 2:3 is the TMDB poster ratio, the same one MovieCard's media box uses.
-  poster: { width: POSTER_WIDTH, aspectRatio: 2 / 3 },
+  // than sizing to its content, so a long title cannot squeeze the poster.
+  identityText: { flex: 1, flexBasis: 0, gap: 10 },
+  // 2:3 is the TMDB poster ratio, the same one MovieCard's media box uses. The
+  // hairline separates the poster from a dark frame behind it.
+  poster: { aspectRatio: 2 / 3, borderWidth: StyleSheet.hairlineWidth },
+  // The loading stand-in for it: the same box, on the page colour, clipped so
+  // the block inside keeps the corner.
+  posterPlaceholder: { aspectRatio: 2 / 3, overflow: 'hidden' },
+  // `wrap`, because the badge and the date line together outrun a narrow column
+  // beside a poster.
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  rating: { paddingHorizontal: 10, paddingVertical: 3 },
   // `alignSelf` keeps the button at its own width. A Button in a column with
-  // `flexBasis: 0` stretches to the whole measure otherwise, which reads as a
-  // banner rather than an action.
-  trailerRow: { alignSelf: 'flex-start', marginTop: 8 },
-  tagline: { fontStyle: 'italic', marginTop: 2 },
-  overview: { marginTop: 10 },
-  skeletonParagraph: { marginTop: 10 },
-  skeletonChips: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  // `align: stretch` spans the whole measure, which reads as a banner rather
+  // than an action.
+  actions: { alignSelf: 'flex-start' },
+  section: { gap: 8 },
+  tagline: { fontStyle: 'italic' },
+  overview: { marginTop: 2 },
+  // The gap the body already has, carried over the seam into the rows below.
+  rows: { marginTop: 28 },
+  skeletonChips: { flexDirection: 'row', gap: 8 },
 })

@@ -55,19 +55,21 @@ beforeEach(() => {
   openURL.mockResolvedValue(true)
 })
 
-it('shows the title, the meta line, and the overview', async () => {
+it('shows the title, the rating, the date line, and the overview', async () => {
   mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
   getMovie.mockResolvedValue(movie)
 
   const screen = renderWithProviders(<MovieScreen />)
 
-  // The title renders twice on purpose: once in the app bar and once in the
-  // body. `findAllByText` states that, where `findByText` would fail on the
-  // second copy and read as a defect.
+  // The title renders twice on purpose: once in the masthead and once in the
+  // floating header, which fades it in as the masthead scrolls away. Only one
+  // of the two is ever visible. `findAllByText` states that, where
+  // `findByText` would fail on the second copy and read as a defect.
   expect(await screen.findAllByText(movie.title)).toHaveLength(2)
-  // The runtime joins the rating and the year, which is what the detail endpoint
-  // adds over a list entry.
-  expect(screen.getByText('★ 8.2 · 2024 · 2h 47m')).toBeTruthy()
+  // The rating stands on its own as a badge, and the year and the runtime are
+  // the line beside it. The cards keep the joined form — see lib/format.ts.
+  expect(screen.getByText('★ 8.2')).toBeTruthy()
+  expect(screen.getByText('2024 · 2h 47m')).toBeTruthy()
   expect(screen.getByText(movie.overview)).toBeTruthy()
 })
 
@@ -174,29 +176,31 @@ it('renders a film that has no genres', async () => {
 })
 
 // TMDB reports an unknown runtime as null for an announced film with no cut yet.
-// lib/api.ts maps that to 0, and the meta line must then drop the segment rather
+// lib/api.ts maps that to 0, and the date line must then drop the segment rather
 // than print "0m".
-it('drops the runtime from the meta line when the film has none', async () => {
+it('drops the runtime from the date line when the film has none', async () => {
   const noRuntime = { ...movie, runtime: 0 }
   mockUseLocalSearchParams.mockReturnValue({ id: String(noRuntime.id) })
   getMovie.mockResolvedValue(noRuntime)
 
   const screen = renderWithProviders(<MovieScreen />)
 
-  expect(await screen.findByText('★ 8.2 · 2024')).toBeTruthy()
+  expect(await screen.findByText('2024')).toBeTruthy()
+  expect(screen.queryByText('2024 · 2h 47m')).toBeNull()
 })
 
-// The test renderer reports a 390pt window, which is `compact`. The poster
-// column belongs to the wide layout only: on a phone the backdrop is already the
-// hero, and a second image of the same film would push the overview off screen.
-it('does not render the poster column on a narrow window', async () => {
+// The poster is part of the masthead at every width: it overlaps the backdrop
+// and gives the title a baseline to sit on. It used to belong to the wide
+// layout alone, where it was a second image stacked under the backdrop.
+it('renders the poster in the masthead on a narrow window', async () => {
   mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
   getMovie.mockResolvedValue(movie)
 
   const screen = renderWithProviders(<MovieScreen />)
 
   await screen.findByText(movie.overview)
-  expect(screen.queryByTestId('detail-poster')).toBeNull()
+  expect(screen.getByTestId('detail-poster')).toBeTruthy()
+  expect(screen.getByTestId('detail-backdrop')).toBeTruthy()
 })
 
 /**
@@ -308,7 +312,7 @@ describe('on a wide window', () => {
     jest.restoreAllMocks()
   })
 
-  it('renders the poster beside the text', async () => {
+  it('renders the poster beside the title', async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
     getMovie.mockResolvedValue(movie)
 
@@ -319,8 +323,8 @@ describe('on a wide window', () => {
   })
 
   // A film with no poster path gets no placeholder box: an empty rectangle beside
-  // the title reads as a broken image. The text column takes the width instead.
-  it('omits the poster column for a film with no poster', async () => {
+  // the title reads as a broken image. The title column takes the width instead.
+  it('omits the poster for a film with no poster', async () => {
     const noPoster = { ...movie, poster_path: null }
     mockUseLocalSearchParams.mockReturnValue({ id: String(noPoster.id) })
     getMovie.mockResolvedValue(noPoster)

@@ -38,3 +38,16 @@ export const metaLine = (voteAverage: number, releaseDate: string, runtime = 0) 
   const parts = [rating ? `★ ${rating}` : null, year, length].filter(Boolean)
   return parts.length ? parts.join(' · ') : 'Not rated'
 }
+
+/**
+ * The year and the runtime, as `2024 · 2h 47m`.
+ *
+ * The detail screen shows the rating as its own badge, so it needs the rest of
+ * the meta line without it. `metaLine` above stays as it is: the cards have one
+ * line for all three facts and no room for a badge.
+ *
+ * Returns `''` when the film has neither — an announced film with no date and
+ * no cut. The caller then renders no line at all rather than a stray separator.
+ */
+export const releaseLine = (releaseDate: string, runtime = 0) =>
+  [releaseYear(releaseDate), runtimeLabel(runtime)].filter(Boolean).join(' · ')
