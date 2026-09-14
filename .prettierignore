@@ -3,6 +3,7 @@ node_modules/
 dist/
 web-build/
 coverage/
+.jest-cache/
 yarn.lock
 expo-env.d.ts
 assets/

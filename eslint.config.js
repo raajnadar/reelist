@@ -74,6 +74,7 @@ module.exports = [
       'dist/',
       'web-build/',
       'coverage/',
+      '.jest-cache/',
       'expo-env.d.ts',
       // The proxy is server code and deploys on its own.
       'proxy/.vercel/',

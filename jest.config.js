@@ -1,3 +1,8 @@
+// Both projects write their transform cache here rather than to the system
+// temporary directory. A repository path can be restored in CI, which turns a
+// cold run into a warm one. See .github/workflows/ci.yml.
+const cacheDirectory = '<rootDir>/.jest-cache'
+
 // `jest-expo` supplies the Expo SDK 57 preset: the React Native transform, the
 // module mocks, and the platform-aware resolver. Do not replace it with a plain
 // `babel-jest` setup — the app imports native modules that only this preset
@@ -7,6 +12,7 @@
 // own project in a node environment. `yarn test` still runs both.
 const proxyProject = {
   displayName: 'proxy',
+  cacheDirectory,
   testEnvironment: 'node',
   testMatch: ['<rootDir>/proxy/**/*.test.ts'],
   // babel-preset-expo is already a dependency and strips the types. The proxy
@@ -19,6 +25,7 @@ const proxyProject = {
 const appProject = {
   displayName: 'app',
   preset: 'jest-expo',
+  cacheDirectory,
 
   // The preset ignores node_modules by default, but every React Native package
   // ships untranspiled ESM. These have to go through Babel or the run fails on
@@ -65,6 +72,21 @@ const appProject = {
 
 module.exports = {
   projects: [appProject, proxyProject],
+
+  // Jest defaults to one worker for each core but one. That is the wrong shape
+  // for this suite: every worker is a separate process, so each one transforms
+  // and requires the whole React Native module graph again. The duplicated work
+  // costs more than the parallelism returns. Measured on 8 cores, 328 tests:
+  //
+  //   workers     | cold cache | warm cache
+  //   ------------|------------|-----------
+  //   7 (default) |       87 s |      20 s
+  //   4           |       56 s |      19 s
+  //   2           |       51 s |      21 s
+  //
+  // Two workers still hold both projects in flight, and a machine with more
+  // cores gains nothing here.
+  maxWorkers: 2,
   collectCoverageFrom: [
     'lib/**/*.ts',
     'components/**/*.tsx',

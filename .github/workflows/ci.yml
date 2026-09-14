@@ -60,6 +60,20 @@ jobs:
         if: ${{ !cancelled() }}
         run: yarn format:check
 
+      # Jest transforms the whole React Native module graph on a cold cache,
+      # which costs more than every test in the suite together. The cache is a
+      # pure function of the dependencies and the Babel and Jest configuration,
+      # so the key holds those three files. A cache hit makes the run about
+      # three times faster. `restore-keys` still gives a partial hit after a
+      # dependency bump, because Jest re-transforms only what changed.
+      - name: Restore the Jest cache
+        if: ${{ !cancelled() }}
+        uses: actions/cache@v4
+        with:
+          path: .jest-cache
+          key: jest-${{ runner.os }}-${{ hashFiles('yarn.lock', 'proxy/yarn.lock', 'babel.config.js', 'jest.config.js') }}
+          restore-keys: jest-${{ runner.os }}-
+
       # The only check that runs the code instead of reading it. `--ci` fails on
       # a missing snapshot rather than writing one, so a snapshot never lands in
       # the repository from a CI run.
