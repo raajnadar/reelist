@@ -2,7 +2,7 @@ import { AppBar } from '@rootnative/components/appbar'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -15,13 +15,9 @@ import { MovieCard, CARD_WIDTH } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMoviesByGenre } from '../../lib/api'
-import {
-  missingFailure,
-  toFailure,
-  type Failure,
-  type FailureKind,
-} from '../../lib/errors'
-import type { Movie } from '../../lib/types'
+import { missingFailure, type FailureKind } from '../../lib/errors'
+import { useResource } from '../../lib/useResource'
+import type { Movie, Paged } from '../../lib/types'
 
 const GAP = 12
 const PADDING = 16
@@ -96,96 +92,73 @@ export default function GenreScreen() {
   const params = useLocalSearchParams<{ id: string; name?: string }>()
   const genreId = Number(params.id)
 
+  // A route parameter is a string from an untrusted source: a deep link can
+  // carry anything. Derived from the param rather than stored, because a bad id
+  // needs no request and no loading state.
+  const validId = Number.isInteger(genreId) && genreId > 0
+
   /**
-   * Everything one genre's request produced, tagged with the genre it belongs
-   * to.
+   * The first page.
    *
-   * Tagged rather than reset, which is the search screen's structure and for
-   * the same two reasons. Clearing state at the top of the effect would set
-   * state synchronously during the commit and cascade a render; and holding the
-   * films, the page, and the id in one value means they can never disagree, as
-   * four separate `useState` calls could when a second genre opens over a first.
+   * A null key while the id is bad: a deep link can carry anything, TMDB
+   * answers an unparseable `with_genres` with an unfiltered list, and a request
+   * that cannot be trusted is better not sent. The failure for that case is
+   * built below, where it is found.
    */
-  const [outcome, setOutcome] = useState<{
+  const first = useResource<Paged>(
+    validId ? `genre:${genreId}` : null,
+    () => getMoviesByGenre(genreId, 1),
+    'Could not load movies',
+  )
+
+  /**
+   * The pages after the first, tagged with the genre they belong to.
+   *
+   * They stay outside the hook because they are not the answer to one request:
+   * the hook holds one answer per key, and this is a list that grows as the
+   * reader scrolls. Leaving the first page with the hook is what lets a return
+   * to the same genre draw immediately.
+   */
+  const [appended, setAppended] = useState<{
     genreId: number
     movies: Movie[]
     page: number
     totalPages: number
-    failure: Failure | null
   } | null>(null)
 
   const [loadingMore, setLoadingMore] = useState(false)
 
-  // A route parameter is a string from an untrusted source: a deep link can
-  // carry anything. TMDB answers an unparseable `with_genres` with an
-  // unfiltered list, so the check happens here rather than being left to a
-  // response that looks successful.
-  const validId = Number.isInteger(genreId) && genreId > 0
-
   /**
-   * Bumped by the retry button, and read by the first-page effect as a
-   * dependency. `loadMore` needs no equivalent: a failed later page keeps the
-   * films already on screen and tries again on the next scroll to the end.
+   * The genre on screen right now, readable from inside a promise.
+   *
+   * `loadMore` is a callback rather than an effect, so it has no cleanup to
+   * cancel a request when the reader opens another genre. This is what a late
+   * page is checked against.
    */
-  const [attempt, setAttempt] = useState(0)
+  const genreRef = useRef(genreId)
+  useEffect(() => {
+    genreRef.current = genreId
+  }, [genreId])
+
+  // The appended pages count only while they describe the genre being shown.
+  const more = appended && appended.genreId === genreId ? appended : null
+  // The first page dedupes the rest. TMDB pages a ranking, not a snapshot, so a
+  // film can move between pages while the reader scrolls and arrive twice.
+  const movies = mergePages(first.data?.results ?? [], more?.movies ?? [])
+  const page = more?.page ?? first.data?.page ?? 1
+  const totalPages = more?.totalPages ?? first.data?.total_pages ?? 1
+
+  // A bad route parameter is a failure with no request behind it, so it is
+  // classified where it is found rather than lifted from a rejection.
+  const failure = validId
+    ? first.failure
+    : missingFailure('That link does not point at a genre.')
+  const loading = first.loading
 
   const retry = () => {
-    // Same as the search screen: `loading` is derived from "a genre with no
-    // answer yet", so clearing the outcome is what puts the placeholders back.
-    setOutcome(null)
-    setAttempt((n) => n + 1)
+    setAppended(null)
+    first.reload()
   }
-
-  // The first page. Keyed on the id so opening a second genre from a deep link
-  // reloads rather than showing the previous genre's films.
-  useEffect(() => {
-    if (!validId) return
-
-    let active = true
-
-    getMoviesByGenre(genreId, 1)
-      .then((paged) => {
-        if (!active) return
-        setOutcome({
-          genreId,
-          movies: paged.results,
-          page: paged.page,
-          totalPages: paged.total_pages,
-          failure: null,
-        })
-      })
-      .catch((e: unknown) => {
-        if (!active) return
-        setOutcome({
-          genreId,
-          movies: [],
-          page: 1,
-          totalPages: 1,
-          // The same contract as the other screens: a MissingProxyUrlError and
-          // a TmdbError each carry a message written for the person reading it.
-          failure: toFailure(e, 'Could not load movies'),
-        })
-      })
-
-    return () => {
-      active = false
-    }
-  }, [genreId, validId, attempt])
-
-  // The outcome counts only while it describes the genre being shown. An
-  // outcome for the previous genre is ignored rather than cleared.
-  const current = outcome && outcome.genreId === genreId ? outcome : null
-  const movies = current?.movies ?? []
-  const page = current?.page ?? 1
-  const totalPages = current?.totalPages ?? 1
-  // Derived, not stored: a bad id is known at render time, and there is a
-  // request outstanding whenever a valid genre has no outcome yet. A bad route
-  // parameter is a failure with no request behind it, so it is classified where
-  // it is found rather than lifted from a rejection.
-  const failure = validId
-    ? (current?.failure ?? null)
-    : missingFailure('That link does not point at a genre.')
-  const loading = validId && !current
 
   /**
    * The next page, requested when the grid nears its end.
@@ -202,24 +175,23 @@ export default function GenreScreen() {
     if (page >= totalPages) return
 
     setLoadingMore(true)
-    const next = page + 1
 
-    getMoviesByGenre(genreId, next)
+    getMoviesByGenre(genreId, page + 1)
       .then((paged) => {
-        // Written through the updater so the merge reads the films actually on
-        // screen. The genre is checked again inside it: a page can land after
-        // the user opened a different genre, and appending it there would show
-        // one genre's films under another's name.
-        setOutcome((prev) =>
-          prev && prev.genreId === genreId
-            ? {
-                ...prev,
-                movies: mergePages(prev.movies, paged.results),
-                page: paged.page,
-                totalPages: paged.total_pages,
-              }
-            : prev,
-        )
+        // A page that lands after the reader opened another genre is dropped.
+        // Appending it would show one genre's films under another's name.
+        if (genreRef.current !== genreId) return
+        setAppended((prev) => ({
+          genreId,
+          // Read through the updater, so the merge sees the pages actually
+          // stored. A list left over from a previous genre is not one of them.
+          movies: mergePages(
+            prev && prev.genreId === genreId ? prev.movies : [],
+            paged.results,
+          ),
+          page: paged.page,
+          totalPages: paged.total_pages,
+        }))
       })
       .catch(() => {
         // A failed page is not a failed screen. The films already loaded stay,

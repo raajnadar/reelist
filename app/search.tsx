@@ -3,16 +3,17 @@ import { TextField } from '@rootnative/components/text-field'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard, CARD_WIDTH } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { searchMovies } from '../lib/api'
-import { toFailure, type Failure, type FailureKind } from '../lib/errors'
+import { type FailureKind } from '../lib/errors'
 import { useDebounced } from '../lib/useDebounced'
-import type { Movie } from '../lib/types'
+import { useResource } from '../lib/useResource'
+import type { Paged } from '../lib/types'
 
 const GAP = 12
 const PADDING = 16
@@ -64,76 +65,29 @@ export default function SearchScreen() {
   const trimmed = debouncedQuery.trim()
 
   /**
-   * The finished answer to one query, or null when no search has finished.
+   * The search, or nothing while the box is empty.
    *
-   * `query` is stored beside the data rather than compared against the live box,
-   * which is what makes a stale render impossible: an outcome is only shown when
-   * its `query` still matches the one being searched. Holding the two in one
-   * state value also means they can never disagree, which three separate
-   * `useState` calls could.
+   * A null key is what makes an empty box not a search: the hook sends no
+   * request and reports no failure, and the prompt below is drawn from the
+   * absence of an answer rather than from a cleared state.
+   *
+   * The key carries the query, so an answer is only ever drawn against the
+   * query it belongs to. Two searches can be in flight when a slow request for
+   * "int" resolves after a fast one for "interstellar"; the tag is what keeps
+   * the older answer from contradicting the box.
    */
-  const [outcome, setOutcome] = useState<{
-    query: string
-    results: Movie[]
-    failure: Failure | null
-  } | null>(null)
+  const search = useResource<Paged>(
+    trimmed ? `search:${trimmed}` : null,
+    () => searchMovies(trimmed),
+    'Could not search movies',
+  )
 
-  /**
-   * Bumped by the retry button. The effect below reads it as a dependency, so a
-   * press re-runs the same search without a change to the box.
-   */
-  const [attempt, setAttempt] = useState(0)
-
-  const retry = () => {
-    // Clearing the outcome is what puts the placeholders back: `loading` below
-    // is derived from "a query with no answer yet", not stored.
-    setOutcome(null)
-    setAttempt((n) => n + 1)
-  }
-
-  useEffect(() => {
-    // An empty box is not a search. Returning before any setState leaves the
-    // last outcome in place, and `current` below ignores it because its query no
-    // longer matches — so the screen falls back to the prompt with no reset and
-    // no cascading render.
-    if (!trimmed) return
-
-    let active = true
-
-    searchMovies(trimmed)
-      .then((paged) => {
-        // The guard keeps the answers in order. Two searches can be in flight
-        // when a slow request for "int" resolves after a fast one for
-        // "interstellar"; without it the older answer would overwrite the newer
-        // one and the grid would contradict the box.
-        if (!active) return
-        setOutcome({ query: trimmed, results: paged.results, failure: null })
-      })
-      .catch((e: unknown) => {
-        if (!active) return
-        setOutcome({
-          query: trimmed,
-          results: [],
-          // Same contract as the other screens: a MissingProxyUrlError and a
-          // TmdbError each carry a message written for the person reading it,
-          // and toFailure says which of the two a retry can clear.
-          failure: toFailure(e, 'Could not search movies'),
-        })
-      })
-
-    return () => {
-      active = false
-    }
-  }, [trimmed, attempt])
-
-  // The outcome counts only while it describes the query in the box.
-  const current = outcome && outcome.query === trimmed ? outcome : null
-  // Derived, not stored: there is a query to answer and no answer for it yet.
-  // A `loading` state set inside the effect would be the cascading render the
-  // structure above avoids.
-  const loading = Boolean(trimmed) && !current
-  const failure = current?.failure ?? null
-  const results = current?.results ?? []
+  const failure = search.failure
+  const results = search.data?.results ?? []
+  // Searched, and the answer is in. This is what separates "no matches" from
+  // the opening prompt: both show an empty grid, so a count of zero cannot
+  // tell them apart.
+  const searched = search.data !== null
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
@@ -169,7 +123,7 @@ export default function SearchScreen() {
       </View>
 
       <Presence>
-        {loading ? (
+        {search.loading ? (
           // A grid of placeholders, not a spinner: it holds the shape the
           // results will take, so the layout does not jump when they arrive.
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
@@ -185,7 +139,7 @@ export default function SearchScreen() {
             body={failure.message}
             actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
             actionIcon="refresh"
-            onAction={failure.kind === 'transient' ? retry : undefined}
+            onAction={failure.kind === 'transient' ? search.reload : undefined}
           />
         ) : results.length ? (
           <Motion.View
@@ -211,11 +165,9 @@ export default function SearchScreen() {
               showsVerticalScrollIndicator={false}
             />
           </Motion.View>
-        ) : current ? (
+        ) : searched ? (
           /*
-            Searched, and found nothing. `current` is the signal that separates
-            this from the prompt below: both states show an empty grid, so a
-            count of zero cannot tell them apart.
+            Searched, and found nothing.
 
             The action clears the box rather than repeating the search. The
             request succeeded — there is nothing to retry — and a new query is

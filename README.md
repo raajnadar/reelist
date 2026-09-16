@@ -169,6 +169,8 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent            |
 | `lib/motion.test.ts`                | The transition tokens and the stagger ceiling          |
 | `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value          |
+| `lib/useResource.test.ts`           | Stale answers, the store, the retry, and the idle key  |
+| `lib/resourceCache.test.ts`         | The life of an entry, and the eviction at the ceiling  |
 | `lib/errors.test.ts`                | Which failures may offer a retry, and which may not    |
 | `components/MovieCard.test.tsx`     | The poster size and the fixed card height              |
 | `components/CastCard.test.tsx`      | The photo size, and both reserved text heights         |
@@ -224,6 +226,8 @@ lib/
 ├── errors.ts            # Sorts a failure into transient, setup, or missing
 ├── motion.ts            # The shared transition tokens and the stagger
 ├── useDebounced.ts      # Delays a value until it stops changing
+├── useResource.ts       # Loads one key, and keeps the answer
+├── resourceCache.ts     # The store behind useResource
 └── test-utils.tsx       # render() wrapped in the app's providers
 proxy/                   # The TMDB proxy. Deploys on its own
 ├── api/tmdb.ts          # The function that holds the key
@@ -272,6 +276,37 @@ send a developer to check their network.
 
 `lib/types.ts` uses the TMDB field names — `poster_path`, `vote_average` — on
 purpose. The mock data and the live data share one type.
+
+### How a screen loads
+
+Every screen asks for its data through `useResource`, and no screen writes a
+fetch effect of its own.
+
+Each of the four wrote the same block before it: a state for the data, one for
+the failure, one for the loading flag, a counter the retry button raised, and an
+`active` flag that kept a late answer off a screen the reader had left. Three of
+them also tagged the stored answer with the id or the query it described,
+because either can change while a request is in flight.
+
+```ts
+const detail = useResource(validId ? `movie:${movieId}` : null, () => getMovie(movieId), 'Could not load the movie')
+```
+
+The hook returns `data`, `failure`, `loading`, and `reload`. A `null` key is an
+idle resource: it sends no request and reports no failure, which is what makes
+an empty search box not a search, and a link that names no film not a loading
+screen.
+
+`lib/resourceCache.ts` keeps each answer for five minutes, under the ten minutes
+the proxy caches at its edge. A return to the home screen therefore draws the
+rows on the first frame instead of loading them again. After five minutes the
+old copy stays on screen while the new request runs, and a failed refresh leaves
+it there rather than replacing films the reader can see with an error.
+
+One thing stayed in a screen. `app/genre/[id].tsx` appends page after page as
+the reader scrolls, and that is a growing list rather than the answer to one
+request. The hook holds its first page, which is why a return to the same genre
+is immediate.
 
 ## Technology
 

@@ -64,7 +64,10 @@ export default [
     // Jest injects its globals rather than exporting them, so the linter needs
     // them declared. This replaces the `/* eslint-env jest */` comment form,
     // which ESLint 10 rejects.
-    files: ['**/*.test.ts', '**/*.test.tsx', 'lib/test-utils.tsx'],
+    //
+    // jest.setup.js is matched by the Node block above as well, and the two
+    // sets merge: it calls `require` and `beforeEach` in the same file.
+    files: ['**/*.test.ts', '**/*.test.tsx', 'lib/test-utils.tsx', 'jest.setup.js'],
     languageOptions: {
       globals: globals.jest,
     },

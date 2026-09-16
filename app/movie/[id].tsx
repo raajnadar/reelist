@@ -5,7 +5,6 @@ import { useBreakpointValue, useTheme } from '@rootnative/core'
 import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
 import { openURL } from 'expo-linking'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CastRow } from '../../components/CastRow'
@@ -17,12 +16,8 @@ import { RemoteImage } from '../../components/RemoteImage'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMovie } from '../../lib/api'
-import {
-  missingFailure,
-  toFailure,
-  type Failure,
-  type FailureKind,
-} from '../../lib/errors'
+import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
+import { useResource } from '../../lib/useResource'
 import { ratingLabel, releaseLine } from '../../lib/format'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import type { MovieDetail, Video } from '../../lib/types'
@@ -137,55 +132,38 @@ export default function MovieScreen() {
   const movieId = Number(id)
   const validId = Number.isInteger(movieId)
 
-  const [movie, setMovie] = useState<MovieDetail | null>(null)
-  const [loading, setLoading] = useState(validId)
-  const [failure, setFailure] = useState<Failure | null>(
-    // A bad route parameter is a failure with no request behind it, so it is
-    // classified here as permanent rather than lifted from a rejection.
-    validId ? null : missingFailure('That link does not point at a movie.'),
+  /**
+   * The film, or nothing while the id names none.
+   *
+   * A null key for a bad parameter, so a link that points at no film sends no
+   * request and shows no loading state. The failure for that case is built
+   * below, where it is found.
+   */
+  const detail = useResource<MovieDetail | null>(
+    validId ? `movie:${movieId}` : null,
+    () => getMovie(movieId),
+    'Could not load the movie',
   )
 
+  const movie = detail.data
+  const loading = detail.loading
+
   /**
-   * Bumped by the retry button, and read by the effect below as a dependency.
-   * The effect already owns the request and the `active` guard that keeps a
-   * late answer off a screen the reader has left, so a second path to the same
-   * request would only have to repeat both.
+   * What went wrong, in the order the three causes can be known.
+   *
+   * A bad route parameter is decided at render time and needs no request. A
+   * `null` answer is the 404 `lib/api.ts` returns: the id parsed and the
+   * request succeeded, so a second attempt would return the same nothing, and
+   * that makes it `missing` rather than `transient`.
    */
-  const [attempt, setAttempt] = useState(0)
+  const failure: Failure | null = !validId
+    ? missingFailure('That link does not point at a movie.')
+    : (detail.failure ??
+      (!loading && movie === null
+        ? missingFailure('TMDB has no movie with that id.')
+        : null))
 
-  const retry = () => {
-    setLoading(true)
-    setFailure(null)
-    setAttempt((n) => n + 1)
-  }
-
-  useEffect(() => {
-    if (!validId) return
-    let active = true
-
-    // Same shape as the home screen: async against static data today, ready for
-    // the network later. See the note in lib/api.ts.
-    getMovie(movieId)
-      .then((result) => {
-        if (!active) return
-        if (result) setMovie(result)
-        // A 404 from TMDB, which lib/api.ts turns into `null`. The id parsed
-        // and the request succeeded, so a second attempt would return the same
-        // nothing.
-        else setFailure(missingFailure('TMDB has no movie with that id.'))
-      })
-      .catch((e: unknown) => {
-        if (!active) return
-        setFailure(toFailure(e, 'Could not load the movie'))
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [movieId, validId, attempt])
+  const retry = detail.reload
 
   const backdrop = movie ? backdropUrl(movie.backdrop_path) : null
   const poster = movie ? posterUrl(movie.poster_path, 'w500') : null

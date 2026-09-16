@@ -3,7 +3,6 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from '../components/BrandMark'
@@ -13,7 +12,8 @@ import { MovieRow } from '../components/MovieRow'
 import { SkeletonRow } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { getGenres, getPopular, getTopRated, getTrending } from '../lib/api'
-import { toFailure, type Failure, type FailureKind } from '../lib/errors'
+import { type FailureKind } from '../lib/errors'
+import { useResource } from '../lib/useResource'
 import type { Genre, Movie } from '../lib/types'
 
 type Row = { title: string; movies: Movie[] }
@@ -40,87 +40,50 @@ export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const [rows, setRows] = useState<Row[]>([])
-  const [loading, setLoading] = useState(true)
-  const [failure, setFailure] = useState<Failure | null>(null)
-  const [genres, setGenres] = useState<Genre[]>([])
-
   /**
-   * Bumped by the retry button, and read by both effects below as a dependency.
+   * The three film rows, as one resource.
    *
-   * A counter rather than a callback that re-runs the fetch: the effects already
-   * own the request and its cleanup, and a second path to the same request would
-   * have to repeat the `active` guard that keeps a late answer off a screen the
-   * reader has left.
+   * They load together because they are drawn together: a screen with two rows
+   * and a gap is worse than a screen that waits. One failed request is a failed
+   * screen here, which is why the genres below are a second resource.
    */
-  const [attempt, setAttempt] = useState(0)
-
-  const retry = () => {
-    setLoading(true)
-    setFailure(null)
-    setAttempt((n) => n + 1)
-  }
-
-  // Promise.all and the loading state do nothing useful against static data.
-  // That is the point: when lib/api.ts starts hitting the network, this screen
-  // already handles the latency and the failure.
-  useEffect(() => {
-    let active = true
-
-    Promise.all([getTrending(), getPopular(), getTopRated()])
-      .then(([trending, popular, topRated]) => {
-        if (!active) return
-        setRows([
-          { title: 'Trending this week', movies: trending.results },
-          { title: 'Popular', movies: popular.results },
-          { title: 'Top rated', movies: topRated.results },
-        ])
-      })
-      .catch((e: unknown) => {
-        if (!active) return
-        // A MissingProxyUrlError and a TmdbError both carry a message written
-        // for the person who sees it: the first says how to set the proxy URL,
-        // the second repeats what TMDB reported. toFailure also says which of
-        // the two a second attempt can clear. See lib/errors.ts.
-        setFailure(toFailure(e, 'Could not load movies'))
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [attempt])
+  const rows = useResource<Row[]>(
+    'home:rows',
+    async () => {
+      const [trending, popular, topRated] = await Promise.all([
+        getTrending(),
+        getPopular(),
+        getTopRated(),
+      ])
+      return [
+        { title: 'Trending this week', movies: trending.results },
+        { title: 'Popular', movies: popular.results },
+        { title: 'Top rated', movies: topRated.results },
+      ]
+    },
+    'Could not load movies',
+  )
 
   /**
    * The genres load on their own, deliberately not inside the Promise.all above.
    *
    * Joining them would tie the whole screen to the weakest request: one failed
-   * genre call would take the `.catch` branch and replace three loaded film rows
-   * with an error message. Here a failure only empties the list, and GenreChips
-   * renders nothing for an empty list — so the chips are simply absent and the
-   * rest of the screen is untouched.
+   * genre call would take the failure branch and replace three loaded film rows
+   * with an error message. Here a failure only leaves the list empty, and
+   * GenreChips renders nothing for an empty list — so the chips are simply
+   * absent and the rest of the screen is untouched. Its `failure` is read by
+   * nobody for that reason.
    */
-  useEffect(() => {
-    let active = true
+  const genres = useResource<Genre[]>('home:genres', getGenres, 'Could not load genres')
 
-    getGenres()
-      .then((list) => {
-        if (active) setGenres(list)
-      })
-      .catch(() => {
-        // Swallowed on purpose. There is no message to show for a missing
-        // shortcut row, and reporting it would suggest the screen is broken.
-      })
+  const retry = () => {
+    rows.reload()
+    // Reloaded as well, so a reader who presses the button after a network drop
+    // does not get the rows back and keep an empty chip row for the session.
+    genres.reload()
+  }
 
-    return () => {
-      active = false
-    }
-    // `attempt` is here so the retry button reloads the chips as well. They
-    // fail silently, so a reader who presses it after a network drop would
-    // otherwise get the rows back and keep an empty chip row for the session.
-  }, [attempt])
+  const failure = rows.failure
 
   return (
     <View
@@ -150,7 +113,7 @@ export default function HomeScreen() {
       {/* Outside the Presence block below, for the reason the search button is:
           the chips do not depend on the film rows, so they must not wait for
           them, disappear while they load, or vanish when they fail. */}
-      <GenreChips genres={genres} />
+      <GenreChips genres={genres.data ?? []} />
 
       {/*
         Presence animates the swap between the three states. Each branch needs
@@ -159,7 +122,7 @@ export default function HomeScreen() {
         as the same element as the content and neither would transition.
       */}
       <Presence>
-        {loading ? (
+        {rows.loading ? (
           <Motion.View
             key="loading"
             // No `initial`: the skeleton is on screen from the first frame, and
@@ -216,7 +179,7 @@ export default function HomeScreen() {
                 The rest stay compact rows — the scale effect loses its weight if
                 every row uses it.
               */}
-              {rows.map((row, index) =>
+              {(rows.data ?? []).map((row, index) =>
                 index === 0 ? (
                   <MovieCarousel key={row.title} title={row.title} movies={row.movies} />
                 ) : (
