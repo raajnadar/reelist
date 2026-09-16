@@ -1,9 +1,19 @@
 name: Publish EAS Update
 
+# Every action is pinned to a commit SHA, with its tag in the trailing comment.
+# A tag can be moved; a SHA cannot, so a compromised action cannot reach this
+# workflow through a re-pointed tag. The RootNative repositories pin the same
+# way. Bump with the tag comment and the SHA together, never one alone.
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+# The token only needs to read the repository. EAS authenticates with its own
+# EXPO_TOKEN secret, not with GITHUB_TOKEN.
+permissions:
+  contents: read
 
 # The QR code in the README points at the `main` channel. This job republishes
 # that channel, so the code keeps working without the image ever changing.
@@ -21,15 +31,14 @@ jobs:
     if: ${{ github.repository == 'raajnadar/reelist' }}
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Keep this version equal to .nvmrc, the engines field, and ci.yml.
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: yarn
 
-      - uses: expo/expo-github-action@v9
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # v9
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}

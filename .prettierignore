@@ -7,3 +7,7 @@ coverage/
 yarn.lock
 expo-env.d.ts
 assets/
+
+# Prettier mangles JSX inside fenced code blocks, so no repository in the org
+# formats markdown. These files are hand-written.
+*.md

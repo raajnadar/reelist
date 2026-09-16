@@ -139,7 +139,8 @@ Two guards keep this from regressing:
 | `yarn test:watch`    | Runs Jest and re-runs on a change.               |
 | `yarn test:coverage` | Runs Jest and reports coverage.                  |
 | `yarn routes:types`  | Writes the Expo Router route types by hand.      |
-| `yarn build:web`     | Exports the static web build to `dist/`.         |
+| `yarn export:web`    | Exports the static web build to `dist/`.         |
+| `yarn verify`        | Runs lint, typecheck, format:check, and test.    |
 
 CI runs `typecheck`, `lint`, `format:check`, and `test` on every push to `main`
 and on every pull request.

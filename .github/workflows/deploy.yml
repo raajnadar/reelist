@@ -1,5 +1,10 @@
 name: Deploy web to GitHub Pages
 
+# Every action is pinned to a commit SHA, with its tag in the trailing comment.
+# A tag can be moved; a SHA cannot, so a compromised action cannot reach this
+# workflow through a re-pointed tag. The RootNative repositories pin the same
+# way. Bump with the tag comment and the SHA together, never one alone.
+
 on:
   push:
     branches: [main]
@@ -25,18 +30,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Keep this version equal to .nvmrc, the engines field, and ci.yml.
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: yarn
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - uses: actions/configure-pages@v6
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
         id: pages
 
       # Pages serves a project site from a subpath, so the bundled asset URLs
@@ -50,7 +54,7 @@ jobs:
         env:
           EXPO_BASE_URL: ${{ steps.pages.outputs.base_path }}
           EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}
-        run: yarn build:web
+        run: yarn export:web
 
       # Expo Router serves one index.html and routes on the client. Pages has no
       # rewrite rule, so a deep link would 404 on reload. Copying index.html to
@@ -64,7 +68,7 @@ jobs:
       - name: Disable Jekyll
         run: touch dist/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
@@ -78,5 +82,5 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/deploy-pages@v5
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         id: deployment

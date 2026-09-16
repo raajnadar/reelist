@@ -1,10 +1,19 @@
 name: CI
 
+# Every action is pinned to a commit SHA, with its tag in the trailing comment.
+# A tag can be moved; a SHA cannot, so a compromised action cannot reach this
+# workflow through a re-pointed tag. The RootNative repositories pin the same
+# way. Bump with the tag comment and the SHA together, never one alone.
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+# The token only needs to read the repository.
+permissions:
+  contents: read
 
 # A new push to the same branch cancels the run that is already going. The last
 # commit is the only one whose result matters.
@@ -18,15 +27,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Node 24 is the current Active LTS, and the version the developers run.
-      # CI and the development machine then share one major version, so a
-      # failure here reproduces locally. Keep this number, .nvmrc, and the
-      # `engines` field in package.json equal.
-      - uses: actions/setup-node@v7
+      # The version comes from .nvmrc, so CI and the development machine cannot
+      # drift apart. Node 24 is the current Active LTS. Keep .nvmrc and the
+      # `engines` field in package.json equal; no workflow repeats the number.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: yarn
 
       # --frozen-lockfile makes the job fail if package.json and yarn.lock
@@ -68,7 +76,7 @@ jobs:
       # dependency bump, because Jest re-transforms only what changed.
       - name: Restore the Jest cache
         if: ${{ !cancelled() }}
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .jest-cache
           key: jest-${{ runner.os }}-${{ hashFiles('yarn.lock', 'proxy/yarn.lock', 'babel.config.js', 'jest.config.js') }}

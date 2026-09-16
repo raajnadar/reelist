@@ -2,6 +2,15 @@
 // would capture whatever the environment held at that moment and every later
 // test would share it. Each test loads the module itself, after setting the
 // value it needs. This is why there is no `import { tmdbFetch }` at the top.
+//
+// The two imports below are a different thing: `import type` is erased at
+// compile time and emits no runtime import, so it cannot defeat the
+// `resetModules()` below. They exist only to type the `require()` results. A
+// `typeof import('./tmdb')` annotation would do the same job inline, and the
+// org's `consistent-type-imports` rule forbids that form.
+import type * as ConfigModule from './config'
+import type * as TmdbModule from './tmdb'
+
 const load = (url: string) => {
   jest.resetModules()
   process.env.EXPO_PUBLIC_TMDB_PROXY_URL = url
@@ -9,8 +18,8 @@ const load = (url: string) => {
     // require(), not import: the call has to run per test, after the env is
     // set. A top-level import would be hoisted above every line here.
     /* eslint-disable @typescript-eslint/no-require-imports */
-    ...(require('./tmdb') as typeof import('./tmdb')),
-    config: require('./config') as typeof import('./config'),
+    ...(require('./tmdb') as typeof TmdbModule),
+    config: require('./config') as typeof ConfigModule,
     /* eslint-enable @typescript-eslint/no-require-imports */
   }
 }
