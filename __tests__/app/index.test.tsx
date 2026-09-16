@@ -49,6 +49,18 @@ it('opens the search screen from the header button', async () => {
   await act(async () => {})
 })
 
+it('opens the watchlist from the header button', async () => {
+  const screen = renderWithProviders(<HomeScreen />)
+
+  fireEvent.press(screen.getByLabelText('Open the watchlist'))
+
+  // The literal path is the assertion. `yarn typecheck` proves the route
+  // exists; this proves the button is wired to it.
+  expect(mockPush).toHaveBeenCalledWith('/watchlist')
+
+  await act(async () => {})
+})
+
 it('keeps the search button reachable while the rows are still loading', async () => {
   const screen = renderWithProviders(<HomeScreen />)
 

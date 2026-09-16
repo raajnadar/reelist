@@ -11,16 +11,14 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { MovieCard, CARD_WIDTH } from '../../components/MovieCard'
+import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMoviesByGenre } from '../../lib/api'
 import { missingFailure, type FailureKind } from '../../lib/errors'
+import { GRID_GAP, GRID_PADDING, posterColumns } from '../../lib/grid'
 import { useResource } from '../../lib/useResource'
 import type { Movie, Paged } from '../../lib/types'
-
-const GAP = 12
-const PADDING = 16
 
 /**
  * How each kind of failure is presented, and what it offers.
@@ -58,18 +56,6 @@ const REPORTS: Record<
 }
 
 /**
- * How many poster columns fit in `width`.
- *
- * The same rule the search grid uses, and the same floor of two: one column on
- * a narrow window would give each poster the full width, which reads as a list
- * of billboards rather than a grid.
- */
-export function genreColumnCount(width: number) {
-  const available = width - PADDING * 2
-  return Math.max(2, Math.floor((available + GAP) / (CARD_WIDTH + GAP)))
-}
-
-/**
  * Appends the films of a newly loaded page, dropping any already on screen.
  *
  * TMDB pages a ranking, not a snapshot. A film can move between pages while the
@@ -87,7 +73,7 @@ export default function GenreScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
-  const columns = genreColumnCount(width)
+  const columns = posterColumns(width)
 
   const params = useLocalSearchParams<{ id: string; name?: string }>()
   const genreId = Number(params.id)
@@ -301,7 +287,7 @@ export default function GenreScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  list: { paddingHorizontal: PADDING, gap: GAP },
-  column: { gap: GAP },
+  list: { paddingHorizontal: GRID_PADDING, gap: GRID_GAP },
+  column: { gap: GRID_GAP },
   footer: { paddingVertical: 20 },
 })

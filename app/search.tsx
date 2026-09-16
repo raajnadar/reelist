@@ -6,17 +6,15 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { MovieCard, CARD_WIDTH } from '../components/MovieCard'
+import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { searchMovies } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
+import { GRID_GAP, GRID_PADDING, posterColumns } from '../lib/grid'
 import { useDebounced } from '../lib/useDebounced'
 import { useResource } from '../lib/useResource'
 import type { Paged } from '../lib/types'
-
-const GAP = 12
-const PADDING = 16
 
 /**
  * How each kind of failure is presented. The action is bound inside the screen:
@@ -35,28 +33,12 @@ const REPORTS: Record<
   missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
 }
 
-/**
- * How many poster columns fit in `width`.
- *
- * The results are a grid rather than a horizontal row, because a search answer
- * is a set to scan, not a shelf to browse. The column count is derived from the
- * window so one layout serves a phone and a desktop browser; a fixed count would
- * leave a wide window mostly empty.
- *
- * Two is the floor. One column on a narrow window would give each poster the
- * full width, which reads as a list of billboards instead of a grid.
- */
-export function searchColumnCount(width: number) {
-  const available = width - PADDING * 2
-  return Math.max(2, Math.floor((available + GAP) / (CARD_WIDTH + GAP)))
-}
-
 export default function SearchScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
-  const columns = searchColumnCount(width)
+  const columns = posterColumns(width)
 
   const [query, setQuery] = useState('')
   // The field reads `query` so it answers every keystroke. The fetch reads this,
@@ -200,7 +182,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  field: { paddingHorizontal: PADDING, paddingTop: 8, paddingBottom: 12 },
-  list: { paddingHorizontal: PADDING, gap: GAP },
-  column: { gap: GAP },
+  field: { paddingHorizontal: GRID_PADDING, paddingTop: 8, paddingBottom: 12 },
+  list: { paddingHorizontal: GRID_PADDING, gap: GRID_GAP },
+  column: { gap: GRID_GAP },
 })

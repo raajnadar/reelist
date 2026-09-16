@@ -99,15 +99,23 @@ export default function HomeScreen() {
             Reelist
           </Typography>
         </View>
-        {/* An IconButton rather than an AppBar `action`: this screen draws its
-            own title with the top inset above it, and swapping in an AppBar
-            would change the home layout to add one button. */}
-        <IconButton
-          icon="magnify"
-          variant="standard"
-          accessibilityLabel="Search movies"
-          onPress={() => router.push('/search')}
-        />
+        {/* IconButtons rather than AppBar `actions`: this screen draws its own
+            title with the top inset above it, and swapping in an AppBar would
+            change the home layout to add two buttons. */}
+        <View style={styles.actions}>
+          <IconButton
+            icon="bookmark-outline"
+            variant="standard"
+            accessibilityLabel="Open the watchlist"
+            onPress={() => router.push('/watchlist')}
+          />
+          <IconButton
+            icon="magnify"
+            variant="standard"
+            accessibilityLabel="Search movies"
+            onPress={() => router.push('/search')}
+          />
+        </View>
       </View>
 
       {/* Outside the Presence block below, for the reason the search button is:
@@ -210,4 +218,5 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   title: { paddingVertical: 12 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
 })

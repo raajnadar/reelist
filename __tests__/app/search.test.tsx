@@ -1,9 +1,8 @@
 import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
-import SearchScreen, { searchColumnCount } from '../../app/search'
+import SearchScreen from '../../app/search'
 import { SEARCH_DEBOUNCE_MS } from '../../lib/useDebounced'
-import { CARD_WIDTH } from '../../components/MovieCard'
 import { MissingProxyUrlError } from '../../lib/config'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: Expo Router builds
@@ -45,31 +44,6 @@ const settle = async () => {
     jest.advanceTimersByTime(SEARCH_DEBOUNCE_MS)
   })
 }
-
-describe('searchColumnCount', () => {
-  // The grid has to stay a grid at every width. A count below two would give a
-  // poster the full width of a narrow phone.
-  it.each([320, 360, 390, 414, 768, 1024, 1440])(
-    'gives at least 2 columns at %ipx',
-    (width) => {
-      expect(searchColumnCount(width)).toBeGreaterThanOrEqual(2)
-    },
-  )
-
-  it('never lays out columns wider than the available space', () => {
-    for (const width of [320, 360, 390, 414, 768, 1024, 1440]) {
-      const columns = searchColumnCount(width)
-      const needed = columns * CARD_WIDTH + (columns - 1) * 12
-      // Two columns is a floor, so a very narrow window is allowed to overflow.
-      // Past that, the count must actually fit.
-      if (columns > 2) expect(needed).toBeLessThanOrEqual(width - 32)
-    }
-  })
-
-  it('adds columns as the window widens', () => {
-    expect(searchColumnCount(1440)).toBeGreaterThan(searchColumnCount(390))
-  })
-})
 
 it('shows the prompt and searches for nothing before the user types', () => {
   const screen = renderWithProviders(<SearchScreen />)

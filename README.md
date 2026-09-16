@@ -171,6 +171,8 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value          |
 | `lib/useResource.test.ts`           | Stale answers, the store, the retry, and the idle key  |
 | `lib/resourceCache.test.ts`         | The life of an entry, and the eviction at the ceiling  |
+| `lib/watchlist.test.ts`             | The store, the device copy, and a corrupt one          |
+| `lib/grid.test.ts`                  | The column count, at 7 screen widths                   |
 | `lib/errors.test.ts`                | Which failures may offer a retry, and which may not    |
 | `components/MovieCard.test.tsx`     | The poster size and the fixed card height              |
 | `components/CastCard.test.tsx`      | The photo size, and both reserved text heights         |
@@ -183,6 +185,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness     |
 | `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips     |
 | `__tests__/app/genre/[id].test.tsx` | The genre grid: paging, a bad id, a stale page         |
+| `__tests__/app/watchlist.test.tsx`  | The saved grid, both empty states, and a live change   |
 | `proxy/api/tmdb.test.ts`            | The allowlist, the append value, and the key           |
 | `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open     |
 
@@ -199,6 +202,7 @@ app/                     # Expo Router: one file is one screen
 ├── _layout.tsx          # Root layout with the ThemeProvider
 ├── index.tsx            # Home screen
 ├── search.tsx           # Search screen, debounced as you type
+├── watchlist.tsx        # The films saved on this device
 ├── genre/[id].tsx       # One genre, as an endless grid
 └── movie/[id].tsx       # Film detail screen
 components/
@@ -228,6 +232,8 @@ lib/
 ├── useDebounced.ts      # Delays a value until it stops changing
 ├── useResource.ts       # Loads one key, and keeps the answer
 ├── resourceCache.ts     # The store behind useResource
+├── watchlist.ts         # The saved films, and the device copy
+├── grid.ts              # The poster grid: columns, gap, padding
 └── test-utils.tsx       # render() wrapped in the app's providers
 proxy/                   # The TMDB proxy. Deploys on its own
 ├── api/tmdb.ts          # The function that holds the key
@@ -307,6 +313,36 @@ One thing stayed in a screen. `app/genre/[id].tsx` appends page after page as
 the reader scrolls, and that is a growing list rather than the answer to one
 request. The hook holds its first page, which is why a return to the same genre
 is immediate.
+
+## The watchlist
+
+The watchlist is the one thing in the app that belongs to the reader rather than
+to TMDB, and it is the only state written to the device.
+
+`lib/watchlist.ts` holds the saved films in memory and mirrors them to
+AsyncStorage under one key. It is a module with a `useSyncExternalStore` hook
+over it, not a React context: the detail screen and the watchlist screen are
+often mounted together, and both have to see one press. The root layout gains no
+provider for it.
+
+A saved film is stored whole, not as an id. A grid of ids would need one request
+per card before it could draw anything, and a watchlist that cannot open offline
+is not worth keeping. The store narrows a `MovieDetail` to the seven fields a
+card reads, so a save does not put the cast, the videos, and twenty recommended
+films on the device.
+
+Three states the code treats as real rather than impossible:
+
+1. **The device copy is unread.** The screen shows placeholders until the read
+   finishes. Without that, a reader with a full watchlist sees "Nothing saved
+   yet" for a frame on every cold start.
+2. **The device copy is damaged.** A process the system kills mid-write leaves a
+   half-written string. `parseStored` returns an empty list for it and drops any
+   entry with no numeric id, because a film with no id reaches FlatList as a
+   child with no key.
+3. **Storage cannot be read or written.** A browser in private mode, or a full
+   disk. The list in memory is still correct, so the app keeps working and the
+   failure is not reported: there is no action a message could offer.
 
 ## Technology
 

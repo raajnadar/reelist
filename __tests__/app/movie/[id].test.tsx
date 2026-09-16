@@ -1,9 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { fireEvent, waitFor } from '@testing-library/react-native'
 import { Dimensions } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import MovieScreen from '../../../app/movie/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
+import { parseStored, STORAGE_KEY } from '../../../lib/watchlist'
 
 // This test mirrors the path of the screen it covers, but it stays outside
 // `app/`. Expo Router builds the route table with `require.context('./app')`,
@@ -294,6 +296,69 @@ describe('the trailer button', () => {
     expect(await screen.findByText(noTrailer.overview)).toBeTruthy()
     expect(screen.queryByText('Watch trailer')).toBeNull()
     expect(openURL).not.toHaveBeenCalled()
+  })
+})
+
+describe('the save button', () => {
+  it('saves the film, and reports it as saved', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByText('Save'))
+
+    // The label states what the film is now, not what the next press will do.
+    expect(await screen.findByText('Saved')).toBeTruthy()
+    expect(screen.queryByText('Save')).toBeNull()
+  })
+
+  it('removes a film that is already saved', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+    fireEvent.press(await screen.findByText('Save'))
+
+    fireEvent.press(await screen.findByText('Saved'))
+
+    expect(await screen.findByText('Save')).toBeTruthy()
+  })
+
+  it('writes the saved film to the device', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+    fireEvent.press(await screen.findByText('Save'))
+
+    // The card fields only. A MovieDetail carries the cast, the videos, and
+    // twenty recommended films, and none of that belongs on the device.
+    await waitFor(async () => {
+      const saved = parseStored(await AsyncStorage.getItem(STORAGE_KEY))
+      expect(saved).toHaveLength(1)
+      expect(saved[0]).toEqual({
+        id: movie.id,
+        title: movie.title,
+        poster_path: movie.poster_path,
+        backdrop_path: movie.backdrop_path,
+        vote_average: movie.vote_average,
+        release_date: movie.release_date,
+        overview: movie.overview,
+      })
+    })
+  })
+
+  // The trailer button is the one that can be absent. This one is the same for
+  // every film, because every film can be saved.
+  it('is there for a film with no trailer', async () => {
+    const noTrailer = { ...movie, trailer: null }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noTrailer.id) })
+    getMovie.mockResolvedValue(noTrailer)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('Save')).toBeTruthy()
   })
 })
 

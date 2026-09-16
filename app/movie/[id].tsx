@@ -17,6 +17,7 @@ import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
+import { isSaved, toggleSaved, useWatchlist } from '../../lib/watchlist'
 import { useResource } from '../../lib/useResource'
 import { ratingLabel, releaseLine } from '../../lib/format'
 import { backdropUrl, posterUrl } from '../../lib/images'
@@ -164,6 +165,9 @@ export default function MovieScreen() {
         : null))
 
   const retry = detail.reload
+
+  const { movies: watchlist } = useWatchlist()
+  const saved = movie ? isSaved(watchlist, movie.id) : false
 
   const backdrop = movie ? backdropUrl(movie.backdrop_path) : null
   const poster = movie ? posterUrl(movie.poster_path, 'w500') : null
@@ -499,13 +503,13 @@ export default function MovieScreen() {
                   the whole cascade from render order, so the lines below this
                   one move back by one interval on their own.
                 */}
-                {movie.trailer ? (
-                  <Motion.View
-                    initial={{ opacity: 0, translateY: 16 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition="enter"
-                    style={styles.actions}
-                  >
+                <Motion.View
+                  initial={{ opacity: 0, translateY: 16 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition="enter"
+                  style={styles.actions}
+                >
+                  {movie.trailer ? (
                     <Button
                       variant="filled"
                       size="m"
@@ -514,8 +518,27 @@ export default function MovieScreen() {
                     >
                       Watch trailer
                     </Button>
-                  </Motion.View>
-                ) : null}
+                  ) : null}
+                  {/*
+                    The label states what the film is now, not what the button
+                    will do. A control that reads "Save" while the film is
+                    already saved would report the list wrongly, and the icon
+                    fills at the same moment for a reader who does not read the
+                    label.
+
+                    `tonal` beside the filled trailer button: the trailer is the
+                    one action the screen leads with, and two filled buttons
+                    side by side would leave neither of them first.
+                  */}
+                  <Button
+                    variant={saved ? 'filled' : 'tonal'}
+                    size="m"
+                    leadingIcon={saved ? 'bookmark' : 'bookmark-outline'}
+                    onPress={() => toggleSaved(movie)}
+                  >
+                    {saved ? 'Saved' : 'Save'}
+                  </Button>
+                </Motion.View>
 
                 {/*
                   The genre row, which doubles as navigation: each chip opens the
@@ -631,10 +654,16 @@ const styles = StyleSheet.create({
   // beside a poster.
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   rating: { paddingHorizontal: 10, paddingVertical: 3 },
-  // `alignSelf` keeps the button at its own width. A Button in a column with
+  // `alignSelf` keeps the buttons at their own width. A Button in a column with
   // `align: stretch` spans the whole measure, which reads as a banner rather
-  // than an action.
-  actions: { alignSelf: 'flex-start' },
+  // than an action. `wrap`, because the two together outrun a narrow column
+  // beside the poster.
+  actions: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   section: { gap: 8 },
   tagline: { fontStyle: 'italic' },
   overview: { marginTop: 2 },

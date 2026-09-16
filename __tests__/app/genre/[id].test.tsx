@@ -2,8 +2,7 @@ import { fireEvent, waitFor } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovies } from '../../../lib/mock'
-import GenreScreen, { genreColumnCount, mergePages } from '../../../app/genre/[id]'
-import { CARD_WIDTH } from '../../../components/MovieCard'
+import GenreScreen, { mergePages } from '../../../app/genre/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
 import type { Movie } from '../../../lib/types'
 
@@ -48,27 +47,6 @@ beforeEach(() => {
     results: mockMovies,
     page: 1,
     total_pages: 1,
-  })
-})
-
-describe('genreColumnCount', () => {
-  // The grid has to stay a grid at every width, the same invariant the search
-  // grid holds.
-  it.each([320, 360, 390, 414, 768, 1024, 1440])(
-    'gives at least 2 columns at %ipx',
-    (width) => {
-      expect(genreColumnCount(width)).toBeGreaterThanOrEqual(2)
-    },
-  )
-
-  it('never lays out columns wider than the available space', () => {
-    for (const width of [320, 360, 390, 414, 768, 1024, 1440]) {
-      const columns = genreColumnCount(width)
-      const needed = columns * CARD_WIDTH + (columns - 1) * 12
-      // Two columns can overflow a very narrow window by design; above that the
-      // count must fit.
-      if (columns > 2) expect(needed).toBeLessThanOrEqual(width - 32)
-    }
   })
 })
 
