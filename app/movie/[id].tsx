@@ -1,35 +1,25 @@
-import { Button } from '@rootnative/components/button'
 import { Skeleton } from '@rootnative/components/skeleton'
-import { Typography } from '@rootnative/components/typography'
 import { useBreakpointValue, useTheme } from '@rootnative/core'
 import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
-import { openURL } from 'expo-linking'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CastRow } from '../../components/CastRow'
+import { DetailActions } from '../../components/DetailActions'
 import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
+import { DetailHero } from '../../components/DetailHero'
+import { DetailIdentity, DetailIdentitySkeleton } from '../../components/DetailIdentity'
+import { DetailOverview } from '../../components/DetailOverview'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
-import { Scrim, type ScrimStop } from '../../components/Scrim'
-import { RemoteImage } from '../../components/RemoteImage'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
-import { isSaved, toggleSaved, useWatchlist } from '../../lib/watchlist'
-import { useResource } from '../../lib/useResource'
-import { ratingLabel, releaseLine } from '../../lib/format'
 import { backdropUrl, posterUrl } from '../../lib/images'
-import type { MovieDetail, Video } from '../../lib/types'
-
-/**
- * Milliseconds between consecutive lines in a staggered entrance.
- *
- * One value for both cascades on this screen — the loading blocks and the
- * content that replaces them — so the two read as the same movement.
- */
-const STAGGER_INTERVAL = 60
+import { STAGGER_INTERVAL } from '../../lib/motion'
+import type { MovieDetail } from '../../lib/types'
+import { useResource } from '../../lib/useResource'
 
 /**
  * The widest the body ever grows, whatever the window does.
@@ -77,50 +67,6 @@ const REPORTS: Record<
   },
 }
 
-/**
- * The scrim that dissolves the backdrop into the page.
- *
- * The stops are weighted to the bottom third: the top half of the frame is left
- * alone, and the last quarter reaches the page colour before the image ends, so
- * there is no seam where the picture stops. This is what replaced the parallax —
- * the hero now reads as part of the page rather than as a panel sliding behind
- * it.
- */
-const BACKDROP_SCRIM: readonly ScrimStop[] = [
-  [0, 0],
-  [0.45, 0.08],
-  [0.65, 0.34],
-  [0.82, 0.76],
-  [1, 1],
-]
-
-/**
- * A short wash under the status bar, so the back button and the clock stay
- * legible on a bright frame. It is the theme `scrim` (black), not the page
- * colour: this one darkens the picture rather than fading it out.
- */
-const TOP_SCRIM: readonly ScrimStop[] = [
-  [0, 0.4],
-  [1, 0],
-]
-
-/**
- * Opens the trailer outside the app.
- *
- * `lib/api.ts` already established the video is a YouTube trailer, so this
- * builds the watch URL and nothing more. It takes the nullable type rather than
- * a narrowed one, because the caller reads `movie.trailer` inside a callback
- * and the guard around that callback does not narrow a property there.
- *
- * A rejected promise means no installed app can open a YouTube link. There is
- * no better answer than doing nothing, and an uncaught rejection would only
- * print a warning.
- */
-const openTrailer = (video: Video | null) => {
-  if (!video) return
-  void openURL(`https://www.youtube.com/watch?v=${video.key}`).catch(() => {})
-}
-
 export default function MovieScreen() {
   const theme = useTheme()
   const router = useRouter()
@@ -164,25 +110,13 @@ export default function MovieScreen() {
         ? missingFailure('TMDB has no movie with that id.')
         : null))
 
-  const retry = detail.reload
-
-  const { movies: watchlist } = useWatchlist()
-  const saved = movie ? isSaved(watchlist, movie.id) : false
-
-  const backdrop = movie ? backdropUrl(movie.backdrop_path) : null
-  const poster = movie ? posterUrl(movie.poster_path, 'w500') : null
-  // The backdrop is the hero and the poster is the fallback for it, so a film
-  // with only one of the two still gets a complete masthead.
-  const artwork = backdrop ?? poster
-
   const { width, height } = useWindowDimensions()
 
   /**
    * The wide arrangement, from `expanded` up.
    *
-   * It changes the size of the masthead, not its shape: the poster and the
-   * title sit side by side at every width. `medium` is a tablet, wide enough
-   * for a longer measure than a phone and not wide enough for a 200px poster.
+   * It drives the poster size, the overlap, and the title variant together, so
+   * the three cannot disagree about which layout is on screen.
    */
   const wide = useBreakpointValue({ compact: false, medium: false, expanded: true })
 
@@ -211,6 +145,12 @@ export default function MovieScreen() {
    */
   const overlap = wide ? 120 : 72
 
+  // The backdrop is the hero and the poster is the fallback for it, so a film
+  // with only one of the two still gets a complete masthead.
+  const artwork = movie
+    ? (backdropUrl(movie.backdrop_path) ?? posterUrl(movie.poster_path, 'w500'))
+    : null
+
   // scrollY drives the header on the UI thread, so the bar arrives during a
   // fling without a re-render per frame.
   const { scrollY, onScroll } = useScroll()
@@ -223,13 +163,10 @@ export default function MovieScreen() {
   // the fix is a file on the developer's disk and a restart, and no button on
   // this screen can apply it.
   const actions: Record<FailureKind, (() => void) | undefined> = {
-    transient: retry,
+    transient: detail.reload,
     setup: undefined,
     missing: () => router.replace('/'),
   }
-
-  const rating = movie ? ratingLabel(movie.vote_average) : null
-  const release = movie ? releaseLine(movie.release_date, movie.runtime) : ''
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
@@ -262,53 +199,18 @@ export default function MovieScreen() {
             <Skeleton height={heroHeight} shape="rectangle" />
 
             <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
-              <View style={styles.identity}>
-                {/*
-                  The ratio lives on the wrapper, not the block: Skeleton writes
-                  a concrete height ahead of the caller's style, and in React
-                  Native an explicit height beats `aspectRatio`.
+              <DetailIdentitySkeleton posterWidth={posterWidth} />
 
-                  The wrapper also carries the page colour. The poster
-                  placeholder rides up over the backdrop placeholder, and two
-                  blocks of the same pulsing surface would read as one shape.
-                */}
-                <View
-                  style={[
-                    styles.posterPlaceholder,
-                    {
-                      width: posterWidth,
-                      borderRadius: theme.shape.cornerLarge,
-                      backgroundColor: theme.colors.background,
-                    },
-                  ]}
-                >
-                  <Skeleton
-                    height="100%"
-                    style={{ borderRadius: theme.shape.cornerLarge }}
-                  />
-                </View>
-
-                <View style={styles.identityText}>
-                  {/*
-                    `<Stagger>` owns the cascade, so no block carries its own
-                    delay. It assigns child `i` a delay of `i * interval` from
-                    render order, re-derived every render — so adding or
-                    removing a line cannot leave a stale offset behind.
-                  */}
-                  <Stagger interval={STAGGER_INTERVAL} delay={STAGGER_INTERVAL}>
-                    <Skeleton height={28} width="80%" />
-                    <Skeleton height={18} width="55%" />
-                  </Stagger>
-                </View>
-              </View>
-
+              {/* The action row. */}
               <Skeleton height={40} width={168} shape="rectangle" />
+
               {/* The chip row. Two blocks at chip height, so the space the
                   genres will take is already reserved. */}
               <View style={styles.skeletonChips}>
                 <Skeleton height={32} width={84} shape="rectangle" />
                 <Skeleton height={32} width={72} shape="rectangle" />
               </View>
+
               <Skeleton height={76} />
             </View>
 
@@ -342,63 +244,12 @@ export default function MovieScreen() {
             style={styles.fill}
             contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
           >
-            {/*
-              The masthead: one frame of artwork that fades into the page, with
-              the poster and the title riding up over its lower edge.
-
-              The picture no longer moves against the scroll. A backdrop that
-              drifts at half speed reads as a panel behind the page, and it put
-              the title over a moving image for the whole first screen.
-            */}
-            <View style={[styles.heroArt, { height: heroHeight }]}>
-              {artwork ? (
-                /*
-                  A slow settle out of a slight zoom, played once on arrival.
-                  The wrapper owns it rather than the picture: `Motion.View`
-                  takes the animated path because `animate` is present, and
-                  RemoteImage is not a Motion primitive.
-
-                  The zoom is all the wrapper does. The fade belongs to the
-                  image, which cross-dissolves when the bytes land — timed to
-                  the download rather than to the mount, so a slow connection
-                  no longer fades an empty box in and then snaps the picture
-                  into it.
-                */
-                <Motion.View
-                  style={styles.fill}
-                  initial={{ scale: 1.06 }}
-                  animate={{ scale: 1 }}
-                  transition="enter"
-                >
-                  <RemoteImage
-                    testID="detail-backdrop"
-                    uri={artwork}
-                    recyclingKey={String(movieId)}
-                    // The picture the screen is built around.
-                    priority="high"
-                    style={styles.fill}
-                  />
-                </Motion.View>
-              ) : (
-                <View
-                  style={[
-                    styles.fill,
-                    styles.fallback,
-                    { backgroundColor: theme.colors.surfaceVariant },
-                  ]}
-                >
-                  <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
-                    No image
-                  </Typography>
-                </View>
-              )}
-
-              <Scrim color={theme.colors.background} stops={BACKDROP_SCRIM} />
-
-              <View style={[styles.topScrim, { height: headerSpace }]}>
-                <Scrim color={theme.colors.scrim} stops={TOP_SCRIM} />
-              </View>
-            </View>
+            <DetailHero
+              uri={artwork}
+              height={heroHeight}
+              headerSpace={headerSpace}
+              recyclingKey={String(movieId)}
+            />
 
             {/*
               The body is capped and centred, so a wide window widens the
@@ -406,139 +257,17 @@ export default function MovieScreen() {
               it lifts the whole block over the lower edge of the artwork.
             */}
             <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
+              {/*
+                `<Stagger>` owns the cascade, so no block below carries its own
+                delay. It assigns child `i` a delay of `i * interval` from render
+                order, re-derived every render — so adding or removing a section
+                cannot leave a stale offset behind, and each one is free to be a
+                component of its own.
+              */}
               <Stagger interval={STAGGER_INTERVAL}>
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                  style={styles.identity}
-                >
-                  {/*
-                    The poster, at every width.
+                <DetailIdentity movie={movie} posterWidth={posterWidth} wide={wide} />
 
-                    It is the anchor of the masthead rather than a second copy
-                    of the artwork: it overlaps the backdrop, carries the
-                    portrait shape the film is sold under, and gives the title
-                    beside it a baseline to sit on. A film with no poster keeps
-                    the arrangement and loses only the image — an empty
-                    rectangle reads as a broken one.
-                  */}
-                  {poster ? (
-                    <RemoteImage
-                      testID="detail-poster"
-                      uri={poster}
-                      recyclingKey={String(movieId)}
-                      priority="high"
-                      style={[
-                        styles.poster,
-                        {
-                          width: posterWidth,
-                          borderRadius: theme.shape.cornerLarge,
-                          backgroundColor: theme.colors.surfaceVariant,
-                          borderColor: theme.colors.outlineVariant,
-                        },
-                      ]}
-                    />
-                  ) : null}
-
-                  <View style={styles.identityText}>
-                    {/* The larger variant only where there is room for it. On a
-                        phone the headline would wrap a long title to three lines. */}
-                    <Typography
-                      variant={wide ? 'headlineLargeEmphasized' : 'titleLargeEmphasized'}
-                    >
-                      {movie.title}
-                    </Typography>
-
-                    <View style={styles.metaRow}>
-                      {/*
-                        The rating as a badge rather than the first segment of a
-                        meta line. It is the one number a viewer scans for, and
-                        the cards already print the joined line where there is
-                        no room to set it apart.
-                      */}
-                      {rating ? (
-                        <View
-                          style={[
-                            styles.rating,
-                            {
-                              backgroundColor: theme.colors.primaryContainer,
-                              borderRadius: theme.shape.cornerFull,
-                            },
-                          ]}
-                        >
-                          <Typography
-                            variant="labelLargeEmphasized"
-                            color={theme.colors.onPrimaryContainer}
-                          >
-                            {`★ ${rating}`}
-                          </Typography>
-                        </View>
-                      ) : null}
-
-                      {release ? (
-                        <Typography
-                          variant="labelLarge"
-                          color={theme.colors.onSurfaceVariant}
-                        >
-                          {release}
-                        </Typography>
-                      ) : null}
-                    </View>
-                  </View>
-                </Motion.View>
-
-                {/*
-                  The trailer, when the film has one on YouTube. `lib/api.ts`
-                  chose it, so this line has no filtering to do and `null` means
-                  the button is simply absent.
-
-                  The link leaves the app. There is no in-app player: a YouTube
-                  video needs the YouTube frame, so an embedded one would take a
-                  new dependency and still hand playback to YouTube. `openURL`
-                  opens the YouTube app when it is installed and the browser
-                  when it is not.
-
-                  A new child needs no delay of its own — `<Stagger>` re-derives
-                  the whole cascade from render order, so the lines below this
-                  one move back by one interval on their own.
-                */}
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                  style={styles.actions}
-                >
-                  {movie.trailer ? (
-                    <Button
-                      variant="filled"
-                      size="m"
-                      leadingIcon="play"
-                      onPress={() => openTrailer(movie.trailer)}
-                    >
-                      Watch trailer
-                    </Button>
-                  ) : null}
-                  {/*
-                    The label states what the film is now, not what the button
-                    will do. A control that reads "Save" while the film is
-                    already saved would report the list wrongly, and the icon
-                    fills at the same moment for a reader who does not read the
-                    label.
-
-                    `tonal` beside the filled trailer button: the trailer is the
-                    one action the screen leads with, and two filled buttons
-                    side by side would leave neither of them first.
-                  */}
-                  <Button
-                    variant={saved ? 'filled' : 'tonal'}
-                    size="m"
-                    leadingIcon={saved ? 'bookmark' : 'bookmark-outline'}
-                    onPress={() => toggleSaved(movie)}
-                  >
-                    {saved ? 'Saved' : 'Save'}
-                  </Button>
-                </Motion.View>
+                <DetailActions movie={movie} />
 
                 {/*
                   The genre row, which doubles as navigation: each chip opens the
@@ -552,47 +281,7 @@ export default function MovieScreen() {
                 */}
                 <GenreChips genres={movie.genres} inset={0} gutter={0} />
 
-                <Motion.View
-                  initial={{ opacity: 0, translateY: 16 }}
-                  animate={{ opacity: 1, translateY: 0 }}
-                  transition="enter"
-                  style={styles.section}
-                >
-                  {/*
-                    A heading, so the overview is a section like the two rows
-                    below it rather than a paragraph that starts without warning.
-                  */}
-                  <Typography variant="titleMediumEmphasized">Overview</Typography>
-
-                  {/*
-                    The tagline, when the film has one. TMDB sends `""` for a
-                    film with none, and `lib/api.ts` keeps that sentinel — so
-                    this is a line that is simply absent rather than an empty row.
-                  */}
-                  {movie.tagline ? (
-                    <Typography
-                      variant="bodyLarge"
-                      color={theme.colors.primary}
-                      style={styles.tagline}
-                    >
-                      {movie.tagline}
-                    </Typography>
-                  ) : null}
-
-                  {movie.overview ? (
-                    <Typography variant="bodyMedium" style={styles.overview}>
-                      {movie.overview}
-                    </Typography>
-                  ) : (
-                    <Typography
-                      variant="bodyMedium"
-                      color={theme.colors.onSurfaceVariant}
-                      style={styles.overview}
-                    >
-                      No overview yet.
-                    </Typography>
-                  )}
-                </Motion.View>
+                <DetailOverview movie={movie} />
               </Stagger>
             </View>
 
@@ -619,54 +308,12 @@ export default function MovieScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  // Clips the scrim and the zoom-out entrance to the frame. Without it the
-  // image starts 6% wider than the window and widens the page on web.
-  heroArt: { width: '100%', overflow: 'hidden' },
-  fallback: { alignItems: 'center', justifyContent: 'center' },
-  // Pinned to the top of the frame rather than filling it, so the wash under
-  // the status bar ends where the header does.
-  topScrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    pointerEvents: 'none',
-  },
   body: { paddingHorizontal: 16, gap: 20 },
   // Caps the measure and centres what is left over. `width: '100%'` is required
   // with `maxWidth`: without it the box shrinks to its content on a narrow
   // window, and `alignSelf: 'center'` then centres a column narrower than the
   // screen instead of filling it.
   bodyCap: { width: '100%', maxWidth: MAX_BODY_WIDTH, alignSelf: 'center' },
-  // The poster beside the title. `flex-end` sets the two on one baseline, so
-  // the title sits at the foot of the poster however tall either one is.
-  identity: { flexDirection: 'row', alignItems: 'flex-end', gap: 16 },
-  // `flexBasis: 0` with `flex: 1`: the column takes the leftover width rather
-  // than sizing to its content, so a long title cannot squeeze the poster.
-  identityText: { flex: 1, flexBasis: 0, gap: 10 },
-  // 2:3 is the TMDB poster ratio, the same one MovieCard's media box uses. The
-  // hairline separates the poster from a dark frame behind it.
-  poster: { aspectRatio: 2 / 3, borderWidth: StyleSheet.hairlineWidth },
-  // The loading stand-in for it: the same box, on the page colour, clipped so
-  // the block inside keeps the corner.
-  posterPlaceholder: { aspectRatio: 2 / 3, overflow: 'hidden' },
-  // `wrap`, because the badge and the date line together outrun a narrow column
-  // beside a poster.
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  rating: { paddingHorizontal: 10, paddingVertical: 3 },
-  // `alignSelf` keeps the buttons at their own width. A Button in a column with
-  // `align: stretch` spans the whole measure, which reads as a banner rather
-  // than an action. `wrap`, because the two together outrun a narrow column
-  // beside the poster.
-  actions: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  section: { gap: 8 },
-  tagline: { fontStyle: 'italic' },
-  overview: { marginTop: 2 },
   // The gap the body already has, carried over the seam into the rows below.
   rows: { marginTop: 28 },
   skeletonChips: { flexDirection: 'row', gap: 8 },

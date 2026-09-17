@@ -67,6 +67,16 @@ declare module '@rootnative/inertia' {
 }
 
 /**
+ * Milliseconds between consecutive lines in a staggered entrance.
+ *
+ * One value for the detail screen's two cascades — the loading blocks and the
+ * content that replaces them — so the two read as the same movement. It sits
+ * here rather than on the screen because the blocks it paces are components of
+ * their own now, and a second copy of the number would let the two drift.
+ */
+export const STAGGER_INTERVAL = 60
+
+/**
  * Entrance delay for item `index`, in milliseconds.
  *
  * The stagger is capped: with 20 posters in a row, a flat `index * step` would

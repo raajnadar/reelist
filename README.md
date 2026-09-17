@@ -214,6 +214,10 @@ components/
 ├── CastCard.tsx         # One person in the cast row
 ├── GenreChips.tsx       # The genre shortcuts under the home header
 ├── DetailHeader.tsx     # The floating bar that arrives with the scroll
+├── DetailHero.tsx       # The backdrop frame, and its two scrims
+├── DetailIdentity.tsx   # The poster and title box, filled and empty
+├── DetailActions.tsx    # The trailer and save buttons
+├── DetailOverview.tsx   # The tagline and the synopsis
 ├── Scrim.tsx            # The gradient that dissolves the detail masthead
 ├── BrandMark.tsx        # The app mark beside the home title
 ├── StateMessage.tsx     # The shared failure, empty, and prompt block
