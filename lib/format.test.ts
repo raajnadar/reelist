@@ -1,4 +1,11 @@
-import { metaLine, ratingLabel, releaseLine, releaseYear, runtimeLabel } from './format'
+import {
+  lifeSpan,
+  metaLine,
+  ratingLabel,
+  releaseLine,
+  releaseYear,
+  runtimeLabel,
+} from './format'
 
 // The two TMDB sentinel values drive every case here: an empty `release_date`
 // for an unreleased film, and a `0` rating for an unrated one. Both must never
@@ -125,5 +132,37 @@ describe('releaseLine', () => {
 
   it('omits the runtime when the caller passes none', () => {
     expect(releaseLine('2023-07-19')).toBe('2023')
+  })
+})
+
+/**
+ * The person screen's line. TMDB reports the two dates in four combinations,
+ * and each one has to read as a statement about a person rather than as a bare
+ * number beside their name.
+ */
+describe('lifeSpan', () => {
+  it('joins the two years for a person who has died', () => {
+    expect(lifeSpan('1930-08-25', '2014-08-11')).toBe('1930–2014')
+  })
+
+  // The common case: TMDB sends `deathday: null` for a living person, which
+  // lib/api.ts maps to the empty sentinel.
+  it('names the birth year alone for a living person', () => {
+    expect(lifeSpan('1995-12-27', '')).toBe('Born 1995')
+  })
+
+  /**
+   * TMDB holds a death date for some people whose birth date it does not know,
+   * which is common for an early performer. The word is what keeps that year
+   * from reading as a year of birth.
+   */
+  it('names the death year alone when the birth date is unknown', () => {
+    expect(lifeSpan('', '1968-03-04')).toBe('Died 1968')
+  })
+
+  // The empty string is the signal to the caller that there is no line to
+  // draw. A separator or a stray dash on its own would read as a defect.
+  it('returns an empty string when neither date is known', () => {
+    expect(lifeSpan('', '')).toBe('')
   })
 })

@@ -53,6 +53,7 @@ describe('the allowlist', () => {
     '/movie/top_rated',
     '/search/movie',
     '/movie/550',
+    '/person/1082047',
     '/genre/movie/list',
     '/discover/movie',
   ])('forwards %s', async (path) => {
@@ -70,6 +71,9 @@ describe('the allowlist', () => {
     ['/movie/550/../../account', 'a traversal attempt'],
     ['/movie/abc', 'a non-numeric id'],
     ['/movie/', 'an empty id'],
+    ['/person/abc', 'a non-numeric person id'],
+    ['/person/', 'an empty person id'],
+    ['/person/1082047/images', 'a sub-resource under an allowed person'],
     ['/discover/tv', 'a discover path the app does not use'],
     ['/genre/tv/list', 'a genre path the app does not use'],
   ])('rejects %s (%s)', async (path) => {
@@ -160,6 +164,15 @@ describe('the key', () => {
     await get('path=%2Fmovie%2F550&append_to_response=reviews')
 
     expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)
+  })
+
+  // The person endpoint appends a different block, so the list holds two
+  // values. `movie_credits` must stay identical to `PERSON_APPEND` in
+  // lib/api.ts, or the filmography arrives empty with no error.
+  it('forwards the append value the person screen sends', async () => {
+    await get('path=%2Fperson%2F1082047&append_to_response=movie_credits')
+
+    expect(upstreamUrl().searchParams.get('append_to_response')).toBe('movie_credits')
   })
 
   // A value that starts with the allowed one is still a different value. An

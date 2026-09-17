@@ -1,5 +1,13 @@
 import { tmdbFetch } from './tmdb'
-import type { CastMember, Genre, Movie, MovieDetail, Paged, Video } from './types'
+import type {
+  CastMember,
+  Genre,
+  Movie,
+  MovieDetail,
+  Paged,
+  PersonDetail,
+  Video,
+} from './types'
 
 /**
  * The single seam between the UI and the data source. Every screen imports from
@@ -157,6 +165,84 @@ const toPaged = (raw: RawPaged): Paged => ({
   total_pages: Math.min(raw.total_pages ?? 1, MAX_PAGE),
 })
 
+/**
+ * The sub-resource the person request asks TMDB to include.
+ *
+ * Its own constant rather than a second use of `APPEND`, because the two name
+ * the blocks of two different endpoints. `credits` on a person means their
+ * television work as well as their films, and this screen draws a grid of
+ * films.
+ *
+ * Like `APPEND`, this string must stay identical to a value in
+ * `ALLOWED_PARAM_VALUES` in `proxy/api/tmdb.ts`. A mismatch fails silently: the
+ * proxy drops the parameter, TMDB answers with a plain person response, and the
+ * filmography arrives empty with no error to report.
+ */
+const PERSON_APPEND = 'movie_credits'
+
+/**
+ * Newest first, with the undated films last.
+ *
+ * TMDB returns a filmography in no order a reader would expect — neither by
+ * date nor by billing. The rule lives here rather than in the screen for the
+ * reason `pickTrailer` does: it comes from the shape of the response.
+ *
+ * An announced film carries the empty date sentinel, which sorts before every
+ * real date as a string. Those entries go to the end instead, where the least
+ * certain part of a filmography belongs.
+ */
+const byNewest = (a: Movie, b: Movie): number => {
+  if (!a.release_date) return b.release_date ? 1 : 0
+  if (!b.release_date) return -1
+  return b.release_date.localeCompare(a.release_date)
+}
+
+/**
+ * The films of one person, from the `cast` list of the `movie_credits` block.
+ *
+ * One film can appear twice: a performer credited for a dual role, or for a
+ * voice part beside a screen part, gets one entry per credit under the same
+ * film id. The grid keys on that id, so the duplicate would hand FlatList two
+ * children with one key — the defect `mergePages` guards against on the genre
+ * screen. The first credit wins, because the entries carry the same film.
+ */
+const toCredits = (raws: Record<string, unknown>[]): Movie[] => {
+  const byId = new Map<number, Movie>()
+  for (const raw of raws) {
+    const movie = toMovie(raw)
+    if (!byId.has(movie.id)) byId.set(movie.id, movie)
+  }
+  return [...byId.values()].sort(byNewest)
+}
+
+/**
+ * The person endpoint, and the one block appended to it.
+ *
+ * Every string field has a documented absent form. TMDB omits `birthday` and
+ * `place_of_birth` for a person it holds no record of, sends `deathday: null`
+ * for a living person, and `biography: ''` for one with no text in the
+ * requested language. All of them map to `''`, which `lib/types.ts` declares as
+ * the sentinel the screen reads as "do not print this line".
+ *
+ * `movie_credits` is absent for a person with no film work at all, so the read
+ * needs the `?? {}` guard before the `cast` below it.
+ */
+const toPersonDetail = (raw: Record<string, unknown>): PersonDetail => {
+  const credits = (raw.movie_credits as { cast?: Record<string, unknown>[] }) ?? {}
+
+  return {
+    id: raw.id as number,
+    name: (raw.name as string) ?? '',
+    biography: (raw.biography as string) ?? '',
+    birthday: (raw.birthday as string | null) ?? '',
+    deathday: (raw.deathday as string | null) ?? '',
+    place_of_birth: (raw.place_of_birth as string | null) ?? '',
+    known_for_department: (raw.known_for_department as string) ?? '',
+    profile_path: (raw.profile_path as string | null) ?? null,
+    credits: toCredits(credits.cast ?? []),
+  }
+}
+
 export const getTrending = async (): Promise<Paged> =>
   toPaged(await tmdbFetch<RawPaged>('/trending/movie/week'))
 
@@ -220,3 +306,23 @@ export const getMoviesByGenre = async (genreId: number, page = 1): Promise<Paged
       page: String(page),
     }),
   )
+
+/**
+ * One person, and the films they appear in.
+ *
+ * Returns null for an id TMDB has nobody for, the same way `getMovie` does. The
+ * person screen separates "no such person" from "the request failed", and only
+ * one of the two is worth offering a retry for.
+ */
+export const getPerson = async (id: number): Promise<PersonDetail | null> => {
+  try {
+    return toPersonDetail(
+      await tmdbFetch<Record<string, unknown>>(`/person/${id}`, {
+        append_to_response: PERSON_APPEND,
+      }),
+    )
+  } catch (e) {
+    if (e instanceof Error && 'status' in e && e.status === 404) return null
+    throw e
+  }
+}

@@ -1,4 +1,4 @@
-import type { CastMember, Movie, MovieDetail } from './types'
+import type { CastMember, Movie, MovieDetail, PersonDetail } from './types'
 
 /**
  * Poster paths are real TMDB paths, so the images load without an API key.
@@ -154,4 +154,30 @@ export const mockMovieDetail: MovieDetail = {
   // The recommendation row reads plain `Movie` entries, so it reuses the list
   // fixtures rather than repeating them.
   recommendations: mockMovies.slice(1, 4),
+}
+
+/**
+ * One person, in the shape `/person/{id}` returns.
+ *
+ * Separate from `mockCast` for the reason `mockMovieDetail` is separate from
+ * `mockMovies`: a cast entry carries four fields, and giving those entries a
+ * biography and a filmography would let a cast card test pass against data the
+ * credits block never sends.
+ *
+ * The person is alive, so `deathday` is the empty sentinel. The dead form is
+ * built in the tests that need it, because one fixture cannot hold both.
+ */
+export const mockPerson: PersonDetail = {
+  id: 1082047,
+  name: 'Timothée Chalamet',
+  biography:
+    'Timothée Hal Chalamet is an American actor. He began his career in television before his first leading film roles.',
+  birthday: '1995-12-27',
+  deathday: '',
+  place_of_birth: 'New York City, New York, USA',
+  known_for_department: 'Acting',
+  profile_path: '/BE2sdjpgsa2rNTFa66f7upkaOP.jpg',
+  // A filmography is a list of plain `Movie` entries, so it reuses the list
+  // fixtures rather than repeating them.
+  credits: mockMovies.slice(0, 3),
 }

@@ -1,7 +1,16 @@
+import { fireEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
 import { renderWithProviders } from '../lib/test-utils'
 import type { CastMember } from '../lib/types'
 import { CastCard } from './CastCard'
+
+const mockPush = jest.fn()
+
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
+
+beforeEach(() => {
+  mockPush.mockClear()
+})
 
 const member: CastMember = {
   id: 819,
@@ -104,5 +113,34 @@ describe('the text', () => {
 
     expect(blankHeight).toBe(namedHeight)
     expect(blankHeight).toBeGreaterThan(0)
+  })
+})
+
+describe('the press', () => {
+  it('opens the person screen', () => {
+    const screen = renderWithProviders(<CastCard member={member} />)
+
+    fireEvent.press(screen.getByText('Edward Norton'))
+
+    expect(mockPush).toHaveBeenCalledWith(`/person/${member.id}`)
+  })
+
+  /**
+   * The two lines under the photo are read together, so the label carries
+   * both. A screen reader that announced the name alone would drop the reason
+   * this person is on the film's screen.
+   */
+  it('announces the name and the role together', () => {
+    const screen = renderWithProviders(<CastCard member={member} />)
+
+    expect(screen.getByLabelText('Edward Norton. The Narrator')).toBeTruthy()
+  })
+
+  // TMDB sends an empty character for an uncredited part. The label must not
+  // end in a stray full stop with nothing after it.
+  it('announces the name alone for an uncredited part', () => {
+    const screen = renderWithProviders(<CastCard member={{ ...member, character: '' }} />)
+
+    expect(screen.getByLabelText('Edward Norton')).toBeTruthy()
   })
 })

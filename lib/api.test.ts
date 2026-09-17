@@ -1,4 +1,11 @@
-import { getGenres, getMovie, getMoviesByGenre, getTrending, searchMovies } from './api'
+import {
+  getGenres,
+  getMovie,
+  getMoviesByGenre,
+  getPerson,
+  getTrending,
+  searchMovies,
+} from './api'
 import { TmdbError } from './tmdb'
 
 // These tests check the mapping and the error branches, not TMDB itself. The
@@ -477,5 +484,220 @@ describe('getMoviesByGenre', () => {
     tmdbFetch.mockRejectedValue(new TmdbError('Service offline', 503))
 
     await expect(getMoviesByGenre(28)).rejects.toThrow('Service offline')
+  })
+})
+
+describe('getPerson', () => {
+  // A response with every field the person screen reads, plus one it does not.
+  const rawPerson = {
+    id: 1082047,
+    name: 'Timothée Chalamet',
+    biography: 'An American actor.',
+    birthday: '1995-12-27',
+    deathday: null,
+    place_of_birth: 'New York City, New York, USA',
+    known_for_department: 'Acting',
+    profile_path: '/face.jpg',
+    also_known_as: ['Timmy'],
+  }
+
+  /** One film credit, in the shape the `movie_credits` block sends it. */
+  const credit = (id: number, title: string, release_date: string) => ({
+    id,
+    title,
+    release_date,
+    poster_path: '/p.jpg',
+    backdrop_path: null,
+    vote_average: 7,
+    overview: 'A film.',
+    character: 'Someone',
+    credit_id: `credit-${id}`,
+  })
+
+  it('maps the fields the screen reads', async () => {
+    tmdbFetch.mockResolvedValue(rawPerson)
+
+    const person = await getPerson(1082047)
+
+    expect(person).toEqual({
+      id: 1082047,
+      name: 'Timothée Chalamet',
+      biography: 'An American actor.',
+      birthday: '1995-12-27',
+      deathday: '',
+      place_of_birth: 'New York City, New York, USA',
+      known_for_department: 'Acting',
+      profile_path: '/face.jpg',
+      credits: [],
+    })
+  })
+
+  it('drops a field the app does not declare', async () => {
+    tmdbFetch.mockResolvedValue(rawPerson)
+
+    await expect(getPerson(1082047)).resolves.not.toHaveProperty('also_known_as')
+  })
+
+  /**
+   * TMDB sends null for a date it does not hold, and for the birthplace of a
+   * person it has little on. The screen drops a line rather than printing an
+   * empty one, which it can only do if the mapping keeps the `''` sentinel.
+   */
+  it('maps every absent string to the empty sentinel', async () => {
+    tmdbFetch.mockResolvedValue({
+      id: 5,
+      name: 'Nobody Known',
+      birthday: null,
+      deathday: null,
+      place_of_birth: null,
+      biography: '',
+    })
+
+    await expect(getPerson(5)).resolves.toMatchObject({
+      birthday: '',
+      deathday: '',
+      place_of_birth: '',
+      biography: '',
+      known_for_department: '',
+      profile_path: null,
+    })
+  })
+
+  it('asks TMDB for the filmography in the same request', async () => {
+    tmdbFetch.mockResolvedValue(rawPerson)
+
+    await getPerson(1082047)
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/person/1082047', {
+      append_to_response: 'movie_credits',
+    })
+  })
+
+  /**
+   * The value has to match `ALLOWED_PARAM_VALUES` in the proxy exactly. The
+   * proxy drops a value it does not know, TMDB then answers a plain person
+   * response, and the filmography arrives empty with no error to report — so
+   * this string is asserted on its own as well as inside the call above.
+   */
+  it('sends the exact append value the proxy allows', async () => {
+    tmdbFetch.mockResolvedValue(rawPerson)
+
+    await getPerson(1082047)
+
+    expect(tmdbFetch.mock.calls[0][1].append_to_response).toBe('movie_credits')
+  })
+
+  describe('the filmography', () => {
+    it('maps each credit to the fields a card reads', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawPerson,
+        movie_credits: { cast: [credit(1, 'A Film', '2024-01-01')] },
+      })
+
+      const person = await getPerson(1082047)
+
+      expect(person?.credits).toEqual([
+        {
+          id: 1,
+          title: 'A Film',
+          poster_path: '/p.jpg',
+          backdrop_path: null,
+          vote_average: 7,
+          release_date: '2024-01-01',
+          overview: 'A film.',
+        },
+      ])
+    })
+
+    it('newest first', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawPerson,
+        movie_credits: {
+          cast: [
+            credit(1, 'Older', '2010-05-01'),
+            credit(2, 'Newest', '2024-02-27'),
+            credit(3, 'Middle', '2019-11-04'),
+          ],
+        },
+      })
+
+      const person = await getPerson(1082047)
+
+      expect(person?.credits.map((m) => m.title)).toEqual(['Newest', 'Middle', 'Older'])
+    })
+
+    /**
+     * An announced film carries the empty date sentinel, which sorts before
+     * every real date as a string. The least certain entries belong at the end
+     * of a filmography rather than at the top of it.
+     */
+    it('puts a film with no release date last', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawPerson,
+        movie_credits: {
+          cast: [
+            credit(1, 'Announced', ''),
+            credit(2, 'Released', '2024-02-27'),
+            credit(3, 'Also Announced', ''),
+          ],
+        },
+      })
+
+      const person = await getPerson(1082047)
+
+      expect(person?.credits[0].title).toBe('Released')
+      expect(person?.credits).toHaveLength(3)
+    })
+
+    /**
+     * A dual role, or a voice part beside a screen part, gives one film two
+     * credits under the same id. The grid keys on that id, so the duplicate
+     * would hand FlatList two children with one key.
+     */
+    it('keeps one entry for a film credited twice', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawPerson,
+        movie_credits: {
+          cast: [
+            { ...credit(7, 'Dual Role', '2021-06-01'), character: 'The Twin' },
+            { ...credit(7, 'Dual Role', '2021-06-01'), character: 'The Other Twin' },
+          ],
+        },
+      })
+
+      const person = await getPerson(1082047)
+
+      expect(person?.credits).toHaveLength(1)
+    })
+
+    // TMDB omits the block for a person with no film work. Reaching into it
+    // would throw where an empty grid is the right answer.
+    it('maps an absent movie_credits block to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawPerson)
+
+      await expect(getPerson(1082047)).resolves.toMatchObject({ credits: [] })
+    })
+
+    it('maps an empty cast list to an empty filmography', async () => {
+      tmdbFetch.mockResolvedValue({ ...rawPerson, movie_credits: { cast: [] } })
+
+      await expect(getPerson(1082047)).resolves.toMatchObject({ credits: [] })
+    })
+  })
+
+  // The same split getMovie makes: "TMDB has nobody with that id" is not a
+  // failed request, and only one of the two is worth a retry button.
+  it('returns null for a person that does not exist', async () => {
+    tmdbFetch.mockRejectedValue(
+      new TmdbError('The resource you requested could not be found.', 404),
+    )
+
+    await expect(getPerson(999999999)).resolves.toBeNull()
+  })
+
+  it('rethrows a failure that is not a 404', async () => {
+    tmdbFetch.mockRejectedValue(new TmdbError('TMDB is unavailable', 503))
+
+    await expect(getPerson(1082047)).rejects.toThrow('TMDB is unavailable')
   })
 })

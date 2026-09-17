@@ -25,8 +25,9 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
  * TMDB relay: anyone who finds the URL gets unmetered use of the key, and the
  * abuse is billed to this project's rate limit rather than theirs.
  *
- * `/movie/{id}` is matched by a pattern because the id is unbounded. The
- * pattern requires digits, so `/movie/../account` cannot pass through it.
+ * `/movie/{id}` and `/person/{id}` are matched by a pattern because the id is
+ * unbounded. Each pattern requires digits and ends there, so neither
+ * `/movie/../account` nor `/person/1/images` can pass through it.
  *
  * `/discover/movie` takes the genre id as the `with_genres` parameter rather
  * than in the path, so it needs no pattern of its own. TMDB ignores a value it
@@ -42,7 +43,7 @@ const ALLOWED_EXACT = new Set([
   '/discover/movie',
 ])
 
-const ALLOWED_PATTERNS = [/^\/movie\/\d+$/]
+const ALLOWED_PATTERNS = [/^\/movie\/\d+$/, /^\/person\/\d+$/]
 
 const isAllowed = (path: string): boolean =>
   ALLOWED_EXACT.has(path) || ALLOWED_PATTERNS.some((p) => p.test(path))
@@ -64,12 +65,18 @@ const ALLOWED_PARAMS = new Set(['query', 'page', 'with_genres', 'append_to_respo
  * path allowlist, because one allowed path would then reach every sub-resource
  * below it. So this parameter is checked by value.
  *
- * The one allowed value must stay identical to `APPEND` in `lib/api.ts`. A
- * mismatch is silent: the parameter is dropped, TMDB answers with a plain
- * detail response, and the new sections render empty with no error.
+ * The two allowed values must stay identical to `APPEND` and `PERSON_APPEND` in
+ * `lib/api.ts` — the film blocks and the person block. A mismatch is silent: the
+ * parameter is dropped, TMDB answers with a plain detail response, and the
+ * sections that needed it render empty with no error.
+ *
+ * The value is checked on its own rather than against the path it arrives with.
+ * A film value sent to the person endpoint is one TMDB ignores, not a way past
+ * the allowlist, and pairing the two here would only add a rule with nothing to
+ * enforce.
  */
 const ALLOWED_PARAM_VALUES = new Map([
-  ['append_to_response', new Set(['credits,videos,recommendations'])],
+  ['append_to_response', new Set(['credits,videos,recommendations', 'movie_credits'])],
 ])
 
 /**

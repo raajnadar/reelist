@@ -147,7 +147,8 @@ GET /api/tmdb?path=/search/movie&query=dune
 | `/trending/movie/week` | The home carousel                  |
 | `/movie/popular`       | The "Popular" row                  |
 | `/movie/top_rated`     | The "Top rated" row                |
-| `/movie/{id}`          | The detail screen                  |
+| `/movie/{id}`          | The film screen                    |
+| `/person/{id}`         | The person screen                  |
 | `/search/movie`        | The search screen                  |
 | `/genre/movie/list`    | The genre chips on the home screen |
 | `/discover/movie`      | The genre screen                   |
@@ -160,18 +161,24 @@ parameter that names a path of its own: TMDB uses it to include a sub-resource
 of the film in the detail response, and it accepts `reviews`, `images`,
 `keywords`, or `watch/providers` there as readily as the three the app asks for.
 Forwarding the caller's value would undo the path allowlist, so the proxy allows
-one exact string:
+two exact strings, one per endpoint that uses it:
 
 ```
-append_to_response=credits,videos,recommendations
+append_to_response=credits,videos,recommendations   # /movie/{id}
+append_to_response=movie_credits                    # /person/{id}
 ```
 
-That is how the detail screen gets the cast, the trailer, and the "More like
-this" row without a second request — which is what keeps one film at one request
-against the rate limit. The string must stay identical to `APPEND` in
+That is how the film screen gets the cast, the trailer, and the "More like this"
+row, and the person screen gets the filmography, without a second request —
+which is what keeps one page at one request against the rate limit. The two
+strings must stay identical to `APPEND` and `PERSON_APPEND` in
 [lib/api.ts](../lib/api.ts). A mismatch is silent: the proxy drops the
-parameter, TMDB answers a plain detail response, and the three sections render
-absent with no error.
+parameter, TMDB answers a plain detail response, and the sections that needed it
+render absent with no error.
+
+A value is checked on its own, not against the path it arrives with. A film
+value sent to the person endpoint is one TMDB ignores, not a way past the
+allowlist.
 
 `/discover/movie` is the one path whose filter travels as a parameter rather
 than in the path. TMDB ignores a `with_genres` value it cannot parse and answers

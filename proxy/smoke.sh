@@ -61,6 +61,10 @@ check 200 'path=/movie/550' 'one film'
 # the proxy drops an unknown parameter and still answers 200, so that case lives
 # in api/tmdb.test.ts instead.
 check 200 'path=/movie/550&append_to_response=credits,videos,recommendations' 'one film with its extras'
+check 200 'path=/person/287' 'one person'
+# The person screen's real request. Its append value is a second allowed string,
+# and the same note above applies to a wrong one.
+check 200 'path=/person/287&append_to_response=movie_credits' 'one person with their films'
 check 200 'path=/search/movie&query=dune' 'search'
 
 echo
@@ -69,6 +73,8 @@ check 403 'path=/account' 'a path the app does not use'
 check 403 'path=/authentication/token/new' 'an auth endpoint'
 check 403 'path=/movie/550/../../account' 'a traversal attempt'
 check 403 'path=/movie/abc' 'a non-numeric id'
+check 403 'path=/person/abc' 'a non-numeric person id'
+check 403 'path=/person/287/images' 'a sub-resource under an allowed person'
 check 400 '' 'no path'
 check 404 'path=/movie/99999999' 'a film that does not exist'
 

@@ -91,3 +91,29 @@ export type Video = {
   type: string
   official: boolean
 }
+
+/**
+ * One person, as `/person/{id}` returns it.
+ *
+ * The sentinels follow the convention `Movie` sets. TMDB sends `""` for a
+ * biography it does not hold in the requested language, and `null` for the
+ * birthday, the deathday, and the place of birth of a person it has no record
+ * for — a living person always has a null deathday. `lib/api.ts` maps every one
+ * of those to `''`, so the screen drops a line rather than printing an empty
+ * one.
+ *
+ * `credits` is the filmography, from the `movie_credits` block. The entries are
+ * plain `Movie` values, so the grid draws them with the card every other list
+ * on the screen uses.
+ */
+export type PersonDetail = {
+  id: number
+  name: string
+  biography: string
+  birthday: string
+  deathday: string
+  place_of_birth: string
+  known_for_department: string
+  profile_path: string | null
+  credits: Movie[]
+}

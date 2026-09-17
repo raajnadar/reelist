@@ -2,8 +2,15 @@
  * TMDB returns an empty `release_date` for unreleased films and `0` for an
  * unrated one. Both need a fallback at every call site, so they live here.
  */
-export const releaseYear = (releaseDate: string) =>
-  releaseDate.length >= 4 ? releaseDate.slice(0, 4) : null
+
+/**
+ * The year in a TMDB date (`2024-02-27`), or null when the field is the empty
+ * sentinel. The length check is what separates the two: TMDB sends a whole date
+ * or nothing, never a year on its own.
+ */
+const yearOf = (date: string) => (date.length >= 4 ? date.slice(0, 4) : null)
+
+export const releaseYear = (releaseDate: string) => yearOf(releaseDate)
 
 export const ratingLabel = (voteAverage: number) =>
   voteAverage > 0 ? voteAverage.toFixed(1) : null
@@ -51,3 +58,22 @@ export const metaLine = (voteAverage: number, releaseDate: string, runtime = 0) 
  */
 export const releaseLine = (releaseDate: string, runtime = 0) =>
   [releaseYear(releaseDate), runtimeLabel(runtime)].filter(Boolean).join(' · ')
+
+/**
+ * The years a person lived, as `1930–2014`.
+ *
+ * The four branches are the four states the data has. TMDB omits a birthday it
+ * does not hold, and sends a null deathday for a living person; `lib/api.ts`
+ * maps both to `''`. A single year carries a word with it, because `1963`
+ * beside a name reads as a year of death as easily as a year of birth.
+ *
+ * Returns `''` when neither year is known, so the caller prints no line at all.
+ */
+export const lifeSpan = (birthday: string, deathday: string) => {
+  const born = yearOf(birthday)
+  const died = yearOf(deathday)
+  if (born && died) return `${born}–${died}`
+  if (born) return `Born ${born}`
+  if (died) return `Died ${died}`
+  return ''
+}

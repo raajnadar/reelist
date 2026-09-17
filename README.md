@@ -161,33 +161,35 @@ yarn test --selectProjects proxy     # the proxy only
 Jest runs two projects, because the proxy is server code that uses the Web
 `Request` and `Response` API rather than the React Native runtime.
 
-| Suite                               | Covers                                                 |
-| ----------------------------------- | ------------------------------------------------------ |
-| `lib/format.test.ts`                | Both TMDB sentinels, alone and together                |
-| `lib/images.test.ts`                | URL building, and null for a film with no art          |
-| `lib/api.test.ts`                   | The mapping, the paging, and which trailer is used     |
-| `lib/tmdb.test.ts`                  | The transport, and that no key is ever sent            |
-| `lib/motion.test.ts`                | The transition tokens and the stagger ceiling          |
-| `lib/useDebounced.test.ts`          | The delay, and that one burst sends one value          |
-| `lib/useResource.test.ts`           | Stale answers, the store, the retry, and the idle key  |
-| `lib/resourceCache.test.ts`         | The life of an entry, and the eviction at the ceiling  |
-| `lib/watchlist.test.ts`             | The store, the device copy, and a corrupt one          |
-| `lib/grid.test.ts`                  | The column count, at 7 screen widths                   |
-| `lib/errors.test.ts`                | Which failures may offer a retry, and which may not    |
-| `components/MovieCard.test.tsx`     | The poster size and the fixed card height              |
-| `components/CastCard.test.tsx`      | The photo size, and both reserved text heights         |
-| `components/MovieCarousel.test.tsx` | The geometry invariant, at 5 screen widths             |
-| `components/Skeleton.test.ts`       | The placeholder count against the screen width         |
-| `components/HeroImage.test.tsx`     | The Motion plain-path rule the hero parallax needs     |
-| `components/StateMessage.test.tsx`  | The shared failure block, and its half-declared action |
-| `components/RemoteImage.test.tsx`   | The image tuning: recycling, caching, and the fade     |
-| `__tests__/app/movie/[id].test.tsx` | The detail screen: every state and every error         |
-| `__tests__/app/search.test.tsx`     | Search: the debounce, both empty states, staleness     |
-| `__tests__/app/index.test.tsx`      | The home screen's search entry point and the chips     |
-| `__tests__/app/genre/[id].test.tsx` | The genre grid: paging, a bad id, a stale page         |
-| `__tests__/app/watchlist.test.tsx`  | The saved grid, both empty states, and a live change   |
-| `proxy/api/tmdb.test.ts`            | The allowlist, the append value, and the key           |
-| `proxy/api/rate-limit.test.ts`      | The ceiling, the caller identity, and failing open     |
+| Suite                                | Covers                                                 |
+| ------------------------------------ | ------------------------------------------------------ |
+| `lib/format.test.ts`                 | Both TMDB sentinels, and the four life-date forms      |
+| `lib/images.test.ts`                 | URL building, and null for a film with no art          |
+| `lib/api.test.ts`                    | The mapping, the paging, the trailer, the filmography  |
+| `lib/tmdb.test.ts`                   | The transport, and that no key is ever sent            |
+| `lib/motion.test.ts`                 | The transition tokens and the stagger ceiling          |
+| `lib/useDebounced.test.ts`           | The delay, and that one burst sends one value          |
+| `lib/useResource.test.ts`            | Stale answers, the store, the retry, and the idle key  |
+| `lib/resourceCache.test.ts`          | The life of an entry, and the eviction at the ceiling  |
+| `lib/watchlist.test.ts`              | The store, the device copy, and a corrupt one          |
+| `lib/grid.test.ts`                   | The column count, at 7 screen widths                   |
+| `lib/errors.test.ts`                 | Which failures may offer a retry, and which may not    |
+| `components/MovieCard.test.tsx`      | The poster size and the fixed card height              |
+| `components/CastCard.test.tsx`       | The photo size, the reserved heights, and the link     |
+| `components/MovieCarousel.test.tsx`  | The geometry invariant, at 5 screen widths             |
+| `components/Skeleton.test.ts`        | The placeholder count against the screen width         |
+| `components/HeroImage.test.tsx`      | The Motion plain-path rule the hero parallax needs     |
+| `components/StateMessage.test.tsx`   | The shared failure block, and its half-declared action |
+| `components/RemoteImage.test.tsx`    | The image tuning: recycling, caching, and the fade     |
+| `components/PersonProfile.test.tsx`  | The photo, the facts line, and the folded biography    |
+| `__tests__/app/movie/[id].test.tsx`  | The detail screen: every state and every error         |
+| `__tests__/app/search.test.tsx`      | Search: the debounce, both empty states, staleness     |
+| `__tests__/app/index.test.tsx`       | The home screen's search entry point and the chips     |
+| `__tests__/app/genre/[id].test.tsx`  | The genre grid: paging, a bad id, a stale page         |
+| `__tests__/app/watchlist.test.tsx`   | The saved grid, both empty states, and a live change   |
+| `__tests__/app/person/[id].test.tsx` | The person screen: every state, and no films           |
+| `proxy/api/tmdb.test.ts`             | The allowlist, both append values, and the key         |
+| `proxy/api/rate-limit.test.ts`       | The ceiling, the caller identity, and failing open     |
 
 No test needs a key or a network. The proxy tests mock `fetch`, and the screen
 tests mock `lib/api`.
@@ -204,7 +206,8 @@ app/                     # Expo Router: one file is one screen
 ├── search.tsx           # Search screen, debounced as you type
 ├── watchlist.tsx        # The films saved on this device
 ├── genre/[id].tsx       # One genre, as an endless grid
-└── movie/[id].tsx       # Film detail screen
+├── movie/[id].tsx       # Film detail screen
+└── person/[id].tsx      # One person, and the films they appear in
 components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
 ├── CarouselCard.tsx     # One card in the carousel
@@ -218,6 +221,7 @@ components/
 ├── DetailIdentity.tsx   # The poster and title box, filled and empty
 ├── DetailActions.tsx    # The trailer and save buttons
 ├── DetailOverview.tsx   # The tagline and the synopsis
+├── PersonProfile.tsx    # The person masthead and their biography
 ├── Scrim.tsx            # The gradient that dissolves the detail masthead
 ├── BrandMark.tsx        # The app mark beside the home title
 ├── StateMessage.tsx     # The shared failure, empty, and prompt block
@@ -317,6 +321,27 @@ One thing stayed in a screen. `app/genre/[id].tsx` appends page after page as
 the reader scrolls, and that is a growing list rather than the answer to one
 request. The hook holds its first page, which is why a return to the same genre
 is immediate.
+
+### The person screen
+
+A cast card opens `app/person/[id].tsx`, which shows who the person is and every
+film TMDB credits them with. It is one request, for the same reason the film
+screen is: `/person/{id}` carries the filmography when the request appends
+`movie_credits`. That is a second allowed value in the proxy, beside the film
+one — see [proxy/README.md](proxy/README.md).
+
+Two rules live in `lib/api.ts` rather than in the screen, because both come from
+the shape of the response. TMDB returns a filmography in no order a reader would
+expect, so the mapping sorts it newest first and puts the announced films last.
+And a performer credited twice in one film — a dual role, or a voice part beside
+a screen part — gets one entry per credit under the same film id, which would
+hand FlatList two children with one key.
+
+The screen is one list with the profile as its header, not a scroll view holding
+a grid. A working actor has a hundred credits, and a grid inside a scroll view
+mounts every card at once. The name is drawn once: the floating bar carries it
+only after the profile has scrolled away, which is the arrangement
+`components/DetailHeader.tsx` was built for on the film screen.
 
 ## The watchlist
 
