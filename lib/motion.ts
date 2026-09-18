@@ -132,3 +132,19 @@ export function cascadeWindow(index: number, step = 0.08, span = 0.5, max = 6) {
 
   return [start, start + span] as const
 }
+
+/**
+ * The room a horizontal row keeps above and below its cards.
+ *
+ * A horizontal scroller clips its cross axis — react-native-web gives it
+ * `overflowY: hidden` — so the hover lift on a card (`scale: 1.04` with
+ * `translateY: -6`) draws outside the scroller and the card comes back with
+ * flat, cut corners. The vertical grids never show this: their scroller clips
+ * the other axis, and the grid padding already covers the sideways growth.
+ *
+ * A row pads its content by this much and pulls the same amount back with a
+ * negative margin on the scroller, so the lift has room to draw and the layout
+ * does not move. 16 covers the tallest card in the app: 2% of a ~330 px poster
+ * card on each side, plus the 6 px lift.
+ */
+export const LIFT_SPACE = 16

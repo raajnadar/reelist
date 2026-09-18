@@ -2,6 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { Motion, useScroll } from '@rootnative/inertia'
 import { useCallback } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { LIFT_SPACE } from '../lib/motion'
 import type { Movie } from '../lib/types'
 import {
   CarouselCard,
@@ -108,10 +109,12 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         // without measuring it. This is what keeps the scale peaks aligned
         // while cards mount and unmount during a fling.
         getItemLayout={getItemLayout}
+        style={styles.scroller}
         contentContainerStyle={{
           paddingHorizontal: sidePadding,
           // The trailing marginRight on the last slot doubles the end padding.
           paddingRight: sidePadding - CAROUSEL_SPACING,
+          paddingVertical: LIFT_SPACE,
         }}
       />
     </View>
@@ -121,4 +124,10 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
 const styles = StyleSheet.create({
   wrapper: { gap: 12, marginBottom: 28 },
   heading: { paddingHorizontal: 16 },
+  /*
+    Room for the hover lift on the centered card, given back to the layout by
+    the negative margin. The row clips what leaves it on the vertical axis,
+    which cut the corners off the card under the pointer. See LIFT_SPACE.
+  */
+  scroller: { marginVertical: -LIFT_SPACE },
 })

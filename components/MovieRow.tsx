@@ -2,6 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useInView } from '@rootnative/inertia'
 import { useRef } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
+import { LIFT_SPACE } from '../lib/motion'
 import type { Movie } from '../lib/types'
 import { MovieCard } from './MovieCard'
 
@@ -43,6 +44,7 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
         renderItem={({ item, index }) => (
           <MovieCard movie={item} index={index} progress={progress} />
         )}
+        style={styles.scroller}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
@@ -53,6 +55,14 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
 const styles = StyleSheet.create({
   row: { gap: 8, marginBottom: 24 },
   heading: { paddingHorizontal: 16 },
-  list: { paddingHorizontal: 16 },
+  /*
+    The scroller keeps room for the hover lift and gives it straight back.
+    A horizontal scroller clips what leaves it on the vertical axis, so
+    without the padding the lifted card loses its top corners. The negative
+    margin cancels the padding in the layout, which keeps the gap under the
+    heading and the space below the row at the values above. See LIFT_SPACE.
+  */
+  scroller: { marginVertical: -LIFT_SPACE },
+  list: { paddingHorizontal: 16, paddingVertical: LIFT_SPACE },
   separator: { width: 12 },
 })
