@@ -174,6 +174,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/watchlist.test.ts`              | The store, the device copy, and a corrupt one          |
 | `lib/grid.test.ts`                   | The column count, at 7 screen widths                   |
 | `lib/errors.test.ts`                 | Which failures may offer a retry, and which may not    |
+| `lib/youtube.test.ts`                | The player parameters, the page, and an encoded key    |
 | `components/MovieCard.test.tsx`      | The poster size and the fixed card height              |
 | `components/CastCard.test.tsx`       | The photo size, the reserved heights, and the link     |
 | `components/MovieCarousel.test.tsx`  | The geometry invariant, at 5 screen widths             |
@@ -188,6 +189,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `__tests__/app/genre/[id].test.tsx`  | The genre grid: paging, a bad id, a stale page         |
 | `__tests__/app/watchlist.test.tsx`   | The saved grid, both empty states, and a live change   |
 | `__tests__/app/person/[id].test.tsx` | The person screen: every state, and no films           |
+| `__tests__/app/trailer/[key].test.tsx` | The player: the frame, both exits, and a bad link   |
 | `proxy/api/tmdb.test.ts`             | The allowlist, both append values, and the key         |
 | `proxy/api/rate-limit.test.ts`       | The ceiling, the caller identity, and failing open     |
 
@@ -207,7 +209,8 @@ app/                     # Expo Router: one file is one screen
 ├── watchlist.tsx        # The films saved on this device
 ├── genre/[id].tsx       # One genre, as an endless grid
 ├── movie/[id].tsx       # Film detail screen
-└── person/[id].tsx      # One person, and the films they appear in
+├── person/[id].tsx      # One person, and the films they appear in
+└── trailer/[key].tsx    # The trailer, played in the app
 components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
 ├── CarouselCard.tsx     # One card in the carousel
@@ -221,6 +224,8 @@ components/
 ├── DetailIdentity.tsx   # The poster and title box, filled and empty
 ├── DetailActions.tsx    # The trailer and save buttons
 ├── DetailOverview.tsx   # The tagline and the synopsis
+├── TrailerPlayer.tsx    # The video surface. A web view on a phone
+├── TrailerPlayer.web.tsx # The same surface in a browser: an iframe
 ├── PersonProfile.tsx    # The person masthead and their biography
 ├── Scrim.tsx            # The gradient that dissolves the detail masthead
 ├── BrandMark.tsx        # The app mark beside the home title
@@ -235,6 +240,7 @@ lib/
 ├── mock.ts              # Static film data, now a test fixture only
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels
+├── youtube.ts           # The embed URL, the watch URL, and the player page
 ├── errors.ts            # Sorts a failure into transient, setup, or missing
 ├── motion.ts            # The shared transition tokens and the stagger
 ├── useDebounced.ts      # Delays a value until it stops changing
@@ -342,6 +348,59 @@ a grid. A working actor has a hundred credits, and a grid inside a scroll view
 mounts every card at once. The name is drawn once: the floating bar carries it
 only after the profile has scrolled away, which is the arrangement
 `components/DetailHeader.tsx` was built for on the film screen.
+
+### The trailer player
+
+The "Watch trailer" button opens `app/trailer/[key].tsx` rather than handing the
+video to YouTube. The app used to call `openURL` and leave, which lost the
+reader to another app and lost the scroll position on the way back. A route of
+its own keeps the detail screen mounted underneath, and it earns the system back
+gesture and the Android hardware back button without any code.
+
+The screen makes no request. `getMovie` already chose the video, and the key is
+the whole of what a player needs, so it travels in the route with the film title
+beside it. That is why the player has no loading state and no failure state of
+its own.
+
+There are two player files. `components/TrailerPlayer.tsx` draws a web view, and
+`components/TrailerPlayer.web.tsx` draws an iframe. The split is not a
+preference: `react-native-webview` has no web build, and one file would pull a
+native-only module into the browser bundle. Metro picks the `.web` file for the
+web target, so the native one never reaches it. The web file imports the prop
+type from the native one and no value from it, so the two surfaces cannot drift
+apart.
+
+The two load the embed differently, and that difference is the whole reason
+`embedPage` in `lib/youtube.ts` exists. **YouTube checks the `Referer` header on
+every embed request, and it answers a bad one inside the frame rather than
+failing.** The player draws an error code, the video never plays, and nothing
+throws that the app could catch. The screen met two of those codes in turn on an
+iOS device, while the browser build played the same trailer throughout:
+
+| Code  | What the player showed             | What the referrer was        |
+| ----- | ---------------------------------- | ---------------------------- |
+| `153` | "Video player configuration error" | None                         |
+| `152` | "This video is not available"      | `https://www.youtube.com`    |
+
+A web view pointed straight at the embed URL makes that URL the top-level
+document, and a top-level document has no referrer to send — that is the 153.
+Wrapping the embed in a local page fixed the absence but not the value: a page
+served as youtube.com is an embed of YouTube inside YouTube, which YouTube
+refuses, and that is the 152.
+
+So the page needs both halves together. The embed sits in an iframe with a
+parent document, and that document claims a real third-party site through the
+web view's `baseUrl` — `PLAYER_ORIGIN`, which is this app's own web build on
+GitHub Pages. The referrer the phone sends is then the referrer the working
+browser build already sends. That build needs none of this, because its iframe
+already sits in a real page on that site.
+
+The player always offers a button that opens the video in YouTube itself. That
+is not a fallback after a failure, because there is no failure to catch: a studio
+can block a video from embedding, and TMDB still lists it. The embed then loads
+and plays nothing but the words "Video unavailable". The app cannot tell that
+apart from a slow start without the YouTube frame API, so it keeps the way out
+visible instead.
 
 ## The watchlist
 

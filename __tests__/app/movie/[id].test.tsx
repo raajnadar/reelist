@@ -39,26 +39,17 @@ jest.mock('expo-router', () => ({
   }),
 }))
 
-// The trailer button leaves the app. `openURL` is the one call the screen makes
-// outside itself, and no app file opened a link before this screen did, so
-// there is no shared mock to reuse.
-jest.mock('expo-linking', () => ({ openURL: jest.fn() }))
-
 jest.mock('../../../lib/api', () => ({
   getMovie: jest.fn(),
 }))
 
 const { getMovie } = jest.requireMock('../../../lib/api')
-const { openURL } = jest.requireMock('expo-linking')
 
 // Dune: a film with every field the detail endpoint sends.
 const movie = mockMovieDetail
 
 beforeEach(() => {
   jest.clearAllMocks()
-  // The screen calls `.catch` on the result, so the mock has to answer with a
-  // promise rather than undefined.
-  openURL.mockResolvedValue(true)
 })
 
 it('shows the title, the rating, the date line, and the overview', async () => {
@@ -270,7 +261,9 @@ it('renders the poster in the masthead on a narrow window', async () => {
  * that to an empty list or a null.
  */
 describe('the trailer button', () => {
-  it('opens the YouTube watch page for the trailer key', async () => {
+  // The button opens the player screen rather than YouTube. The title travels
+  // with the key, so the player names the film without a request of its own.
+  it('opens the player screen for the trailer key', async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
     getMovie.mockResolvedValue(movie)
 
@@ -278,8 +271,8 @@ describe('the trailer button', () => {
 
     fireEvent.press(await screen.findByText('Watch trailer'))
 
-    expect(openURL).toHaveBeenCalledWith(
-      `https://www.youtube.com/watch?v=${movie.trailer?.key}`,
+    expect(mockPush).toHaveBeenCalledWith(
+      `/trailer/${movie.trailer?.key}?title=${encodeURIComponent(movie.title)}`,
     )
   })
 
@@ -295,7 +288,7 @@ describe('the trailer button', () => {
     // The overview is the marker that the body rendered at all.
     expect(await screen.findByText(noTrailer.overview)).toBeTruthy()
     expect(screen.queryByText('Watch trailer')).toBeNull()
-    expect(openURL).not.toHaveBeenCalled()
+    expect(mockPush).not.toHaveBeenCalled()
   })
 })
 

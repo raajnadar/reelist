@@ -1,26 +1,9 @@
 import { Button } from '@rootnative/components/button'
 import { Motion } from '@rootnative/inertia'
-import { openURL } from 'expo-linking'
+import { useRouter } from 'expo-router'
 import { StyleSheet } from 'react-native'
-import type { MovieDetail, Video } from '../lib/types'
+import type { MovieDetail } from '../lib/types'
 import { isSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
-
-/**
- * Opens the trailer outside the app.
- *
- * `lib/api.ts` already established the video is a YouTube trailer, so this
- * builds the watch URL and nothing more. It takes the nullable type rather than
- * a narrowed one, because the caller reads `movie.trailer` inside a callback
- * and the guard around that callback does not narrow a property there.
- *
- * A rejected promise means no installed app can open a YouTube link. There is
- * no better answer than doing nothing, and an uncaught rejection would only
- * print a warning.
- */
-const openTrailer = (video: Video | null) => {
-  if (!video) return
-  void openURL(`https://www.youtube.com/watch?v=${video.key}`).catch(() => {})
-}
 
 /**
  * What the reader can do with the film: watch the trailer, and keep it.
@@ -30,8 +13,14 @@ const openTrailer = (video: Video | null) => {
  * needs no delay of its own.
  */
 export function DetailActions({ movie }: { movie: MovieDetail }) {
+  const router = useRouter()
   const { movies } = useWatchlist()
   const saved = isSaved(movies, movie.id)
+
+  // Read into a const before the callback below reads it. `movie.trailer` is a
+  // property, and the guard in the JSX does not narrow a property inside a
+  // handler that runs later.
+  const trailer = movie.trailer
 
   return (
     <Motion.View
@@ -45,17 +34,20 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
         this line has no filtering to do and `null` means the button is simply
         absent.
 
-        The link leaves the app. There is no in-app player: a YouTube video
-        needs the YouTube frame, so an embedded one would take a new dependency
-        and still hand playback to YouTube. `openURL` opens the YouTube app when
-        it is installed and the browser when it is not.
+        It opens the player screen, which keeps the reader in the app and keeps
+        this screen underneath with its scroll position. The title travels with
+        it so the player can name the film without a request of its own.
       */}
-      {movie.trailer ? (
+      {trailer ? (
         <Button
           variant="filled"
           size="m"
           leadingIcon="play"
-          onPress={() => openTrailer(movie.trailer)}
+          onPress={() =>
+            router.push(
+              `/trailer/${trailer.key}?title=${encodeURIComponent(movie.title)}`,
+            )
+          }
         >
           Watch trailer
         </Button>
