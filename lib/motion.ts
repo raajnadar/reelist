@@ -134,17 +134,22 @@ export function cascadeWindow(index: number, step = 0.08, span = 0.5, max = 6) {
 }
 
 /**
- * The room a horizontal row keeps above and below its cards.
+ * The room a card needs around it to grow into.
  *
- * A horizontal scroller clips its cross axis — react-native-web gives it
- * `overflowY: hidden` — so the hover lift on a card (`scale: 1.04` with
- * `translateY: -6`) draws outside the scroller and the card comes back with
- * flat, cut corners. The vertical grids never show this: their scroller clips
- * the other axis, and the grid padding already covers the sideways growth.
+ * Every card that answers a pointer grows from its centre and rises:
+ * `scale: 1.04` with `translateY: -6`. The tallest of them is the poster card,
+ * 332 px — 240 of poster and 92 of content — which puts its top edge 12.6 px
+ * above its resting box under the pointer, and its side 3.2 px out. 16 covers
+ * that with room to spare, and covers the carousel card as well, which is
+ * taller but only scales to 1.03.
  *
- * A row pads its content by this much and pulls the same amount back with a
- * negative margin on the scroller, so the lift has room to draw and the layout
- * does not move. 16 covers the tallest card in the app: 2% of a ~330 px poster
- * card on each side, plus the 6 px lift.
+ * Two rules follow from it, and both matter:
+ *
+ * 1. A horizontal row pads its content by this much. Its scroller clips the
+ *    vertical axis — react-native-web gives it `overflowY: hidden` — so a card
+ *    with no room above it comes back with its top corners cut off flat.
+ * 2. Nothing sits closer to a card than this. The space has to be real space:
+ *    padding that a negative margin pulls back leaves the clipping fixed, but
+ *    the grown card then draws over the heading above it.
  */
 export const LIFT_SPACE = 16

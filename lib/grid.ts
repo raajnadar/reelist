@@ -1,4 +1,5 @@
 import { CARD_WIDTH } from '../components/MovieCard'
+import { LIFT_SPACE } from './motion'
 
 /**
  * The poster grid, shared by search, genre, and the watchlist.
@@ -8,8 +9,14 @@ import { CARD_WIDTH } from '../components/MovieCard'
  * between two cards on one screen equal to the gap on another.
  */
 
-/** The space between two cards, across and down. */
-export const GRID_GAP = 12
+/**
+ * The space between two cards, across and down.
+ *
+ * It is LIFT_SPACE, not a number of its own: a card under the pointer grows and
+ * rises, and a gap narrower than that would let it draw over the card in the
+ * row above. The same value runs across as well, so the grid stays a grid.
+ */
+export const GRID_GAP = LIFT_SPACE
 
 /** The space between the grid and the edge of the screen. */
 export const GRID_PADDING = 16

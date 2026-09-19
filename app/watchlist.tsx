@@ -96,6 +96,12 @@ export default function WatchlistScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  list: { paddingHorizontal: GRID_PADDING, gap: GRID_GAP },
+  /*
+    The top inset is inside the scroller, not above it: a vertical scroller
+    clips at its own top edge, so a card in the first row that grows under the
+    pointer would come back cut off. GRID_GAP is the room it needs — see
+    LIFT_SPACE — and it is the same space that separates two rows.
+  */
+  list: { paddingHorizontal: GRID_PADDING, paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
 })

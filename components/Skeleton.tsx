@@ -2,6 +2,8 @@ import { Grid } from '@rootnative/components/layout'
 import { useBreakpointValue } from '@rootnative/core'
 import { Skeleton as SkeletonBlock } from '@rootnative/components/skeleton'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { GRID_GAP } from '../lib/grid'
+import { LIFT_SPACE } from '../lib/motion'
 import { CARD_WIDTH } from './MovieCard'
 
 /**
@@ -116,7 +118,7 @@ export function SkeletonGrid({ rows = 2 }: { rows?: number }) {
       (it would see one child). The cards pulse together instead, which is what
       the library block does on its own.
     */
-    <Grid columns={SKELETON_COLUMNS} gap={ROW_GAP} style={styles.grid}>
+    <Grid columns={SKELETON_COLUMNS} gap={GRID_GAP} style={styles.grid}>
       {Array.from({ length: columns * rows }, (_, i) => (
         <SkeletonCard key={i} stretch />
       ))}
@@ -144,8 +146,12 @@ const styles = StyleSheet.create({
   // `overflow: 'hidden'` keeps the last card clipped at the edge. Without it the
   // overflowing card widens the page on web and adds a horizontal scrollbar the
   // real FlatList row does not have.
-  row: { gap: 12, marginBottom: 24, overflow: 'hidden' },
+  // The gap matches the real row, where the space under the heading is the
+  // list's own LIFT_SPACE padding rather than a gap.
+  row: { gap: LIFT_SPACE, marginBottom: 24, overflow: 'hidden' },
   heading: { marginHorizontal: ROW_PADDING },
   rowCards: { flexDirection: 'row', gap: ROW_GAP, paddingHorizontal: ROW_PADDING },
-  grid: { paddingHorizontal: ROW_PADDING },
+  // The real grid holds the same inset and the same gap, so the placeholder
+  // stands where the cards will.
+  grid: { paddingHorizontal: ROW_PADDING, paddingTop: GRID_GAP },
 })

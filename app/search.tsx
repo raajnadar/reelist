@@ -182,7 +182,15 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  field: { paddingHorizontal: GRID_PADDING, paddingTop: 8, paddingBottom: 12 },
-  list: { paddingHorizontal: GRID_PADDING, gap: GRID_GAP },
+  // No padding under the field: the space below it belongs to the list, which
+  // has to hold it inside its own scroller. See the list below.
+  field: { paddingHorizontal: GRID_PADDING, paddingTop: 8 },
+  /*
+    The top inset is inside the scroller, not above it: a vertical scroller
+    clips at its own top edge, so a card in the first row that grows under the
+    pointer would come back cut off. GRID_GAP is the room it needs — see
+    LIFT_SPACE — and it is the same space that separates two rows.
+  */
+  list: { paddingHorizontal: GRID_PADDING, paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
 })

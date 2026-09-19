@@ -109,7 +109,6 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         // without measuring it. This is what keeps the scale peaks aligned
         // while cards mount and unmount during a fling.
         getItemLayout={getItemLayout}
-        style={styles.scroller}
         contentContainerStyle={{
           paddingHorizontal: sidePadding,
           // The trailing marginRight on the last slot doubles the end padding.
@@ -122,12 +121,11 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
 }
 
 const styles = StyleSheet.create({
-  wrapper: { gap: 12, marginBottom: 28 },
-  heading: { paddingHorizontal: 16 },
   /*
-    Room for the hover lift on the centered card, given back to the layout by
-    the negative margin. The row clips what leaves it on the vertical axis,
-    which cut the corners off the card under the pointer. See LIFT_SPACE.
+    No `gap`: the list pads itself by LIFT_SPACE, and that padding is both the
+    space under the heading and the room the centered card grows into when the
+    pointer is over it. The margin carries the rest of the 28 under the row.
   */
-  scroller: { marginVertical: -LIFT_SPACE },
+  wrapper: { marginBottom: 28 - LIFT_SPACE },
+  heading: { paddingHorizontal: 16 },
 })

@@ -44,7 +44,6 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
         renderItem={({ item, index }) => (
           <MovieCard movie={item} index={index} progress={progress} />
         )}
-        style={styles.scroller}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
@@ -53,16 +52,15 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 8, marginBottom: 24 },
-  heading: { paddingHorizontal: 16 },
   /*
-    The scroller keeps room for the hover lift and gives it straight back.
-    A horizontal scroller clips what leaves it on the vertical axis, so
-    without the padding the lifted card loses its top corners. The negative
-    margin cancels the padding in the layout, which keeps the gap under the
-    heading and the space below the row at the values above. See LIFT_SPACE.
+    The list pads itself by LIFT_SPACE, and that padding IS the gap under the
+    heading — the row declares no `gap` of its own. A hovered card grows and
+    rises into this padding, so the space has to be real: a negative margin
+    that pulled the same amount back would put the card over the heading.
+    The margin below carries the rest of the 24 the row keeps under it.
   */
-  scroller: { marginVertical: -LIFT_SPACE },
+  row: { marginBottom: 24 - LIFT_SPACE },
+  heading: { paddingHorizontal: 16 },
   list: { paddingHorizontal: 16, paddingVertical: LIFT_SPACE },
   separator: { width: 12 },
 })
