@@ -10,6 +10,7 @@ import { GenreChips } from '../components/GenreChips'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
 import { SkeletonRow } from '../components/Skeleton'
+import { SpinningCog } from '../components/SpinningCog'
 import { StateMessage } from '../components/StateMessage'
 import { getGenres, getPopular, getTopRated, getTrending } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
@@ -101,8 +102,14 @@ export default function HomeScreen() {
         </View>
         {/* IconButtons rather than AppBar `actions`: this screen draws its own
             title with the top inset above it, and swapping in an AppBar would
-            change the home layout to add two buttons. */}
+            change the home layout to add three buttons. */}
         <View style={styles.actions}>
+          <IconButton
+            icon={(props) => <SpinningCog {...props} />}
+            variant="standard"
+            accessibilityLabel="Settings"
+            onPress={() => router.push('/about')}
+          />
           <IconButton
             icon="bookmark-outline"
             variant="standard"

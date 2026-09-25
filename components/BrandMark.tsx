@@ -1,4 +1,5 @@
 import { useTheme } from '@rootnative/core'
+import { useId } from 'react'
 import Svg, { Circle, Mask, Path, Rect } from 'react-native-svg'
 
 /**
@@ -10,9 +11,23 @@ import Svg, { Circle, Mask, Path, Rect } from 'react-native-svg'
 export function BrandMark({ size = 26, color }: { size?: number; color?: string }) {
   const theme = useTheme()
 
+  /**
+   * One mask id for each mark on screen.
+   *
+   * A fixed id breaks the moment two marks share a document, which on the web
+   * is a DOM. `url(#...)` resolves to the first element with that id, so the
+   * second mark points at the first mark's mask — and when a navigator hides
+   * the screen holding that first one, the mask renders nothing and the mark
+   * comes out as a plain filled circle with no reel holes and no play button.
+   *
+   * The colons React puts in a `useId` value are legal in an id but not in the
+   * `url(#...)` reference that reads it, so they come out here.
+   */
+  const maskId = `reel-holes-${useId().replace(/:/g, '')}`
+
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Mask id="reel-holes">
+      <Mask id={maskId}>
         <Rect x={-10} y={-10} width={120} height={120} fill="#fff" />
         <Circle cx={50} cy={18.5} r={6.5} fill="#000" />
         <Circle cx={77.3} cy={34.2} r={6.5} fill="#000" />
@@ -33,7 +48,7 @@ export function BrandMark({ size = 26, color }: { size?: number; color?: string 
         cy={50}
         r={45}
         fill={color ?? theme.colors.primary}
-        mask="url(#reel-holes)"
+        mask={`url(#${maskId})`}
       />
     </Svg>
   )

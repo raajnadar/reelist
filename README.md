@@ -9,6 +9,10 @@ The app holds no API key. It reads its data through a small proxy that keeps the
 key on a server. [Why that matters](#the-key-never-reaches-the-app) is explained
 below, because it shapes the whole data layer.
 
+The settings button in the home header opens the settings sheet: light or dark,
+and what the app is built with. See
+[Built with RootNative UI](#built-with-rootnative-ui).
+
 ## Try the app
 
 ### On a phone
@@ -175,6 +179,8 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/grid.test.ts`                   | The column count, at 7 screen widths                   |
 | `lib/errors.test.ts`                 | Which failures may offer a retry, and which may not    |
 | `lib/youtube.test.ts`                | The player parameters, the page, and an encoded key    |
+| `lib/appearance.test.ts`             | The chosen mode, the device copy, and a corrupt one    |
+| `components/BrandMark.test.tsx`      | The mask id, and that two marks never share one        |
 | `components/MovieCard.test.tsx`      | The poster size and the fixed card height              |
 | `components/CastCard.test.tsx`       | The photo size, the reserved heights, and the link     |
 | `components/MovieCarousel.test.tsx`  | The geometry invariant, at 5 screen widths             |
@@ -190,6 +196,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `__tests__/app/watchlist.test.tsx`   | The saved grid, both empty states, and a live change   |
 | `__tests__/app/person/[id].test.tsx` | The person screen: every state, and no films           |
 | `__tests__/app/trailer/[key].test.tsx` | The player: the frame, both exits, and a bad link   |
+| `__tests__/app/about.test.tsx`       | Every control on the settings screen, and its links    |
 | `proxy/api/tmdb.test.ts`             | The allowlist, both append values, and the key         |
 | `proxy/api/rate-limit.test.ts`       | The ceiling, the caller identity, and failing open     |
 
@@ -210,7 +217,8 @@ app/                     # Expo Router: one file is one screen
 ├── genre/[id].tsx       # One genre, as an endless grid
 ├── movie/[id].tsx       # Film detail screen
 ├── person/[id].tsx      # One person, and the films they appear in
-└── trailer/[key].tsx    # The trailer, played in the app
+├── trailer/[key].tsx    # The trailer, played in the app
+└── about.tsx            # Light or dark, and what the app is built with
 components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
 ├── CarouselCard.tsx     # One card in the carousel
@@ -229,6 +237,7 @@ components/
 ├── PersonProfile.tsx    # The person masthead and their biography
 ├── Scrim.tsx            # The gradient that dissolves the detail masthead
 ├── BrandMark.tsx        # The app mark beside the home title
+├── SpinningCog.tsx      # The settings icon, which turns once every few seconds
 ├── StateMessage.tsx     # The shared failure, empty, and prompt block
 ├── RemoteImage.tsx      # Every TMDB picture, cached and cross-dissolved
 └── Skeleton.tsx         # The loading placeholders
@@ -248,6 +257,7 @@ lib/
 ├── resourceCache.ts     # The store behind useResource
 ├── watchlist.ts         # The saved films, and the device copy
 ├── grid.ts              # The poster grid: columns, gap, padding
+├── appearance.ts        # Light, dark, or system, and the device copy
 └── test-utils.tsx       # render() wrapped in the app's providers
 proxy/                   # The TMDB proxy. Deploys on its own
 ├── api/tmdb.ts          # The function that holds the key
@@ -432,6 +442,85 @@ Three states the code treats as real rather than impossible:
    disk. The list in memory is still correct, so the app keeps working and the
    failure is not reported: there is no action a message could offer.
 
+## Built with RootNative UI
+
+The settings sheet, at [app/about.tsx](app/about.tsx), opens from the settings
+button in the home header. The light and dark control comes first. Below it, a
+short "about" part names [RootNative UI](https://rootnative.github.io/ui/), the
+three packages that draw the app, and the version of each one.
+
+### It is a modal, drawn by the app
+
+The screen is a detour, not a place: the reader opens it, changes the look, and
+returns to the film they were on. It has to keep the screen underneath on
+display while the theme repaints it, because that repaint is the one thing the
+screen exists to show.
+
+`app/_layout.tsx` gives the route two options and nothing else:
+
+```tsx
+<Stack.Screen name="about" options={{ presentation: 'transparentModal', animation: 'fade' }} />
+```
+
+`transparentModal` is plain React Navigation, and it behaves the same on all
+three platforms. The navigator keeps the screen below mounted and visible
+whenever the screen above it is a transparent presentation, and hands this route
+a see-through background:
+
+```js
+// react-navigation/native-stack/views/NativeStackView.js
+const TRANSPARENT_PRESENTATIONS = ['transparentModal', 'containedTransparentModal']
+display: (isFocused || TRANSPARENT_PRESENTATIONS.includes(nextPresentation)) ? 'flex' : 'none'
+```
+
+Everything the reader sees is then drawn by `app/about.tsx` — a scrim, and a
+card over it. That is the point rather than extra work: the card's colours and
+its corner (`theme.shape.cornerExtraLarge`) come from the theme, so **a change
+to light or dark repaints the card that made the change**. A presentation owned
+by the navigator could not do that.
+
+`useBreakpoint()` picks the shape. Below the `compact` boundary the card fills
+the window and drops its corner, because a centred card with margins is a worse
+full-screen page. Above it the card is 640 px wide and at most 86% of the window
+tall, centred on the scrim. A press on the scrim dismisses; the scrim itself is
+out of the accessibility tree, because it repeats what the close button already
+offers.
+
+**The path not taken.** `presentation: 'modal'` gives a native sheet on iOS and
+Android, and Expo Router has a web implementation with a centred desktop dialog
+— but only behind `EXPO_UNSTABLE_WEB_MODAL`. Without the flag Metro resolves
+`expo-router/build/layouts/_web-modal.js` to the plain stack and the route draws
+as a full page. That meant an unstable flag in three npm scripts, a local type
+for a `webModalStyle` option the package does not export, and a look the theme
+could not reach. `transparentModal` costs about forty lines of ordinary layout
+and has none of that.
+
+### Light and dark
+
+The reader picks System, Light, or Dark. The choice goes to
+[lib/appearance.ts](lib/appearance.ts), the root layout reads it, and the film
+rows behind the sheet repaint with it. The choice is kept on the device.
+
+The two themes come from one call in [theme.ts](theme.ts):
+`createMaterialTheme('#BE123C')`. The HCT colour engine behind
+`@rootnative/core/create-theme` derives all 49 MD3 roles from that seed, for
+light and for dark.
+
+### Motion is a vocabulary, not a number
+
+[lib/motion.ts](lib/motion.ts) registers six named transitions once, on
+`<MotionConfig>` at the app root. No component in the app writes a spring
+constant; each writes `transition="press"` or `transition="enter"`, and the feel
+of every surface changes from that one file.
+
+A TypeScript module augmentation in that file narrows the `transition` prop to
+the six names, so a typo is a compile error rather than a dev-time warning and a
+silent fallback to the default spring.
+
+Reduced motion is handled once, in the same place: `<MotionConfig>` defaults to
+`reducedMotion="user"`, and every animation below it downgrades to no animation
+when the OS asks.
+
 ## Technology
 
 - Expo SDK 57 and Expo Router 57
@@ -495,6 +584,22 @@ Six steps need a web interface:
 ## More information
 
 - [RootNative UI documentation](https://rootnative.github.io/ui)
+- [RootNative UI source](https://github.com/rootnative/ui) — `@rootnative/core`
+  and `@rootnative/components`
+- [RootNative Inertia source](https://github.com/rootnative/inertia) — the
+  animation layer, in a repository of its own
 - [Expo Router documentation](https://docs.expo.dev/router/introduction/)
 - [Expo documentation](https://docs.expo.dev/)
 - [TMDB API reference](https://developer.themoviedb.org/reference/intro/getting-started)
+
+The about screen carries the same links. Each package name on it opens that
+package's repository, and the URL is read from the package's own `homepage`
+field rather than written into the screen, so a package that moves takes its
+link with it.
+
+The version beside each name comes from the same place — the package's own
+`version` field, read at runtime. All three packages publish `./package.json`
+in their exports, so the screen states what is installed and a `yarn upgrade`
+cannot leave it behind. A test compares the number on screen
+against the number installed, so an upgrade that left the page behind fails the
+build.
