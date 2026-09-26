@@ -151,12 +151,58 @@ export function toggleSaved(movie: Movie): void {
   emit()
 }
 
-/** Empties the list, on the device as well. */
-export function clearWatchlist(): void {
+/**
+ * Empties the list, on the device as well.
+ *
+ * Returns the films it removed, so the caller can offer an undo that hands them
+ * to `restoreSaved`.
+ */
+export function clearWatchlist(): Movie[] {
+  const removed = movies
   touched = true
   movies = []
   persist()
   emit()
+  return removed
+}
+
+/**
+ * Puts removed films back, for an undo.
+ *
+ * `at` is the index the first film had before the removal, so an undone unsave
+ * returns the film to its old place rather than to the front. Leave it out to
+ * put the films after everything saved since: those saves are newer, and the
+ * newest save goes first.
+ *
+ * A film the reader saved again before the undo is skipped, so an undo never
+ * makes a duplicate.
+ */
+export function restoreSaved(films: Movie[], at = Number.POSITIVE_INFINITY): void {
+  const back = films.filter((m) => !isSaved(movies, m.id)).map(toSaved)
+  if (!back.length) return
+
+  const index = Math.min(Math.max(at, 0), movies.length)
+  touched = true
+  movies = [...movies.slice(0, index), ...back, ...movies.slice(index)]
+  persist()
+  emit()
+}
+
+export type WatchlistOrder = 'added' | 'title' | 'rating'
+
+/**
+ * The saved films in the order the reader chose. The store order is the date
+ * added, newest first.
+ *
+ * `Array.prototype.sort` is stable, so two films with the same rating keep
+ * their date-added order.
+ */
+export function sortWatchlist(saved: Movie[], order: WatchlistOrder): Movie[] {
+  if (order === 'added') return saved
+  const sorted = [...saved]
+  return order === 'title'
+    ? sorted.sort((a, b) => a.title.localeCompare(b.title))
+    : sorted.sort((a, b) => b.vote_average - a.vote_average)
 }
 
 /**

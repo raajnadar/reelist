@@ -42,6 +42,13 @@ export const transitions = {
   cascade: { type: 'timing', duration: 900 },
 
   /**
+   * The bookmark that fills when the reader saves a film. Low friction, so the
+   * icon overshoots to about 1.14 and settles in about half a second: the
+   * bounce is what tells the reader the save happened.
+   */
+  pop: { type: 'spring', tension: 500, friction: 14 },
+
+  /**
    * Content leaving. Timing and quick: an exit that springs holds the old
    * content on screen while the new content is already arriving.
    */

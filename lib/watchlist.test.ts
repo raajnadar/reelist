@@ -1,17 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { mockMovies } from './mock'
-import type { MovieDetail } from './types'
+import type { Movie, MovieDetail } from './types'
 import {
   clearWatchlist,
   isSaved,
   parseStored,
+  restoreSaved,
+  sortWatchlist,
   STORAGE_KEY,
   toggleSaved,
   useWatchlist,
 } from './watchlist'
 
-const [first, second] = mockMovies
+const [first, second, third] = mockMovies
 
 describe('parseStored', () => {
   it('reads back what the store wrote', () => {
@@ -140,6 +142,69 @@ describe('useWatchlist', () => {
     await waitFor(async () => expect(await AsyncStorage.getItem(STORAGE_KEY)).toBe('[]'))
   })
 
+  it('returns the films it removed', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(first))
+    act(() => toggleSaved(second))
+
+    let removed: Movie[] = []
+    act(() => {
+      removed = clearWatchlist()
+    })
+
+    expect(removed).toEqual([second, first])
+  })
+
+  it('puts an unsaved film back at its old place', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(third))
+    act(() => toggleSaved(second))
+    act(() => toggleSaved(first))
+
+    act(() => toggleSaved(second))
+    act(() => restoreSaved([second], 1))
+
+    expect(result.current.movies).toEqual([first, second, third])
+    await waitFor(async () =>
+      expect(parseStored(await AsyncStorage.getItem(STORAGE_KEY))).toEqual([
+        first,
+        second,
+        third,
+      ]),
+    )
+  })
+
+  it('puts a cleared list back after the films saved since', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(second))
+    act(() => toggleSaved(first))
+
+    let removed: Movie[] = []
+    act(() => {
+      removed = clearWatchlist()
+    })
+    // Saved between the clear and the undo, so it is the newest save.
+    act(() => toggleSaved(third))
+    act(() => restoreSaved(removed))
+
+    expect(result.current.movies).toEqual([third, first, second])
+  })
+
+  it('skips a film the reader saved again before the undo', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(first))
+
+    act(() => toggleSaved(first))
+    act(() => toggleSaved(first))
+    act(() => restoreSaved([first], 0))
+
+    expect(result.current.movies).toEqual([first])
+  })
+
   it('reports one change to every reader', async () => {
     const a = renderHook(() => useWatchlist())
     const b = renderHook(() => useWatchlist())
@@ -173,5 +238,30 @@ describe('useWatchlist', () => {
 
     await waitFor(() => expect(result.current.loaded).toBe(true))
     expect(result.current.movies).toEqual([])
+  })
+})
+
+describe('sortWatchlist', () => {
+  const low = { ...first, id: 101, title: 'beta', vote_average: 6 }
+  const high = { ...first, id: 102, title: 'Alpha', vote_average: 9 }
+  const tie = { ...first, id: 103, title: 'Gamma', vote_average: 6 }
+  const saved = [low, high, tie]
+
+  it('keeps the store order for the date added', () => {
+    expect(sortWatchlist(saved, 'added')).toBe(saved)
+  })
+
+  it('sorts by title without regard to case', () => {
+    expect(sortWatchlist(saved, 'title')).toEqual([high, low, tie])
+  })
+
+  it('puts the highest rating first, and keeps the date order in a tie', () => {
+    expect(sortWatchlist(saved, 'rating')).toEqual([high, low, tie])
+  })
+
+  it('does not change the list it is given', () => {
+    sortWatchlist(saved, 'title')
+
+    expect(saved).toEqual([low, high, tie])
   })
 })

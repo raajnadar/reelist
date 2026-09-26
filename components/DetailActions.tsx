@@ -1,9 +1,12 @@
 import { Button } from '@rootnative/components/button'
+import { useSnackbar } from '@rootnative/components/snackbar'
 import { Motion } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
+import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
-import { isSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
+import { BookmarkIcon } from './BookmarkIcon'
+import { restoreSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
 
 /**
  * What the reader can do with the film: watch the trailer, and keep it.
@@ -14,8 +17,30 @@ import { isSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
  */
 export function DetailActions({ movie }: { movie: MovieDetail }) {
   const router = useRouter()
+  const snackbar = useSnackbar()
   const { movies } = useWatchlist()
-  const saved = isSaved(movies, movie.id)
+  const savedAt = movies.findIndex((m) => m.id === movie.id)
+  const saved = savedAt !== -1
+  const [pops, setPops] = useState(0)
+
+  const toggle = () => {
+    toggleSaved(movie)
+    if (!saved) {
+      setPops((n) => n + 1)
+      return
+    }
+
+    // `long`, because the library makes a snackbar with an action wait
+    // forever by default, and it would then stay on the screens the reader
+    // opens next. `replace`, so a fast save and unsave does not queue two.
+    snackbar.show({
+      message: 'Removed from your watchlist',
+      actionLabel: 'Undo',
+      duration: 'long',
+      replace: true,
+      onAction: () => restoreSaved([movie], savedAt),
+    })
+  }
 
   // Read into a const before the callback below reads it. `movie.trailer` is a
   // property, and the guard in the JSX does not narrow a property inside a
@@ -66,8 +91,8 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       <Button
         variant={saved ? 'filled' : 'tonal'}
         size="m"
-        leadingIcon={saved ? 'bookmark' : 'bookmark-outline'}
-        onPress={() => toggleSaved(movie)}
+        leadingIcon={(props) => <BookmarkIcon saved={saved} pop={pops} {...props} />}
+        onPress={toggle}
       >
         {saved ? 'Saved' : 'Save'}
       </Button>

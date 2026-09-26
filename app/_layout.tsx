@@ -1,3 +1,5 @@
+import { PortalHost } from '@rootnative/components/portal'
+import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider, useThemeMode } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { Stack } from 'expo-router'
@@ -95,7 +97,16 @@ export default function RootLayout() {
           subtree would keep animating.
         */}
         <MotionConfig transitions={transitions}>
-          <Screens />
+          {/*
+            Inside MotionConfig, so a menu or a snackbar drawn in the portal
+            layer resolves the app's named transitions too. No screen has a FAB
+            or a bottom bar, so the snackbar needs no `bottomOffset`.
+          */}
+          <PortalHost>
+            <SnackbarProvider>
+              <Screens />
+            </SnackbarProvider>
+          </PortalHost>
         </MotionConfig>
         <ThemedStatusBar />
       </ThemeProvider>

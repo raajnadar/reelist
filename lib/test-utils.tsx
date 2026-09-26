@@ -1,3 +1,5 @@
+import { PortalHost } from '@rootnative/components/portal'
+import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { render, screen } from '@testing-library/react-native'
@@ -29,7 +31,11 @@ function Providers({ children }: { children: ReactElement }) {
           falls back to the default spring — the test would then exercise
           motion the app never runs.
         */}
-        <MotionConfig transitions={transitions}>{children}</MotionConfig>
+        <MotionConfig transitions={transitions}>
+          <PortalHost>
+            <SnackbarProvider>{children}</SnackbarProvider>
+          </PortalHost>
+        </MotionConfig>
       </ThemeProvider>
     </SafeAreaProvider>
   )

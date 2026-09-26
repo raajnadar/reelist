@@ -80,3 +80,48 @@ it('reports a device copy that cannot be parsed as an empty watchlist', async ()
 
   expect(await screen.findByTestId('watchlist-empty')).toBeTruthy()
 })
+
+it('sorts the films from the options menu', async () => {
+  // Oppenheimer was saved last, so it leads the date-added order. The title
+  // order puts Dune first, which is the change this test looks for.
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([second, first]))
+
+  const screen = renderWithProviders(<WatchlistScreen />)
+  const order = () =>
+    screen
+      .getAllByText(new RegExp(`^(${first.title}|${second.title})$`))
+      .map((t) => t.props.children)
+
+  expect(await screen.findByText(first.title)).toBeTruthy()
+  expect(order()).toEqual([second.title, first.title])
+
+  fireEvent.press(screen.getByTestId('watchlist-options'))
+  fireEvent.press(await screen.findByText('Title'))
+
+  await waitFor(() => expect(order()).toEqual([first.title, second.title]))
+})
+
+it('clears the watchlist, and the undo puts every film back', async () => {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([first, second]))
+
+  const screen = renderWithProviders(<WatchlistScreen />)
+  expect(await screen.findByText(first.title)).toBeTruthy()
+
+  fireEvent.press(screen.getByTestId('watchlist-options'))
+  fireEvent.press(await screen.findByText('Clear watchlist'))
+
+  expect(await screen.findByTestId('watchlist-empty')).toBeTruthy()
+  expect(screen.getByText('Watchlist cleared')).toBeTruthy()
+
+  fireEvent.press(screen.getByText('Undo'))
+
+  expect(await screen.findByText(first.title)).toBeTruthy()
+  expect(screen.getByText(second.title)).toBeTruthy()
+})
+
+it('shows no options menu on an empty watchlist', async () => {
+  const screen = renderWithProviders(<WatchlistScreen />)
+
+  expect(await screen.findByTestId('watchlist-empty')).toBeTruthy()
+  expect(screen.queryByTestId('watchlist-options')).toBeNull()
+})

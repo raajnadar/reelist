@@ -318,6 +318,23 @@ describe('the save button', () => {
     expect(await screen.findByText('Save')).toBeTruthy()
   })
 
+  it('offers an undo after a removal, and puts the film back', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+    fireEvent.press(await screen.findByText('Save'))
+    // A save is not a removal, so it has nothing to undo.
+    expect(screen.queryByText('Removed from your watchlist')).toBeNull()
+
+    fireEvent.press(await screen.findByText('Saved'))
+    expect(await screen.findByText('Removed from your watchlist')).toBeTruthy()
+
+    fireEvent.press(screen.getByText('Undo'))
+
+    expect(await screen.findByText('Saved')).toBeTruthy()
+  })
+
   it('writes the saved film to the device', async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
     getMovie.mockResolvedValue(movie)

@@ -1,14 +1,31 @@
 import { AppBar } from '@rootnative/components/appbar'
+import { Divider } from '@rootnative/components/divider'
+import { IconButton } from '@rootnative/components/icon-button'
+import { Menu } from '@rootnative/components/menu'
+import { useSnackbar } from '@rootnative/components/snackbar'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
+import { useMemo, useState } from 'react'
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { GRID_GAP, GRID_PADDING, posterColumns } from '../lib/grid'
-import { useWatchlist } from '../lib/watchlist'
+import {
+  clearWatchlist,
+  restoreSaved,
+  sortWatchlist,
+  useWatchlist,
+  type WatchlistOrder,
+} from '../lib/watchlist'
+
+const ORDERS: { value: WatchlistOrder; label: string; icon: string }[] = [
+  { value: 'added', label: 'Date added', icon: 'calendar-clock-outline' },
+  { value: 'title', label: 'Title', icon: 'sort-alphabetical-ascending' },
+  { value: 'rating', label: 'Rating', icon: 'star-outline' },
+]
 
 export default function WatchlistScreen() {
   const theme = useTheme()
@@ -27,6 +44,25 @@ export default function WatchlistScreen() {
    */
   const { movies, loaded } = useWatchlist()
 
+  const snackbar = useSnackbar()
+  const [order, setOrder] = useState<WatchlistOrder>('added')
+  const shown = useMemo(() => sortWatchlist(movies, order), [movies, order])
+
+  /*
+    No confirmation dialog: the undo makes the clear safe, and a dialog would
+    add a step to every clear to protect against the rare wrong one.
+  */
+  const clear = () => {
+    const removed = clearWatchlist()
+    snackbar.show({
+      message: 'Watchlist cleared',
+      actionLabel: 'Undo',
+      duration: 'long',
+      replace: true,
+      onAction: () => restoreSaved(removed),
+    })
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <AppBar
@@ -37,6 +73,42 @@ export default function WatchlistScreen() {
         // this screen is the first entry in the history, as it is on a deep
         // link.
         onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        trailing={
+          movies.length ? (
+            <Menu
+              align="end"
+              // The same R1 workaround as the close button in app/about.tsx:
+              // IconButton sets `alignSelf: 'flex-start'`, and the bar frames
+              // only its own buttons. This frame centres the anchor.
+              anchorStyle={styles.iconFrame}
+              anchor={
+                <IconButton
+                  icon="dots-vertical"
+                  variant="standard"
+                  accessibilityLabel="Watchlist options"
+                  testID="watchlist-options"
+                />
+              }
+            >
+              {ORDERS.map((o) => (
+                <Menu.Item
+                  key={o.value}
+                  label={o.label}
+                  leadingIcon={o.icon}
+                  trailingIcon={order === o.value ? 'check' : undefined}
+                  onPress={() => setOrder(o.value)}
+                />
+              ))}
+              <Divider />
+              <Menu.Item
+                label="Clear watchlist"
+                leadingIcon="delete-sweep-outline"
+                contentColor={theme.colors.error}
+                onPress={clear}
+              />
+            </Menu>
+          ) : undefined
+        }
       />
 
       <Presence>
@@ -57,7 +129,7 @@ export default function WatchlistScreen() {
             style={styles.fill}
           >
             <FlatList
-              data={movies}
+              data={shown}
               // `key` forces a remount when the column count changes. FlatList
               // caches its layout per item and does not recompute on a
               // numColumns change alone, which leaves the old grid geometry
@@ -104,4 +176,5 @@ const styles = StyleSheet.create({
   */
   list: { paddingHorizontal: GRID_PADDING, paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
+  iconFrame: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
 })
