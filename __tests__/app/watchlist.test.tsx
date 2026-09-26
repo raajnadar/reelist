@@ -4,6 +4,7 @@ import WatchlistScreen from '../../app/watchlist'
 import { mockMovies } from '../../lib/mock'
 import { renderWithProviders } from '../../lib/test-utils'
 import { STORAGE_KEY, toggleSaved } from '../../lib/watchlist'
+import { readSearchOrigin } from '../../lib/searchOrigin'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
@@ -18,6 +19,14 @@ jest.mock('expo-router', () => ({
     replace: mockReplace,
     canGoBack: () => true,
   }),
+}))
+
+// See index.test.tsx: the renderer's `measureInWindow` never answers.
+const BUTTON_RECT = { x: 120, y: 480, width: 150, height: 40 }
+
+jest.mock('../../lib/searchOrigin', () => ({
+  ...jest.requireActual('../../lib/searchOrigin'),
+  measureWindowRect: jest.fn(() => Promise.resolve(BUTTON_RECT)),
 }))
 
 const [first, second] = mockMovies
@@ -44,7 +53,8 @@ it('reports an empty watchlist, and offers the search', async () => {
   expect(empty).toBeTruthy()
 
   fireEvent.press(screen.getByText('Find a movie'))
-  expect(mockPush).toHaveBeenCalledWith('/search')
+  await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/search'))
+  expect(readSearchOrigin()).toEqual(BUTTON_RECT)
 })
 
 it('shows no empty state while the device is still being read', async () => {

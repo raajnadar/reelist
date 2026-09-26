@@ -8,20 +8,23 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 )
 
-// All three stores live for the life of the process, and a Jest module registry
+// All four stores live for the life of the process, and a Jest module registry
 // is shared by every test in a file. Without this, the second render of a screen
 // in one file reads the first render's answer and never calls the mocked API, a
-// film saved by one test is still saved in the next, and a theme mode chosen by
-// one test is still applied in the next.
+// film saved by one test is still saved in the next, a theme mode chosen by
+// one test is still applied in the next, and a search button measured by one
+// test is where the next test's search sheet starts.
 const { clearCache } = require('./lib/resourceCache')
 const { resetWatchlist } = require('./lib/watchlist')
 const { resetAppearance } = require('./lib/appearance')
+const { clearSearchOrigin } = require('./lib/searchOrigin')
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 
 beforeEach(async () => {
   clearCache()
   resetWatchlist()
   resetAppearance()
+  clearSearchOrigin()
   // The mock keeps its own values as well, so the store and the device copy
   // have to be emptied together.
   await AsyncStorage.clear()

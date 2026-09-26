@@ -15,6 +15,7 @@ import { StateMessage } from '../components/StateMessage'
 import { getGenres, getPopular, getTopRated, getTrending } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
 import { useResource } from '../lib/useResource'
+import { useSearchLaunch } from '../lib/useSearchLaunch'
 import type { Genre, Movie } from '../lib/types'
 
 type Row = { title: string; movies: Movie[] }
@@ -41,6 +42,7 @@ export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { ref: searchRef, open: openSearch } = useSearchLaunch()
   /**
    * The three film rows, as one resource.
    *
@@ -116,12 +118,16 @@ export default function HomeScreen() {
             accessibilityLabel="Open the watchlist"
             onPress={() => router.push('/watchlist')}
           />
-          <IconButton
-            icon="magnify"
-            variant="standard"
-            accessibilityLabel="Search movies"
-            onPress={() => router.push('/search')}
-          />
+          {/* The wrapper is what the search sheet measures: its field starts
+              as a pill over this button. See lib/useSearchLaunch.ts. */}
+          <View ref={searchRef} collapsable={false}>
+            <IconButton
+              icon="magnify"
+              variant="standard"
+              accessibilityLabel="Search movies"
+              onPress={() => void openSearch()}
+            />
+          </View>
         </View>
       </View>
 

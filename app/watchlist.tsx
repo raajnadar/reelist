@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
-import { GRID_GAP, GRID_PADDING, posterColumns } from '../lib/grid'
+import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
+import { useSearchLaunch } from '../lib/useSearchLaunch'
 import {
   clearWatchlist,
   restoreSaved,
@@ -45,6 +46,7 @@ export default function WatchlistScreen() {
   const { movies, loaded } = useWatchlist()
 
   const snackbar = useSnackbar()
+  const { ref: searchRef, open: openSearch } = useSearchLaunch()
   const [order, setOrder] = useState<WatchlistOrder>('added')
   const shown = useMemo(() => sortWatchlist(movies, order), [movies, order])
 
@@ -139,7 +141,13 @@ export default function WatchlistScreen() {
               keyExtractor={(m) => String(m.id)}
               renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
               columnWrapperStyle={columns > 1 ? styles.column : undefined}
-              contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 16 }]}
+              contentContainerStyle={[
+                styles.list,
+                {
+                  paddingHorizontal: gridInset(width),
+                  paddingBottom: insets.bottom + 16,
+                },
+              ]}
               showsVerticalScrollIndicator={false}
             />
           </Motion.View>
@@ -157,7 +165,8 @@ export default function WatchlistScreen() {
             body="Open a movie and press Save. The films you keep appear here."
             actionLabel="Find a movie"
             actionIcon="magnify"
-            onAction={() => router.push('/search')}
+            actionRef={searchRef}
+            onAction={() => void openSearch()}
           />
         )}
       </Presence>
@@ -174,7 +183,8 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  list: { paddingHorizontal: GRID_PADDING, paddingTop: GRID_GAP, gap: GRID_GAP },
+  // The horizontal inset comes from the window; see gridInset.
+  list: { paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
   iconFrame: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
 })

@@ -33,6 +33,7 @@
     "@rootnative/core": "0.0.0-alpha.16",
     "@rootnative/inertia": "0.0.12",
     "expo": "~57.0.21",
+    "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.17",
     "expo-font": "~57.0.3",
     "expo-image": "~57.0.5",

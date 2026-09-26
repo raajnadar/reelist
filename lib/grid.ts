@@ -35,3 +35,22 @@ export function posterColumns(width: number): number {
   const available = width - GRID_PADDING * 2
   return Math.max(2, Math.floor((available + GRID_GAP) / (CARD_WIDTH + GRID_GAP)))
 }
+
+/**
+ * The space on each side of the grid in `width`, so the grid sits centred.
+ *
+ * The cards have a fixed width, so the columns rarely fill the window. With a
+ * fixed padding every leftover point went to the right: on a 393 phone the
+ * two columns left 16 on the left and 41 on the right. Splitting the leftover
+ * puts the same margin on both sides, while the rows inside stay left
+ * aligned, so a last row with one card starts under the first column rather
+ * than floating in the middle.
+ *
+ * Never less than GRID_PADDING: two columns is a floor, and a window too
+ * narrow for them must not pull the grid past its own edge.
+ */
+export function gridInset(width: number): number {
+  const columns = posterColumns(width)
+  const used = columns * CARD_WIDTH + (columns - 1) * GRID_GAP
+  return Math.max(GRID_PADDING, Math.floor((width - used) / 2))
+}

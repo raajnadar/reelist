@@ -16,7 +16,7 @@ import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMoviesByGenre } from '../../lib/api'
 import { missingFailure, type FailureKind } from '../../lib/errors'
-import { GRID_GAP, GRID_PADDING, posterColumns } from '../../lib/grid'
+import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
 import { useResource } from '../../lib/useResource'
 import type { Movie, Paged } from '../../lib/types'
 
@@ -251,7 +251,13 @@ export default function GenreScreen() {
               keyExtractor={(m) => String(m.id)}
               renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
               columnWrapperStyle={columns > 1 ? styles.column : undefined}
-              contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 16 }]}
+              contentContainerStyle={[
+                styles.list,
+                {
+                  paddingHorizontal: gridInset(width),
+                  paddingBottom: insets.bottom + 16,
+                },
+              ]}
               onEndReached={loadMore}
               // Half a screen of runway. Lower and the user reaches the end
               // before the next page lands; higher and the screen fetches
@@ -293,7 +299,8 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  list: { paddingHorizontal: GRID_PADDING, paddingTop: GRID_GAP, gap: GRID_GAP },
+  // The horizontal inset comes from the window; see gridInset.
+  list: { paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
   footer: { paddingVertical: 20 },
 })

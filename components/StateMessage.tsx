@@ -9,8 +9,13 @@ import {
   type IconSource,
 } from '@rootnative/core'
 import { Motion, Stagger } from '@rootnative/inertia'
-import { isValidElement, type ComponentProps, type ReactNode } from 'react'
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
+import {
+  isValidElement,
+  type ComponentProps,
+  type ReactNode,
+  type RefObject,
+} from 'react'
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 
 /** Milliseconds between the badge, the text, and the action. */
 const STAGGER_INTERVAL = 60
@@ -73,6 +78,12 @@ type Props = {
   actionLabel?: string
   actionIcon?: IconSource
   onAction?: () => void
+  /**
+   * A ref to the box around the action, in case the caller has to measure it.
+   * The watchlist's "Find a movie" is one: the search sheet starts its field
+   * as a pill over the button that opened it.
+   */
+  actionRef?: RefObject<View | null>
   style?: StyleProp<ViewStyle>
   testID?: string
 }
@@ -96,6 +107,7 @@ export function StateMessage({
   actionLabel,
   actionIcon,
   onAction,
+  actionRef,
   style,
   testID,
 }: Props) {
@@ -181,14 +193,18 @@ export function StateMessage({
               filled button on an error state reads as the thing that went
               wrong rather than the thing that fixes it.
             */}
-            <Button
-              variant="tonal"
-              size="m"
-              leadingIcon={actionIcon}
-              onPress={action.onAction}
-            >
-              {action.actionLabel}
-            </Button>
+            {/* `collapsable={false}`, or Android drops the wrapper from the
+                native tree and a measurement finds nothing. */}
+            <View ref={actionRef} collapsable={false}>
+              <Button
+                variant="tonal"
+                size="m"
+                leadingIcon={actionIcon}
+                onPress={action.onAction}
+              >
+                {action.actionLabel}
+              </Button>
+            </View>
           </Motion.View>
         ) : null}
       </Stagger>

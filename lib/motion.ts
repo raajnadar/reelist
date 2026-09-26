@@ -55,6 +55,27 @@ export const transitions = {
   exit: { type: 'timing', duration: 180 },
 
   /**
+   * The search pill on its way from the button to the top of the window.
+   * Stiffer than `enter`, so the trip is short, and damped enough that it does
+   * not overshoot the place the field is about to fill.
+   */
+  travel: { type: 'spring', tension: 200, friction: 24 },
+
+  /**
+   * The pill widening into the field. The delay starts it before the trip
+   * ends, so the two read as one movement rather than a stop and a second
+   * start.
+   */
+  expand: { type: 'spring', tension: 210, friction: 26, delay: 140 },
+
+  /**
+   * What the field holds — the input, its buttons, the results — appearing
+   * once the pill is wide enough to hold it. Timing, not spring: a fade has
+   * nothing to overshoot.
+   */
+  reveal: { type: 'timing', duration: 200, delay: 260 },
+
+  /**
    * The skeleton shimmer. One sweep of the placeholder highlight; the caller
    * adds `repeat: 'infinite'`.
    */

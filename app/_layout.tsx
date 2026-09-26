@@ -59,6 +59,16 @@ function Screens() {
         name="about"
         options={{ presentation: 'transparentModal', animation: 'fade' }}
       />
+      {/*
+        The search is a sheet over the screen it was opened from, for the same
+        reason: its field flies out of the button that opened it, and the glass
+        behind it shows the film rows still there. The fade is the route's whole
+        part in the movement; the pill drives its own trip inside app/search.tsx.
+      */}
+      <Stack.Screen
+        name="search"
+        options={{ presentation: 'transparentModal', animation: 'fade' }}
+      />
     </Stack>
   )
 }

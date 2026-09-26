@@ -3,6 +3,7 @@ import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
 import HomeScreen from '../../app/index'
 import { MissingProxyUrlError } from '../../lib/config'
+import { readSearchOrigin } from '../../lib/searchOrigin'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
@@ -14,6 +15,17 @@ const mockPush = jest.fn()
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), canGoBack: () => true }),
+}))
+
+// The wrapper's `measureInWindow` is a `jest.fn` in this renderer and never
+// answers, so the real helper would wait for ever and the push would never
+// come. The mock answers with a box, which also lets a test check the box
+// reached the store the search sheet reads.
+const BUTTON_RECT = { x: 320, y: 52, width: 40, height: 40 }
+
+jest.mock('../../lib/searchOrigin', () => ({
+  ...jest.requireActual('../../lib/searchOrigin'),
+  measureWindowRect: jest.fn(() => Promise.resolve(BUTTON_RECT)),
 }))
 
 jest.mock('../../lib/api', () => ({
@@ -37,14 +49,17 @@ beforeEach(() => {
   ])
 })
 
-it('opens the search screen from the header button', async () => {
+it('opens the search screen from the header button, after measuring it', async () => {
   const screen = renderWithProviders(<HomeScreen />)
 
   fireEvent.press(screen.getByLabelText('Search movies'))
 
   // The literal path is the assertion. `yarn typecheck` proves the route exists;
-  // this proves the button is wired to it.
-  expect(mockPush).toHaveBeenCalledWith('/search')
+  // this proves the button is wired to it. The wait is the measurement: the
+  // push comes after the button's box is in, not before.
+  await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/search'))
+  // And the box is where the search sheet will read it from.
+  expect(readSearchOrigin()).toEqual(BUTTON_RECT)
 
   await act(async () => {})
 })
