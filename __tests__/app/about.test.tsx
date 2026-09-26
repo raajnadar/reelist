@@ -118,7 +118,7 @@ it('closes when the scrim around the card is pressed', () => {
 it('closes', () => {
   const screen = renderWithProviders(<AboutScreen />)
 
-  fireEvent.press(screen.getByTestId('about-close'))
+  fireEvent.press(screen.getByLabelText('Close'))
   expect(mockBack).toHaveBeenCalled()
 })
 
@@ -130,7 +130,7 @@ it('returns to the home screen when there is nowhere to go back to', () => {
 
   const screen = renderWithProviders(<AboutScreen />)
 
-  fireEvent.press(screen.getByTestId('about-close'))
+  fireEvent.press(screen.getByLabelText('Close'))
   expect(mockBack).not.toHaveBeenCalled()
   expect(mockReplace).toHaveBeenCalledWith('/')
 })

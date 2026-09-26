@@ -2,7 +2,6 @@ import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Chip } from '@rootnative/components/chip'
 import { Divider } from '@rootnative/components/divider'
-import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
 import { useBreakpoint, useTheme, type ThemeMode } from '@rootnative/core'
@@ -156,33 +155,22 @@ export default function AboutScreen() {
         ]}
       >
         {/*
-          A close cross rather than `canGoBack`. This is a modal, so the reader
+          A close cross, not a back arrow. This is a modal, so the reader
           dismisses it; a back arrow would promise a place to go back to.
 
           `router.back` alone dead-ends on a deep link straight to /about,
           which the web build allows. The fallback matches search and detail.
 
-          `insetTop` is right in both layouts. The bar measures its own top
-          inset, so a card floating clear of the status bar adds nothing, and
-          a phone's full-height card gets the gap it needs.
+          Only the phone's full-height card meets the status bar, so only it
+          takes `insetTop`. The bar reads the inset from the SafeAreaProvider,
+          so it is correct on the first paint of this `transparentModal`.
         */}
         <AppBar
           title="About Reelist"
-          insetTop
-          leading={
-            // IconButton pins itself to the top of its parent with
-            // `alignSelf: 'flex-start'`, which puts it above the centred title.
-            // The frame centres it, as the bar does for its own back button.
-            <View style={styles.closeFrame}>
-              <IconButton
-                icon="close"
-                variant="standard"
-                accessibilityLabel="Close"
-                testID="about-close"
-                onPress={dismiss}
-              />
-            </View>
-          }
+          insetTop={!roomy}
+          canGoBack
+          navigationIcon="close"
+          onBackPress={dismiss}
         />
 
         <Motion.ScrollView
@@ -258,10 +246,7 @@ export default function AboutScreen() {
                 </Typography>
               </Motion.View>
 
-              <Section
-                title="Three packages"
-                lead="Press a name to open its source."
-              >
+              <Section title="Three packages" lead="Press a name to open its source.">
                 {PACKAGES.map((item) => (
                   <View key={item.name} style={styles.package}>
                     <View style={styles.packageHead}>
@@ -370,7 +355,6 @@ const styles = StyleSheet.create({
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   card: { overflow: 'hidden' },
   cardFull: { flex: 1, alignSelf: 'stretch' },
-  closeFrame: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: 16, paddingTop: 8, alignItems: 'center' },
   column: { width: '100%', maxWidth: MAX_WIDTH },
   // No rule above it, unlike a section: nothing comes before it on the page.

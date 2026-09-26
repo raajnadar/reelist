@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 
 /**
@@ -33,18 +33,31 @@ export function Scrim({ color, stops }: { color: string; stops: readonly ScrimSt
   // cannot carry, so the separators are dropped.
   const gradientId = `scrim-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
 
+  // The position lives on a View, not on the Svg. On web `react-native-svg`
+  // hands the style to the raw `<svg>` element as an array, which React DOM
+  // drops, so an absolute style on the Svg has no effect there: the element
+  // falls into normal flow at the browser default of 300 by 150 pixels and the
+  // gradient paints only that corner of the frame. The 100% size is set as
+  // props for the same reason.
   return (
-    <Svg style={styles.scrim}>
-      <Defs>
-        {/* x1 = x2 and y1 -> y2 is the vertical sweep, top to bottom. */}
-        <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          {stops.map(([offset, opacity]) => (
-            <Stop key={offset} offset={offset} stopColor={color} stopOpacity={opacity} />
-          ))}
-        </LinearGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradientId})`} />
-    </Svg>
+    <View style={styles.scrim}>
+      <Svg width="100%" height="100%">
+        <Defs>
+          {/* x1 = x2 and y1 -> y2 is the vertical sweep, top to bottom. */}
+          <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            {stops.map(([offset, opacity]) => (
+              <Stop
+                key={offset}
+                offset={offset}
+                stopColor={color}
+                stopOpacity={opacity}
+              />
+            ))}
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradientId})`} />
+      </Svg>
+    </View>
   )
 }
 

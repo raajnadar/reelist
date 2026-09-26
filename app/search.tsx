@@ -245,10 +245,7 @@ export default function SearchScreen() {
               {/*
                 A plain input rather than TextField: the pill is the field, and
                 the bar's own outline, label, and icon slots would fight the
-                icon that just flew in. TextField also forwards no ref, so a
-                screen cannot focus it once the widening ends; `autoFocus` is
-                the only timing it offers. Filed as R3 in the RootNative
-                workspace, DX-FEEDBACK-reelist.md.
+                icon that just flew in.
               */}
               <TextInput
                 accessibilityLabel="Search movies"

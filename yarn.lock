@@ -1783,15 +1783,15 @@
     invariant "^2.2.4"
     nullthrows "^1.1.1"
 
-"@rootnative/components@0.0.0-alpha.16":
-  version "0.0.0-alpha.16"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.16.tgz#d2888e4bf4afe215eb5352caa4c29c38f86e1044"
-  integrity sha512-FTw9lUCCuNBbC3aK1tXgrg7VCVbCgPhckwiwOLc35q0WW7Wc/eQTSZlhjr7xbgYDej3lgdFnE9TjaRZToT/BHg==
+"@rootnative/components@0.0.0-alpha.18":
+  version "0.0.0-alpha.18"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.18.tgz#5c0bdb122af6101040fe74d30ec4cf4161ee60a0"
+  integrity sha512-uGU/bLxJ5LOfuchBLYlGyV62ThBb3TUp5rI2Bxwz8F+t3pkl/PJ5UJNYpjg92/ZfrLTZ7bpIy8m2KFNetsjbWA==
 
-"@rootnative/core@0.0.0-alpha.16":
-  version "0.0.0-alpha.16"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.16.tgz#87c268485334d455eeb48c32e0c30079c6d8c112"
-  integrity sha512-Ce5bs6He7ao9CER5NASBwfFEjuHphnqhdPEulR5VCCmK8Ecpjqznoo3m7YlbUrMTrdhEB6p9vfN+FxBpkBOJAg==
+"@rootnative/core@0.0.0-alpha.18":
+  version "0.0.0-alpha.18"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.18.tgz#94bc18df728a84526853e1ce130392260b9b8f9b"
+  integrity sha512-B5Jus2Os6L4iRBFXn6Pwbax3pnwWP6BE6LIA3PZXD9HepWf2U1BvVDD4Z+/8w44P3H9ERXPRo5bHk/GVYqIfRA==
 
 "@rootnative/inertia@0.0.12":
   version "0.0.12"

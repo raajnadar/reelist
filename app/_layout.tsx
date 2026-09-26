@@ -83,8 +83,9 @@ export default function RootLayout() {
   const { mode } = useAppearance()
 
   return (
-    // SafeAreaProvider stays: the components that apply insets read no context,
-    // but app/index.tsx calls useSafeAreaInsets, which does.
+    // Expo Router mounts its own SafeAreaProvider, and this one is the same
+    // provider one level up. Every `insetTop` bar and the snackbar layer read
+    // their inset from it, which is correct on the first paint of a modal.
     <SafeAreaProvider>
       {/*
         Handing the provider the { light, dark } pair (core alpha.12) makes it

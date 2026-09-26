@@ -79,10 +79,6 @@ export default function WatchlistScreen() {
           movies.length ? (
             <Menu
               align="end"
-              // The same R1 workaround as the close button in app/about.tsx:
-              // IconButton sets `alignSelf: 'flex-start'`, and the bar frames
-              // only its own buttons. This frame centres the anchor.
-              anchorStyle={styles.iconFrame}
               anchor={
                 <IconButton
                   icon="dots-vertical"
@@ -186,5 +182,4 @@ const styles = StyleSheet.create({
   // The horizontal inset comes from the window; see gridInset.
   list: { paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
-  iconFrame: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
 })
