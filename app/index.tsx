@@ -21,6 +21,7 @@ import {
 } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
 import { languageName, useLanguage } from '../lib/language'
+import { prerenderedGenres, prerenderedLists } from '../lib/prerender'
 import { useResource } from '../lib/useResource'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import type { Genre, Movie } from '../lib/types'
@@ -109,7 +110,28 @@ export default function HomeScreen() {
     genres.reload()
   }
 
-  const failure = rows.failure
+  /**
+   * The prerendered rows, for the static web page and its first paint.
+   *
+   * The seed holds the three global lists only, so it stands in only while
+   * the reader has no language preference: a language row has to come from
+   * the proxy. The rows are drawn until the request answers, and they stay
+   * up if it fails, the same as a stale cache entry. Native and a local build
+   * have no seed. See lib/prerender.ts.
+   */
+  const seeded = language ? null : prerenderedLists()
+  const rowData: Row[] | null =
+    rows.data ??
+    (seeded
+      ? [
+          { title: 'Trending this week', movies: seeded.trending },
+          { title: 'Popular', movies: seeded.popular },
+          { title: 'Top rated', movies: seeded.topRated },
+        ]
+      : null)
+  const loading = rows.loading && rowData === null
+  const failure = rowData === null ? rows.failure : null
+  const genreData = genres.data ?? prerenderedGenres() ?? []
 
   return (
     <View
@@ -157,7 +179,7 @@ export default function HomeScreen() {
       {/* Outside the Presence block below, for the reason the search button is:
           the chips do not depend on the film rows, so they must not wait for
           them, disappear while they load, or vanish when they fail. */}
-      <GenreChips genres={genres.data ?? []} />
+      <GenreChips genres={genreData} />
 
       {/*
         Presence animates the swap between the three states. Each branch needs
@@ -166,7 +188,7 @@ export default function HomeScreen() {
         as the same element as the content and neither would transition.
       */}
       <Presence>
-        {rows.loading ? (
+        {loading ? (
           <Motion.View
             key="loading"
             // No `initial`: the skeleton is on screen from the first frame, and
@@ -224,7 +246,7 @@ export default function HomeScreen() {
                 The rest stay compact rows — the scale effect loses its weight if
                 every row uses it.
               */}
-              {(rows.data ?? []).map((row, index) =>
+              {(rowData ?? []).map((row, index) =>
                 index === 0 ? (
                   <MovieCarousel key={row.title} title={row.title} movies={row.movies} />
                 ) : (

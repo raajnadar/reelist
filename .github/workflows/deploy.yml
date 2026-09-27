@@ -50,16 +50,27 @@ jobs:
       # The proxy URL, not the TMDB key. Anything behind EXPO_PUBLIC_ is inlined
       # into the bundle and can be read out of the published site, so the key
       # must never appear here. The proxy holds it. See proxy/README.md.
+      # The films the export writes a static page for: the three home lists,
+      # fetched through the proxy. See lib/prerender.ts. The step takes about
+      # two minutes, because it stays under the proxy's rate limit.
+      - name: Fetch the prerender seed
+        env:
+          EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}
+        run: yarn prerender:seed
+
       - name: Build the static site
         env:
           EXPO_BASE_URL: ${{ steps.pages.outputs.base_path }}
           EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}
         run: yarn export:web
 
-      # Expo Router serves one index.html and routes on the client. Pages has no
-      # rewrite rule, so a deep link would 404 on reload. Copying index.html to
-      # 404.html makes Pages return the app for an unknown path, and the client
-      # router then resolves it.
+      # The export writes one HTML file per route and per prerendered film, and
+      # Pages serves `movie/123.html` for `/movie/123` with a 200. Every other
+      # film is a deep link with no file. Pages has no rewrite rule, so it
+      # answers with 404.html, and copying the home page there makes that
+      # answer the app: the client router reads the address and draws the film.
+      # A search engine still sees the 404 status for those films, which is why
+      # the seed above exists.
       - name: Add the 404 fallback for client routing
         run: cp dist/index.html dist/404.html
 

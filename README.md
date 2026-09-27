@@ -39,6 +39,11 @@ The app runs on Expo Go SDK 57. Update Expo Go if it reports a version mismatch.
 The web build is at **https://raajnadar.github.io/reelist/**. It updates on every
 push to `main`.
 
+The export is static: one HTML file per route, plus one per film in the three
+home lists. The deploy fetches that list with `yarn prerender:seed` before it
+exports, so a search engine gets each of those films with its text and its head
+tags. Every other film loads in the browser. See `lib/prerender.ts`.
+
 The browser build has no gestures and no native animation driver, so the carousel
 feels different there. Use the phone build to judge the motion.
 

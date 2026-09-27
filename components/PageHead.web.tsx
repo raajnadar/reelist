@@ -18,10 +18,10 @@ const describe = (movie: MovieDetail) => {
  * The document head for one film on the web: the tab title, the description,
  * the canonical link, and the Open Graph and Twitter cards a share unfurls.
  *
- * The web build is a client-rendered page, so these tags are written by the
- * browser after the film loads. A crawler that runs JavaScript reads them. A
- * crawler that reads the static HTML only sees the tags in dist/index.html.
- * A prerender for each film is the fix for that, and it is out of scope here.
+ * For a film in the prerender seed the export writes these tags into the
+ * static HTML, so a crawler that reads no JavaScript gets them. For every
+ * other film the browser writes them after the film loads, and only a crawler
+ * that runs JavaScript reads them. See lib/prerender.ts.
  */
 export function PageHead({ movie }: { movie: MovieDetail }) {
   const title = `${shareTitle(movie)} · Reelist`

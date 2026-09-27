@@ -21,8 +21,19 @@ import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import { STAGGER_INTERVAL } from '../../lib/motion'
+import { prerenderedIds, prerenderedMovie } from '../../lib/prerender'
 import type { MovieDetail } from '../../lib/types'
 import { useResource } from '../../lib/useResource'
+
+/**
+ * The films the static web export writes a page for. See lib/prerender.ts.
+ *
+ * Expo Router calls this at export time only. A film that is not in the list
+ * still opens: the client router draws it, and it loads from the proxy.
+ */
+export function generateStaticParams(): { id: string }[] {
+  return prerenderedIds().map((id) => ({ id: String(id) }))
+}
 
 /**
  * The widest the body ever grows, whatever the window does.
@@ -95,8 +106,21 @@ export default function MovieScreen() {
     'Could not load the movie',
   )
 
-  const movie = detail.data
-  const loading = detail.loading
+  /**
+   * The prerendered copy, for a film the web export wrote a page for.
+   *
+   * It is what the static HTML holds and what the page hydrates with, so the
+   * two agree. It stands in until the proxy answers, and it stays up if the
+   * request fails, for the reason a stale cache entry does: the reader has the
+   * film in front of them. A `null` answer outranks it, because that is TMDB
+   * saying the film is gone. Native and a local build have no seed, so this
+   * is always null there. See lib/prerender.ts.
+   */
+  const seed = validId ? prerenderedMovie(movieId) : null
+  const gone =
+    validId && !detail.loading && detail.failure === null && detail.data === null
+  const movie = detail.data ?? (gone ? null : seed)
+  const loading = detail.loading && seed === null
 
   /**
    * What went wrong, in the order the three causes can be known.
@@ -104,14 +128,15 @@ export default function MovieScreen() {
    * A bad route parameter is decided at render time and needs no request. A
    * `null` answer is the 404 `lib/api.ts` returns: the id parsed and the
    * request succeeded, so a second attempt would return the same nothing, and
-   * that makes it `missing` rather than `transient`.
+   * that makes it `missing` rather than `transient`. A failed request behind a
+   * prerendered copy reports nothing, the same as behind a cached one.
    */
   const failure: Failure | null = !validId
     ? missingFailure('That link does not point at a movie.')
-    : (detail.failure ??
-      (!loading && movie === null
-        ? missingFailure('TMDB has no movie with that id.')
-        : null))
+    : movie !== null
+      ? null
+      : (detail.failure ??
+        (!loading ? missingFailure('TMDB has no movie with that id.') : null))
 
   const { width, height } = useWindowDimensions()
 
