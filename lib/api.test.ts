@@ -3,6 +3,7 @@ import {
   getMovie,
   getMoviesByGenre,
   getPerson,
+  getPopularByLanguage,
   getTrending,
   searchMovies,
 } from './api'
@@ -731,6 +732,23 @@ describe('getMoviesByGenre', () => {
     tmdbFetch.mockRejectedValue(new TmdbError('Service offline', 503))
 
     await expect(getMoviesByGenre(28)).rejects.toThrow('Service offline')
+  })
+})
+
+describe('getPopularByLanguage', () => {
+  // The same parameter name the genre filter uses, and one the proxy allows, so
+  // the row needs no proxy change. Popularity is the discover default sort, so
+  // no sort parameter is sent.
+  it('asks discover for the first page in the language', async () => {
+    tmdbFetch.mockResolvedValue({ results: [rawMovie] })
+
+    const paged = await getPopularByLanguage('ta')
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/discover/movie', {
+      with_original_language: 'ta',
+      page: '1',
+    })
+    expect(paged.results[0].title).toBe('Fight Club')
   })
 })
 

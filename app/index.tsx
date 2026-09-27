@@ -12,8 +12,15 @@ import { MovieRow } from '../components/MovieRow'
 import { SkeletonRow } from '../components/Skeleton'
 import { SpinningCog } from '../components/SpinningCog'
 import { StateMessage } from '../components/StateMessage'
-import { getGenres, getPopular, getTopRated, getTrending } from '../lib/api'
+import {
+  getGenres,
+  getPopular,
+  getPopularByLanguage,
+  getTopRated,
+  getTrending,
+} from '../lib/api'
 import { type FailureKind } from '../lib/errors'
+import { languageName, useLanguage } from '../lib/language'
 import { useResource } from '../lib/useResource'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import type { Genre, Movie } from '../lib/types'
@@ -43,22 +50,38 @@ export default function HomeScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { ref: searchRef, open: openSearch } = useSearchLaunch()
+  const { code: language } = useLanguage()
+
   /**
-   * The three film rows, as one resource.
+   * The film rows, as one resource.
    *
    * They load together because they are drawn together: a screen with two rows
    * and a gap is worse than a screen that waits. One failed request is a failed
    * screen here, which is why the genres below are a second resource.
+   *
+   * A reader with a language preference gets a row in that language first,
+   * ahead of the global lists, which are English almost all the way down. The
+   * language is in the key, so a change of preference is a new request and a
+   * return to a previous one draws from the store.
    */
   const rows = useResource<Row[]>(
-    'home:rows',
+    `home:rows:${language ?? ''}`,
     async () => {
-      const [trending, popular, topRated] = await Promise.all([
+      const [inLanguage, trending, popular, topRated] = await Promise.all([
+        language ? getPopularByLanguage(language) : null,
         getTrending(),
         getPopular(),
         getTopRated(),
       ])
       return [
+        ...(inLanguage && language
+          ? [
+              {
+                title: `Popular in ${languageName(language)}`,
+                movies: inLanguage.results,
+              },
+            ]
+          : []),
         { title: 'Trending this week', movies: trending.results },
         { title: 'Popular', movies: popular.results },
         { title: 'Top rated', movies: topRated.results },
@@ -151,7 +174,8 @@ export default function HomeScreen() {
             exit={{ opacity: 0 }}
             transition="exit"
           >
-            {/* Three rows, matching the three the screen loads. */}
+            {/* Three rows, matching the three the screen always loads. The
+                language row, when there is one, arrives with them. */}
             <SkeletonRow />
             <SkeletonRow />
             <SkeletonRow />

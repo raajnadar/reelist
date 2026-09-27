@@ -3,6 +3,7 @@ import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLanguage } from '../../lib/language'
 import {
   ActivityIndicator,
   FlatList,
@@ -94,8 +95,15 @@ export default function GenreScreen() {
    * The filters the reader picked. Screen state rather than a route parameter:
    * a genre link from the home chips carries none, and a pick belongs to this
    * visit rather than to the address.
+   *
+   * The grid starts on the reader's preferred film language, when they set one
+   * on the about screen. It is a start value only: the row can change or clear
+   * it for this visit, and a change to the preference reaches the next visit.
    */
-  const [filters, setFilters] = useState<DiscoverFilters>(EMPTY_FILTERS)
+  const { code: preferredLanguage } = useLanguage()
+  const [filters, setFilters] = useState<DiscoverFilters>(() =>
+    preferredLanguage ? { language: preferredLanguage } : EMPTY_FILTERS,
+  )
 
   /**
    * What is being asked for: one genre under one set of filters.

@@ -3,6 +3,7 @@ import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
 import HomeScreen from '../../app/index'
 import { MissingProxyUrlError } from '../../lib/config'
+import { setLanguage } from '../../lib/language'
 import { readSearchOrigin } from '../../lib/searchOrigin'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
@@ -32,6 +33,7 @@ jest.mock('../../lib/api', () => ({
   getTrending: jest.fn(),
   getPopular: jest.fn(),
   getTopRated: jest.fn(),
+  getPopularByLanguage: jest.fn(),
   getGenres: jest.fn(),
 }))
 
@@ -196,5 +198,33 @@ describe('the genre chips', () => {
 
     await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
     expect(screen.queryByText('Action')).toBeNull()
+  })
+})
+
+describe('the language row', () => {
+  it('is absent when the reader has no preference', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+    expect(api.getPopularByLanguage).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Popular in/)).toBeNull()
+  })
+
+  // The row leads the screen, ahead of the global lists, and is named for the
+  // language. The request carries the code the store holds.
+  it('leads with popular films in the chosen language', async () => {
+    api.getPopularByLanguage.mockResolvedValue({
+      results: [{ ...mockMovies[0], id: 9001, title: 'Vikram' }],
+      page: 1,
+      total_pages: 1,
+    })
+    act(() => setLanguage('ta'))
+
+    const screen = renderWithProviders(<HomeScreen />)
+
+    await waitFor(() => expect(screen.getByText('Popular in Tamil')).toBeTruthy())
+    expect(api.getPopularByLanguage).toHaveBeenCalledWith('ta')
+    expect(screen.getByText('Vikram')).toBeTruthy()
+    expect(screen.getByText('Trending this week')).toBeTruthy()
   })
 })

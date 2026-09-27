@@ -445,6 +445,23 @@ export const getMoviesByGenre = async (
   )
 
 /**
+ * The most popular films in one original language, for the home row a reader
+ * with a language preference sees first.
+ *
+ * The discover endpoint with one filter, rather than a new path: it sorts by
+ * popularity when it is asked nothing else, and `with_original_language` is
+ * already a parameter the proxy allows, so this needs no proxy change. The
+ * screen shows one row and cannot page, so only the first page is asked for.
+ */
+export const getPopularByLanguage = async (language: string): Promise<Paged> =>
+  toPaged(
+    await tmdbFetch<RawPaged>('/discover/movie', {
+      ...toDiscoverParams({ language }),
+      page: '1',
+    }),
+  )
+
+/**
  * One person, and the films they appear in.
  *
  * Returns null for an id TMDB has nobody for, the same way `getMovie` does. The

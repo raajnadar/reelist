@@ -5,6 +5,7 @@ import inertiaPackage from '@rootnative/inertia/package.json'
 import { Linking } from 'react-native'
 import AboutScreen from '../../app/about'
 import { useAppearance } from '../../lib/appearance'
+import { useLanguage } from '../../lib/language'
 import { useRegion } from '../../lib/region'
 import { renderWithProviders } from '../../lib/test-utils'
 
@@ -67,6 +68,39 @@ it('sets the country the watch providers are read for', () => {
   expect(renderRegionOnStore()).toMatchObject({ code: 'IN', chosen: true })
   // The chip, not the menu item: the menu is still leaving when this runs.
   expect(screen.getByLabelText('Region: India. Change')).toBeTruthy()
+})
+
+it('sets the language the reader wants films in first', () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  act(() => {
+    fireEvent.press(screen.getByTestId('language-chip'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('language-ta'))
+  })
+
+  expect(renderLanguageOnStore()).toBe('ta')
+  expect(screen.getByLabelText('Preferred film language: Tamil. Change')).toBeTruthy()
+})
+
+it('clears the language preference', () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  act(() => {
+    fireEvent.press(screen.getByTestId('language-chip'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('language-ta'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('language-chip'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('language-none'))
+  })
+
+  expect(renderLanguageOnStore()).toBeNull()
 })
 
 it('goes back to the device region', () => {
@@ -199,6 +233,19 @@ function renderRegionOnStore() {
   function Probe() {
     const region = useRegion()
     result = { code: region.code, chosen: region.chosen }
+    return null
+  }
+
+  renderWithProviders(<Probe />)
+  return result
+}
+
+/** Reads the language store the same way. */
+function renderLanguageOnStore() {
+  let result: string | null = ''
+
+  function Probe() {
+    result = useLanguage().code
     return null
   }
 

@@ -14,7 +14,7 @@ jest.mock('expo-localization', () => ({
   getLocales: jest.fn(() => [{ languageTag: 'en-US', regionCode: 'US' }]),
 }))
 
-// All five stores live for the life of the process, and a Jest module registry
+// All six stores live for the life of the process, and a Jest module registry
 // is shared by every test in a file. Without this, the second render of a screen
 // in one file reads the first render's answer and never calls the mocked API, a
 // film saved by one test is still saved in the next, a theme mode chosen by
@@ -24,6 +24,7 @@ const { clearCache } = require('./lib/resourceCache')
 const { resetWatchlist } = require('./lib/watchlist')
 const { resetAppearance } = require('./lib/appearance')
 const { resetRegion } = require('./lib/region')
+const { resetLanguage } = require('./lib/language')
 const { clearSearchOrigin } = require('./lib/searchOrigin')
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 
@@ -32,6 +33,7 @@ beforeEach(async () => {
   resetWatchlist()
   resetAppearance()
   resetRegion()
+  resetLanguage()
   clearSearchOrigin()
   // The mock keeps its own values as well, so the store and the device copy
   // have to be emptied together.

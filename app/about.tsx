@@ -14,6 +14,7 @@ import type { ReactNode } from 'react'
 import { Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { setMode, useAppearance } from '../lib/appearance'
+import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib/language'
 import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
 
 const DOCS_URL = 'https://rootnative.github.io/ui/'
@@ -88,6 +89,7 @@ export default function AboutScreen() {
   const insets = useSafeAreaInsets()
   const { mode } = useAppearance()
   const region = useRegion()
+  const language = useLanguage()
 
   /**
    * The countries the menu offers: the device's own first, then the list.
@@ -230,6 +232,65 @@ export default function AboutScreen() {
                   style={styles.note}
                 >
                   The app follows your device setting until you change it here.
+                </Typography>
+              </Motion.View>
+
+              {/*
+                The language of the films the reader wants first. It leads the
+                home screen with a row in that language and starts the genre
+                grid on it. The text of the app does not change.
+              */}
+              <Motion.View
+                initial={{ opacity: 0, translateY: 12 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition="enter"
+                style={styles.section}
+              >
+                <Typography variant="titleMedium" style={styles.modesTitle}>
+                  Films first in
+                </Typography>
+                <View style={styles.chips}>
+                  <Menu
+                    maxHeight={320}
+                    testID="language-menu"
+                    anchor={
+                      <Chip
+                        variant="assist"
+                        leadingIcon="translate"
+                        testID="language-chip"
+                        accessibilityLabel={`Preferred film language: ${
+                          language.code ? languageName(language.code) : 'No preference'
+                        }. Change`}
+                      >
+                        {language.code ? languageName(language.code) : 'No preference'}
+                      </Chip>
+                    }
+                  >
+                    <Menu.Item
+                      label="No preference"
+                      leadingIcon={language.code ? undefined : 'check'}
+                      onPress={() => setLanguage(null)}
+                      testID="language-none"
+                    />
+                    <Divider />
+                    {LANGUAGE_OPTIONS.map((item) => (
+                      <Menu.Item
+                        key={item.value}
+                        label={item.label}
+                        leadingIcon={item.value === language.code ? 'check' : undefined}
+                        onPress={() => setLanguage(item.value)}
+                        testID={`language-${item.value}`}
+                      />
+                    ))}
+                  </Menu>
+                </View>
+                <Typography
+                  variant="bodySmall"
+                  color={theme.colors.onSurfaceVariant}
+                  style={styles.note}
+                >
+                  The home screen leads with popular films in this language, and the genre
+                  grid starts on it.
                 </Typography>
               </Motion.View>
 

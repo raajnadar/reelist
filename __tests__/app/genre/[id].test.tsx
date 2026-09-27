@@ -1,9 +1,10 @@
-import { fireEvent, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovies } from '../../../lib/mock'
 import GenreScreen, { mergePages } from '../../../app/genre/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
+import { setLanguage } from '../../../lib/language'
 import type { Movie } from '../../../lib/types'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: Expo Router builds
@@ -328,6 +329,17 @@ describe('the filters', () => {
     expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, { rating: 7 })
     expect(screen.queryByText('Film 1')).toBeNull()
     expect(screen.queryByText('Film 21')).toBeNull()
+  })
+
+  // The preference from the about screen is the start value for this visit.
+  it('starts on the preferred film language', async () => {
+    act(() => setLanguage('ta'))
+
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, { language: 'ta' })
+    expect(screen.getByText('Tamil')).toBeTruthy()
   })
 
   it('names the pick on its chip', async () => {
