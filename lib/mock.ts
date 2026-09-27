@@ -171,10 +171,18 @@ export const mockMovieDetail: MovieDetail = {
   recommendations: mockMovies.slice(1, 4),
   images: mockImages,
   providers: {
-    link: 'https://www.themoviedb.org/movie/693134/watch?locale=IN',
-    stream: [{ id: 8, name: 'Netflix', logo_path: '/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg' }],
-    rent: [{ id: 2, name: 'Apple TV', logo_path: '/9ghgSC0MA082EL6HLCW3GalykFD.jpg' }],
-    buy: [{ id: 2, name: 'Apple TV', logo_path: '/9ghgSC0MA082EL6HLCW3GalykFD.jpg' }],
+    IN: {
+      link: 'https://www.themoviedb.org/movie/693134/watch?locale=IN',
+      stream: [{ id: 8, name: 'Netflix', logo_path: '/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg' }],
+      rent: [{ id: 2, name: 'Apple TV', logo_path: '/9ghgSC0MA082EL6HLCW3GalykFD.jpg' }],
+      buy: [{ id: 2, name: 'Apple TV', logo_path: '/9ghgSC0MA082EL6HLCW3GalykFD.jpg' }],
+    },
+    US: {
+      link: 'https://www.themoviedb.org/movie/693134/watch?locale=US',
+      stream: [{ id: 15, name: 'Hulu', logo_path: '/bxBlRUpuOjBeMpKz2P8fxThxTTk.jpg' }],
+      rent: [],
+      buy: [{ id: 2, name: 'Apple TV', logo_path: '/9ghgSC0MA082EL6HLCW3GalykFD.jpg' }],
+    },
   },
 }
 

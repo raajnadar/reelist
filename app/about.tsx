@@ -2,6 +2,7 @@ import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Chip } from '@rootnative/components/chip'
 import { Divider } from '@rootnative/components/divider'
+import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
 import { useBreakpoint, useTheme, type ThemeMode } from '@rootnative/core'
@@ -13,6 +14,7 @@ import type { ReactNode } from 'react'
 import { Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { setMode, useAppearance } from '../lib/appearance'
+import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
 
 const DOCS_URL = 'https://rootnative.github.io/ui/'
 const SOURCE_URL = 'https://github.com/raajnadar/reelist'
@@ -85,6 +87,18 @@ export default function AboutScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { mode } = useAppearance()
+  const region = useRegion()
+
+  /**
+   * The countries the menu offers: the device's own first, then the list.
+   *
+   * The device country is offered even when the list does not hold it, so a
+   * reader in a country the list skips is not locked out of their own. It is
+   * built here rather than in the store, because it is a fact about this menu
+   * rather than about the region.
+   */
+  const device = deviceRegion()
+  const others = REGIONS.filter((r) => r.code !== device)
 
   /**
    * A phone gets the whole window; anything wider gets a card.
@@ -216,6 +230,65 @@ export default function AboutScreen() {
                   style={styles.note}
                 >
                   The app follows your device setting until you change it here.
+                </Typography>
+              </Motion.View>
+
+              {/*
+                The country the watch providers are read for. A menu rather
+                than chips, because the list is long, and capped in height so
+                it scrolls rather than filling the window.
+              */}
+              <Motion.View
+                initial={{ opacity: 0, translateY: 12 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition="enter"
+                style={styles.section}
+              >
+                <Typography variant="titleMedium" style={styles.modesTitle}>
+                  Where to watch
+                </Typography>
+                <View style={styles.chips}>
+                  <Menu
+                    maxHeight={320}
+                    testID="region-menu"
+                    anchor={
+                      <Chip
+                        variant="assist"
+                        leadingIcon="map-marker-outline"
+                        testID="region-chip"
+                        accessibilityLabel={`Region: ${regionName(region.code)}. Change`}
+                      >
+                        {regionName(region.code)}
+                      </Chip>
+                    }
+                  >
+                    <Menu.Item
+                      label={`Follow device (${regionName(device)})`}
+                      leadingIcon={region.chosen ? undefined : 'check'}
+                      onPress={() => setRegion(null)}
+                      testID="region-device"
+                    />
+                    <Divider />
+                    {others.map((item) => (
+                      <Menu.Item
+                        key={item.code}
+                        label={item.name}
+                        leadingIcon={
+                          region.chosen && item.code === region.code ? 'check' : undefined
+                        }
+                        onPress={() => setRegion(item.code)}
+                        testID={`region-${item.code}`}
+                      />
+                    ))}
+                  </Menu>
+                </View>
+                <Typography
+                  variant="bodySmall"
+                  color={theme.colors.onSurfaceVariant}
+                  style={styles.note}
+                >
+                  Streaming services differ by country. The app follows your device region
+                  until you pick one here.
                 </Typography>
               </Motion.View>
 

@@ -5,6 +5,7 @@ import inertiaPackage from '@rootnative/inertia/package.json'
 import { Linking } from 'react-native'
 import AboutScreen from '../../app/about'
 import { useAppearance } from '../../lib/appearance'
+import { useRegion } from '../../lib/region'
 import { renderWithProviders } from '../../lib/test-utils'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
@@ -49,6 +50,42 @@ it('sets light, dark, or the system setting', () => {
   })
 
   expect(renderHookOnStore().result.mode).toBe('dark')
+})
+
+// The menu opens on the chip and closes on the item. The choice is checked in
+// the store the detail screen reads, which is what makes the setting real.
+it('sets the country the watch providers are read for', () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  act(() => {
+    fireEvent.press(screen.getByTestId('region-chip'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('region-IN'))
+  })
+
+  expect(renderRegionOnStore()).toMatchObject({ code: 'IN', chosen: true })
+  // The chip, not the menu item: the menu is still leaving when this runs.
+  expect(screen.getByLabelText('Region: India. Change')).toBeTruthy()
+})
+
+it('goes back to the device region', () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  act(() => {
+    fireEvent.press(screen.getByTestId('region-chip'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('region-IN'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('region-chip'))
+  })
+  act(() => {
+    fireEvent.press(screen.getByTestId('region-device'))
+  })
+
+  expect(renderRegionOnStore()).toMatchObject({ code: 'US', chosen: false })
 })
 
 it('shows the version of each package that is installed', () => {
@@ -153,4 +190,18 @@ function renderHookOnStore() {
 
   renderWithProviders(<Probe />)
   return { result }
+}
+
+/** Reads the region store the way `renderHookOnStore` reads the appearance. */
+function renderRegionOnStore() {
+  let result = { code: '', chosen: false }
+
+  function Probe() {
+    const region = useRegion()
+    result = { code: region.code, chosen: region.chosen }
+    return null
+  }
+
+  renderWithProviders(<Probe />)
+  return result
 }

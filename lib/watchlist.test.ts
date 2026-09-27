@@ -81,7 +81,7 @@ describe('useWatchlist', () => {
       trailer: null,
       recommendations: mockMovies,
       images: [{ file_path: '/still.jpg', aspect_ratio: 1.778 }],
-      providers: null,
+      providers: {},
     }
 
     act(() => toggleSaved(detail))

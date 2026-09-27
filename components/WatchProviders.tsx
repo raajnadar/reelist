@@ -1,8 +1,10 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
+import { useRouter } from 'expo-router'
 import { Linking, Pressable, StyleSheet, View } from 'react-native'
 import { logoUrl } from '../lib/images'
+import { regionName, useRegion } from '../lib/region'
 import type { WatchProvider, WatchProviders as Providers } from '../lib/types'
 import { RemoteImage } from './RemoteImage'
 
@@ -25,22 +27,33 @@ const GROUPS: { key: keyof Omit<Providers, 'link'>; label: string }[] = [
 /**
  * Where the film can be watched, as a section of logo tiles.
  *
+ * The country comes from the region store: the device region until the reader
+ * picks one on the about screen. The section names the country, and the name
+ * opens the about screen, so a reader who sees the wrong country can fix it
+ * from here.
+ *
  * Each tile opens the TMDB "where to watch" page for the film. TMDB gives no
  * deep link into each service, so one page is the best answer and every tile
- * opens the same one. The page lists the services by region, so the reader
- * can also see a region other than the one the app reads.
+ * opens the same one.
  *
  * The JustWatch line is a condition of use. TMDB licenses the provider data
  * from JustWatch and asks each app that shows it to say so.
  */
-export function WatchProviders({ providers }: { providers: Providers | null }) {
+export function WatchProviders({ providers }: { providers: Record<string, Providers> }) {
   const theme = useTheme()
+  const router = useRouter()
+  const { code } = useRegion()
+  const name = regionName(code)
 
-  // Absent, not empty. `lib/api.ts` maps a region with no service to null, so
-  // a film nobody carries shows no heading above nothing.
-  if (!providers) return null
+  // Absent, not empty. A film no service carries anywhere shows no heading
+  // above nothing. A film carried elsewhere but not here is a different case:
+  // the reader should learn that, and that the country can be changed.
+  if (!Object.keys(providers).length) return null
 
-  const open = () => void Linking.openURL(providers.link)
+  const here = providers[code]
+  const open = () => {
+    if (here) void Linking.openURL(here.link)
+  }
 
   return (
     <Motion.View
@@ -49,26 +62,46 @@ export function WatchProviders({ providers }: { providers: Providers | null }) {
       transition="enter"
       style={styles.section}
     >
-      <Typography variant="titleMediumEmphasized">Where to watch</Typography>
+      <View style={styles.head}>
+        <Typography variant="titleMediumEmphasized">Where to watch</Typography>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Region: ${name}. Change`}
+          accessibilityHint="Opens the settings"
+          onPress={() => router.push('/about')}
+          hitSlop={8}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Typography variant="labelMedium" color={theme.colors.primary}>
+            {name}
+          </Typography>
+        </Pressable>
+      </View>
 
-      {GROUPS.map(({ key, label }) =>
-        providers[key].length ? (
-          <View key={key} style={styles.group}>
-            <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
-              {label}
-            </Typography>
-            <View style={styles.tiles}>
-              {providers[key].map((provider) => (
-                <ProviderTile
-                  key={provider.id}
-                  provider={provider}
-                  label={label}
-                  onPress={open}
-                />
-              ))}
+      {here ? (
+        GROUPS.map(({ key, label }) =>
+          here[key].length ? (
+            <View key={key} style={styles.group}>
+              <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
+                {label}
+              </Typography>
+              <View style={styles.tiles}>
+                {here[key].map((provider) => (
+                  <ProviderTile
+                    key={provider.id}
+                    provider={provider}
+                    label={label}
+                    onPress={open}
+                  />
+                ))}
+              </View>
             </View>
-          </View>
-        ) : null,
+          ) : null,
+        )
+      ) : (
+        <Typography variant="bodyMedium" color={theme.colors.onSurfaceVariant}>
+          No streaming service carries this film in {name} yet.
+        </Typography>
       )}
 
       <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
@@ -126,6 +159,7 @@ function ProviderTile({
 
 const styles = StyleSheet.create({
   section: { gap: 12 },
+  head: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
   group: { gap: 6 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {

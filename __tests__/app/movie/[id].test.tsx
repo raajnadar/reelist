@@ -398,6 +398,32 @@ describe('the cast row', () => {
   })
 })
 
+describe('the watch providers', () => {
+  // The mocked device is in the United States, and the fixture carries a
+  // service there. The section names the country and the service.
+  it('shows the services for the device country', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('Where to watch')).toBeTruthy()
+    expect(screen.getByText('United States')).toBeTruthy()
+    expect(screen.getByLabelText('Hulu. Stream')).toBeTruthy()
+  })
+
+  it('is absent for a film no service carries anywhere', async () => {
+    const nowhere = { ...movie, providers: {} }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(nowhere.id) })
+    getMovie.mockResolvedValue(nowhere)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(nowhere.overview)).toBeTruthy()
+    expect(screen.queryByText('Where to watch')).toBeNull()
+  })
+})
+
 describe('the recommendation row', () => {
   it('shows the films TMDB recommends', async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })

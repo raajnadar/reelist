@@ -452,13 +452,15 @@ describe('the appended blocks', () => {
       const movie = await getMovie(550)
 
       expect(movie?.providers).toEqual({
-        link: 'https://www.themoviedb.org/movie/550/watch?locale=IN',
-        stream: [{ id: 8, name: 'Netflix', logo_path: '/8.jpg' }],
-        rent: [{ id: 2, name: 'Apple TV', logo_path: '/2.jpg' }],
-        buy: [
-          { id: 2, name: 'Apple TV', logo_path: '/2.jpg' },
-          { id: 3, name: 'Google Play', logo_path: '/3.jpg' },
-        ],
+        IN: {
+          link: 'https://www.themoviedb.org/movie/550/watch?locale=IN',
+          stream: [{ id: 8, name: 'Netflix', logo_path: '/8.jpg' }],
+          rent: [{ id: 2, name: 'Apple TV', logo_path: '/2.jpg' }],
+          buy: [
+            { id: 2, name: 'Apple TV', logo_path: '/2.jpg' },
+            { id: 3, name: 'Google Play', logo_path: '/3.jpg' },
+          ],
+        },
       })
     })
 
@@ -477,7 +479,7 @@ describe('the appended blocks', () => {
 
       const movie = await getMovie(550)
 
-      expect(movie?.providers?.stream.map((p) => p.name)).toEqual([
+      expect(movie?.providers.IN.stream.map((p) => p.name)).toEqual([
         'Netflix',
         'Hotstar',
         'Prime Video',
@@ -491,33 +493,43 @@ describe('the appended blocks', () => {
 
       const movie = await getMovie(550)
 
-      expect(movie?.providers).toMatchObject({ rent: [], buy: [] })
+      expect(movie?.providers.IN).toMatchObject({ rent: [], buy: [] })
     })
 
-    it('keeps only the region the app reads', async () => {
-      tmdbFetch.mockResolvedValue(
-        withProviders({ flatrate: [rawProvider(8, 'Netflix', 1)] }, 'US'),
-      )
+    // The country is a setting the reader can change, and the detail is cached
+    // per film, so every country stays in the map.
+    it('keeps every region the block holds', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        'watch/providers': {
+          results: {
+            IN: { flatrate: [rawProvider(8, 'Netflix', 1)] },
+            US: { buy: [rawProvider(2, 'Apple TV', 4)] },
+          },
+        },
+      })
 
-      await expect(getMovie(550)).resolves.toMatchObject({ providers: null })
+      const movie = await getMovie(550)
+
+      expect(Object.keys(movie?.providers ?? {})).toEqual(['IN', 'US'])
     })
 
-    // TMDB omits the whole block for a film it has no provider data for, and
-    // omits the region for a film no service carries there.
-    it('maps an absent block to null', async () => {
+    // TMDB omits the whole block for a film it has no provider data for.
+    it('maps an absent block to an empty map', async () => {
       tmdbFetch.mockResolvedValue(rawMovie)
 
-      await expect(getMovie(550)).resolves.toMatchObject({ providers: null })
+      await expect(getMovie(550)).resolves.toMatchObject({ providers: {} })
     })
 
     // A region entry that holds a link and no service does occur. The row must
-    // stay absent for it, so it maps to null rather than three empty lists.
-    it('maps a region with a link and no service to null', async () => {
+    // stay absent for it, so the region is dropped rather than kept with three
+    // empty lists.
+    it('drops a region with a link and no service', async () => {
       tmdbFetch.mockResolvedValue(
         withProviders({ link: 'https://www.themoviedb.org/movie/550/watch?locale=IN' }),
       )
 
-      await expect(getMovie(550)).resolves.toMatchObject({ providers: null })
+      await expect(getMovie(550)).resolves.toMatchObject({ providers: {} })
     })
 
     it('keeps the absent logo TMDB reports for one service', async () => {
@@ -527,7 +539,7 @@ describe('the appended blocks', () => {
 
       const movie = await getMovie(550)
 
-      expect(movie?.providers?.stream).toEqual([
+      expect(movie?.providers.IN.stream).toEqual([
         { id: 1, name: 'Nobody', logo_path: null },
       ])
     })

@@ -54,7 +54,7 @@ export type MovieDetail = Movie & {
   trailer: Video | null
   recommendations: Movie[]
   images: GalleryImage[]
-  providers: WatchProviders | null
+  providers: Record<string, WatchProviders>
 }
 
 /**
@@ -78,9 +78,10 @@ export type WatchProvider = {
  * than one list. `link` is the TMDB page for the film's providers, which is
  * the only link TMDB gives: it holds no deep link into each service.
  *
- * `MovieDetail.providers` is `null` when TMDB lists nothing for the region.
- * TMDB omits the region from the block for that case, and the row draws no
- * heading above nothing.
+ * `MovieDetail.providers` holds one entry per country, keyed by its ISO code,
+ * and only the countries with at least one service. The country is the
+ * reader's setting, so it is picked at render time rather than here: one
+ * cached film then serves every country the reader switches to.
  */
 export type WatchProviders = {
   link: string

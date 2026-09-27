@@ -59,16 +59,6 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
 const APPEND = 'credits,videos,recommendations,images,watch/providers'
 
 /**
- * The region the watch providers are read for.
- *
- * The `watch/providers` block holds every region TMDB knows, keyed by country
- * code, and the app keeps one of them. One fixed value, because the response is
- * cached per film and not per region, so the choice costs no extra request. A
- * later change can read the device locale here instead.
- */
-const WATCH_REGION = 'IN'
-
-/**
  * Which languages the `images` block may carry.
  *
  * Without this TMDB filters the appended images to the request language, and
@@ -197,32 +187,39 @@ type RawRegionProviders = {
 }
 
 /**
- * The services in `WATCH_REGION`, out of every region the block holds.
+ * The services in every country the block holds, keyed by country code.
  *
- * TMDB omits a region with no service at all, so the read needs the `?? {}`
- * guards, and a region with no list in any of the three groups maps to `null`.
- * A region with a link and no services does occur, and `null` keeps the row
- * absent for it rather than a heading over an empty box.
+ * All of them are kept rather than one, because the country is a setting the
+ * reader can change on the about screen, and the detail is cached per film.
+ * Keeping the map means a change of country re-reads the cache rather than
+ * TMDB. The map is small: a few services in each of some sixty countries.
+ *
+ * A country with a link and no service does occur, and it is dropped, so a
+ * key in the map always has something to draw. TMDB omits the block for a
+ * film it has no data for, so the read needs the `?? {}` guard.
  *
  * `flatrate` is TMDB's name for a subscription. The app calls it `stream`,
  * because that is the word the row prints.
  */
-const toWatchProviders = (raw: Record<string, unknown>): WatchProviders | null => {
+const toWatchProviders = (
+  raw: Record<string, unknown>,
+): Record<string, WatchProviders> => {
   const results = (raw.results as Record<string, RawRegionProviders> | undefined) ?? {}
-  const region = results[WATCH_REGION]
-  if (!region) return null
+  const byRegion: Record<string, WatchProviders> = {}
 
-  const providers = {
-    link: region.link ?? '',
-    stream: toProviderGroup(region.flatrate),
-    rent: toProviderGroup(region.rent),
-    buy: toProviderGroup(region.buy),
+  for (const [code, region] of Object.entries(results)) {
+    const providers = {
+      link: region.link ?? '',
+      stream: toProviderGroup(region.flatrate),
+      rent: toProviderGroup(region.rent),
+      buy: toProviderGroup(region.buy),
+    }
+    if (providers.stream.length || providers.rent.length || providers.buy.length) {
+      byRegion[code] = providers
+    }
   }
 
-  if (!providers.stream.length && !providers.rent.length && !providers.buy.length) {
-    return null
-  }
-  return providers
+  return byRegion
 }
 
 /**
