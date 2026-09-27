@@ -7,6 +7,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StateMessage } from '../../components/StateMessage'
 import { TrailerPlayer } from '../../components/TrailerPlayer'
+import { NoIndex } from '../../components/NoIndex'
 import { ON_STAGE, STAGE } from '../../lib/stage'
 import { watchUrl } from '../../lib/youtube'
 
@@ -59,6 +60,7 @@ export default function TrailerScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <NoIndex />
       {/*
         `fullScreenModal` rather than `modal`: the iOS sheet leaves the screen
         behind it visible at the top and rounds the corners over the video, and

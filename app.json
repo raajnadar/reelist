@@ -45,7 +45,9 @@
       "output": "static"
     },
     "extra": {
-      "router": {},
+      "router": {
+        "sitemap": false
+      },
       "eas": {
         "projectId": "7fe1b9fe-fa75-406c-aaf9-ae330957fc46"
       }

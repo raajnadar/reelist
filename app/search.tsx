@@ -10,6 +10,7 @@ import { GlassLayer } from '../components/GlassLayer'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { NoIndex } from '../components/NoIndex'
 import { searchMovies } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
 import { GRID_GAP, GRID_PADDING, gridInset, posterColumns } from '../lib/grid'
@@ -163,6 +164,7 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.layer}>
+      <NoIndex />
       <GlassLayer onPress={dismiss} testID="search-glass" />
 
       {/*

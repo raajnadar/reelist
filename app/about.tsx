@@ -5,6 +5,7 @@ import { Divider } from '@rootnative/components/divider'
 import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
+import { NoIndex } from '../components/NoIndex'
 import { useBreakpoint, useTheme, type ThemeMode } from '@rootnative/core'
 import corePackage from '@rootnative/core/package.json'
 import { Motion, Stagger } from '@rootnative/inertia'
@@ -131,6 +132,7 @@ export default function AboutScreen() {
       come from the theme the card is about to change.
     */
     <View style={styles.layer}>
+      <NoIndex />
       {/*
         The scrim. A press on it dismisses, which is what a reader expects of
         the dark area around a dialog, and it is the reason this is a Pressable

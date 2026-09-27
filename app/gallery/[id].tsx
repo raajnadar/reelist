@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, View } from 'react-native'
 import { GalleryViewer } from '../../components/GalleryViewer'
 import { StateMessage } from '../../components/StateMessage'
+import { NoIndex } from '../../components/NoIndex'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure } from '../../lib/errors'
 import { ON_STAGE, STAGE } from '../../lib/stage'
@@ -62,6 +63,7 @@ export default function GalleryScreen() {
 
   return (
     <View style={styles.screen}>
+      <NoIndex />
       {/*
         `fullScreenModal` and a fade, the same as the trailer: a sheet would
         round the corners over the picture and show the film behind its top

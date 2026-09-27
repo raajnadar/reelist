@@ -14,6 +14,7 @@
     "web": "expo start --web",
     "export:web": "expo export --platform web",
     "prerender:seed": "node scripts/prerender-seed.js",
+    "sitemap": "node scripts/sitemap.js dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

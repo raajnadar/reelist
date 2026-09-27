@@ -64,6 +64,15 @@ jobs:
           EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}
         run: yarn export:web
 
+      # Lists the home page, the genre pages, and the seeded films, which are
+      # the pages the export wrote a file for. `base_url` is the site address
+      # Pages reports, so the sitemap needs no copy of it. public/robots.txt
+      # points a crawler at this file.
+      - name: Write the sitemap
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: yarn sitemap
+
       # The export writes one HTML file per route and per prerendered film, and
       # Pages serves `movie/123.html` for `/movie/123` with a 200. Every other
       # film is a deep link with no file. Pages has no rewrite rule, so it
