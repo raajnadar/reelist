@@ -6,7 +6,9 @@ import { CastCard } from './CastCard'
 
 const mockPush = jest.fn()
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
+jest.mock('expo-router', () =>
+  jest.requireActual('../lib/test-utils').expoRouterMock(() => ({ push: mockPush })),
+)
 
 beforeEach(() => {
   mockPush.mockClear()

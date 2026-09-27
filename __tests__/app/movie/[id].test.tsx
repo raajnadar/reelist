@@ -31,13 +31,13 @@ const mockPush = jest.fn()
 const mockReplace = jest.fn()
 
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => mockUseLocalSearchParams(),
-  useRouter: () => ({
+  ...jest.requireActual('../../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     back: jest.fn(),
     replace: mockReplace,
     canGoBack: () => true,
-  }),
+  })),
+  useLocalSearchParams: () => mockUseLocalSearchParams(),
 }))
 
 jest.mock('../../../lib/api', () => ({

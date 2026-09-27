@@ -12,14 +12,14 @@ import { readSearchOrigin } from '../../lib/searchOrigin'
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
+jest.mock('expo-router', () =>
+  jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     back: jest.fn(),
     replace: mockReplace,
     canGoBack: () => true,
-  }),
-}))
+  })),
+)
 
 // See index.test.tsx: the renderer's `measureInWindow` never answers.
 const BUTTON_RECT = { x: 120, y: 480, width: 150, height: 40 }

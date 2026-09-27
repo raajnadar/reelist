@@ -18,12 +18,12 @@ const mockReplace = jest.fn()
 let mockParams: Record<string, string> = { id: '1082047' }
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({
+  ...jest.requireActual('../../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     back: jest.fn(),
     replace: mockReplace,
     canGoBack: () => true,
-  }),
+  })),
   useLocalSearchParams: () => mockParams,
 }))
 

@@ -1,6 +1,6 @@
 import { Chip } from '@rootnative/components/chip'
 import { Motion } from '@rootnative/inertia'
-import { useRouter } from 'expo-router'
+import { Link } from 'expo-router'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { entranceTransition } from '../lib/motion'
 import type { Genre } from '../lib/types'
@@ -32,8 +32,6 @@ export function GenreChips({
   inset?: number
   gutter?: number
 }) {
-  const router = useRouter()
-
   if (!genres.length) return null
 
   return (
@@ -53,14 +51,13 @@ export function GenreChips({
             animate={{ opacity: 1, translateY: 0 }}
             transition={entranceTransition(index)}
           >
-            <Chip
-              variant="suggestion"
-              onPress={() =>
-                router.push(`/genre/${item.id}?name=${encodeURIComponent(item.name)}`)
-              }
+            {/* A link, so the web renders an anchor a crawler can follow. */}
+            <Link
+              href={`/genre/${item.id}?name=${encodeURIComponent(item.name)}`}
+              asChild
             >
-              {item.name}
-            </Chip>
+              <Chip variant="suggestion">{item.name}</Chip>
+            </Link>
           </Motion.View>
         )}
       />

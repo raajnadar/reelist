@@ -1,7 +1,7 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
-import { useRouter } from 'expo-router'
+import { Link } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
@@ -55,7 +55,6 @@ export function CarouselCard({
   centerOffset,
 }: Props) {
   const theme = useTheme()
-  const router = useRouter()
   const uri = posterUrl(movie.poster_path, 'w500')
 
   // Three stops: previous slot, this slot centered, next slot. The card reaches
@@ -107,52 +106,57 @@ export function CarouselCard({
           Nesting composes them: the outer element owns the scroll position, the
           inner one owns the touch response.
         */}
-        <Motion.Pressable
-          onPress={() => router.push(`/movie/${movie.id}`)}
-          accessibilityRole="button"
-          accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
-          gesture={{
-            hovered: { scale: 1.03 },
-            pressed: { scale: 0.97 },
-          }}
-          transition={{ pressed: 'press', hovered: 'hover' }}
-          style={[styles.card, { backgroundColor: theme.colors.surfaceContainerHigh }]}
-        >
-          {uri ? (
-            <RemoteImage
-              testID="carousel-poster"
-              uri={uri}
-              // The carousel is a FlatList too, so it recycles the same way a
-              // row does. See RemoteImage.
-              recyclingKey={String(movie.id)}
-              // The featured row is the first thing on the home screen, so its
-              // posters are the ones worth downloading first.
-              priority="high"
-              style={styles.poster}
-            />
-          ) : (
-            <View
-              style={[
-                styles.poster,
-                styles.fallback,
-                { backgroundColor: theme.colors.surfaceVariant },
-              ]}
-            >
-              <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
-                No poster
+        {/*
+          A link, so the web renders an anchor a crawler can follow. The Link
+          sets the role. The style is one object rather than an array, because
+          the link's slot refuses an array on its child.
+        */}
+        <Link href={`/movie/${movie.id}`} asChild>
+          <Motion.Pressable
+            accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
+            gesture={{
+              hovered: { scale: 1.03 },
+              pressed: { scale: 0.97 },
+            }}
+            transition={{ pressed: 'press', hovered: 'hover' }}
+            style={{ ...styles.card, backgroundColor: theme.colors.surfaceContainerHigh }}
+          >
+            {uri ? (
+              <RemoteImage
+                testID="carousel-poster"
+                uri={uri}
+                // The carousel is a FlatList too, so it recycles the same way a
+                // row does. See RemoteImage.
+                recyclingKey={String(movie.id)}
+                // The featured row is the first thing on the home screen, so its
+                // posters are the ones worth downloading first.
+                priority="high"
+                style={styles.poster}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.poster,
+                  styles.fallback,
+                  { backgroundColor: theme.colors.surfaceVariant },
+                ]}
+              >
+                <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
+                  No poster
+                </Typography>
+              </View>
+            )}
+
+            <View style={styles.meta}>
+              <Typography variant="titleSmall" numberOfLines={1}>
+                {movie.title}
+              </Typography>
+              <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+                {metaLine(movie.vote_average, movie.release_date)}
               </Typography>
             </View>
-          )}
-
-          <View style={styles.meta}>
-            <Typography variant="titleSmall" numberOfLines={1}>
-              {movie.title}
-            </Typography>
-            <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
-              {metaLine(movie.vote_average, movie.release_date)}
-            </Typography>
-          </View>
-        </Motion.Pressable>
+          </Motion.Pressable>
+        </Link>
       </Motion.View>
     </View>
   )

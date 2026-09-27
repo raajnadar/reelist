@@ -14,9 +14,13 @@ import { readSearchOrigin } from '../../lib/searchOrigin'
 
 const mockPush = jest.fn()
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, back: jest.fn(), canGoBack: () => true }),
-}))
+jest.mock('expo-router', () =>
+  jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
+    push: mockPush,
+    back: jest.fn(),
+    canGoBack: () => true,
+  })),
+)
 
 // The wrapper's `measureInWindow` is a `jest.fn` in this renderer and never
 // answers, so the real helper would wait for ever and the push would never

@@ -3,7 +3,9 @@ import { renderWithProviders } from '../lib/test-utils'
 import type { Movie } from '../lib/types'
 import { MovieCard } from './MovieCard'
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
+jest.mock('expo-router', () =>
+  jest.requireActual('../lib/test-utils').expoRouterMock(() => ({ push: jest.fn() })),
+)
 
 const movie: Movie = {
   id: 550,

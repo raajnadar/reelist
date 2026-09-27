@@ -11,14 +11,14 @@ import { MissingProxyUrlError } from '../../lib/config'
 
 const mockPush = jest.fn()
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
+jest.mock('expo-router', () =>
+  jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     back: jest.fn(),
     replace: jest.fn(),
     canGoBack: () => true,
-  }),
-}))
+  })),
+)
 
 jest.mock('../../lib/api', () => ({
   searchMovies: jest.fn(),

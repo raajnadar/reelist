@@ -3,7 +3,7 @@ import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { render, screen } from '@testing-library/react-native'
-import type { ReactElement } from 'react'
+import { cloneElement, type ReactElement } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { transitions } from './motion'
 import { darkTheme, lightTheme } from '../theme'
@@ -18,6 +18,41 @@ import { darkTheme, lightTheme } from '../theme'
 const metrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
+}
+
+type LinkMockProps = {
+  href: string
+  asChild?: boolean
+  children: ReactElement<{ onPress?: (event?: unknown) => void }>
+}
+
+/**
+ * What a test hands `jest.mock('expo-router', ...)`: a router and a `Link`.
+ *
+ * The cards and the chips are links, and the real `Link` needs a navigation
+ * container that no test mounts. This one puts a press handler on its child
+ * that calls `router.push` with the href, so a test that presses a card can
+ * assert the same call it asserted when the card was a press handler.
+ *
+ * `router` is a function, because a mock factory runs when the module is
+ * first required, which is before the `mockPush` at the top of a test file is
+ * assigned. The function is called at press time and at each `useRouter`.
+ *
+ * A test that needs more from the module spreads this and adds to it.
+ */
+export function expoRouterMock<R extends { push: (href: string) => void }>(
+  router: () => R,
+) {
+  function Link({ href, children }: LinkMockProps) {
+    return cloneElement(children, {
+      onPress: (event?: unknown) => {
+        children.props.onPress?.(event)
+        router().push(href)
+      },
+    })
+  }
+
+  return { useRouter: router, Link }
 }
 
 function Providers({ children }: { children: ReactElement }) {
