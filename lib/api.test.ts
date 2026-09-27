@@ -172,13 +172,13 @@ describe('the appended blocks', () => {
     known_for_department: 'Acting',
   }
 
-  it('asks TMDB for all four blocks in one request', async () => {
+  it('asks TMDB for all five blocks in one request', async () => {
     tmdbFetch.mockResolvedValue(rawMovie)
 
     await getMovie(550)
 
     expect(tmdbFetch).toHaveBeenCalledWith('/movie/550', {
-      append_to_response: 'credits,videos,recommendations,images',
+      append_to_response: 'credits,videos,recommendations,images,watch/providers',
       include_image_language: 'en,null',
     })
   })
@@ -195,7 +195,7 @@ describe('the appended blocks', () => {
     await getMovie(550)
 
     expect(tmdbFetch.mock.calls[0][1].append_to_response).toBe(
-      'credits,videos,recommendations,images',
+      'credits,videos,recommendations,images,watch/providers',
     )
   })
 
@@ -419,6 +419,117 @@ describe('the appended blocks', () => {
       const movie = await getMovie(550)
 
       expect(movie?.images).toEqual([])
+    })
+  })
+
+  describe('the watch providers', () => {
+    const rawProvider = (
+      provider_id: number,
+      provider_name: string,
+      display_priority: number,
+    ) => ({
+      provider_id,
+      provider_name,
+      logo_path: `/${provider_id}.jpg`,
+      display_priority,
+    })
+
+    const withProviders = (region: Record<string, unknown>, code = 'IN') => ({
+      ...rawMovie,
+      'watch/providers': { id: 550, results: { [code]: region } },
+    })
+
+    it('maps the three groups and the link for the region', async () => {
+      tmdbFetch.mockResolvedValue(
+        withProviders({
+          link: 'https://www.themoviedb.org/movie/550/watch?locale=IN',
+          flatrate: [rawProvider(8, 'Netflix', 1)],
+          rent: [rawProvider(2, 'Apple TV', 4)],
+          buy: [rawProvider(2, 'Apple TV', 4), rawProvider(3, 'Google Play', 5)],
+        }),
+      )
+
+      const movie = await getMovie(550)
+
+      expect(movie?.providers).toEqual({
+        link: 'https://www.themoviedb.org/movie/550/watch?locale=IN',
+        stream: [{ id: 8, name: 'Netflix', logo_path: '/8.jpg' }],
+        rent: [{ id: 2, name: 'Apple TV', logo_path: '/2.jpg' }],
+        buy: [
+          { id: 2, name: 'Apple TV', logo_path: '/2.jpg' },
+          { id: 3, name: 'Google Play', logo_path: '/3.jpg' },
+        ],
+      })
+    })
+
+    // TMDB sends the rank beside each service and does not sort by it. The row
+    // shows the large services first, which is what the rank encodes.
+    it('sorts each group by the rank TMDB sends', async () => {
+      tmdbFetch.mockResolvedValue(
+        withProviders({
+          flatrate: [
+            rawProvider(9, 'Prime Video', 3),
+            rawProvider(8, 'Netflix', 1),
+            rawProvider(122, 'Hotstar', 2),
+          ],
+        }),
+      )
+
+      const movie = await getMovie(550)
+
+      expect(movie?.providers?.stream.map((p) => p.name)).toEqual([
+        'Netflix',
+        'Hotstar',
+        'Prime Video',
+      ])
+    })
+
+    it('maps an absent group to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(
+        withProviders({ flatrate: [rawProvider(8, 'Netflix', 1)] }),
+      )
+
+      const movie = await getMovie(550)
+
+      expect(movie?.providers).toMatchObject({ rent: [], buy: [] })
+    })
+
+    it('keeps only the region the app reads', async () => {
+      tmdbFetch.mockResolvedValue(
+        withProviders({ flatrate: [rawProvider(8, 'Netflix', 1)] }, 'US'),
+      )
+
+      await expect(getMovie(550)).resolves.toMatchObject({ providers: null })
+    })
+
+    // TMDB omits the whole block for a film it has no provider data for, and
+    // omits the region for a film no service carries there.
+    it('maps an absent block to null', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ providers: null })
+    })
+
+    // A region entry that holds a link and no service does occur. The row must
+    // stay absent for it, so it maps to null rather than three empty lists.
+    it('maps a region with a link and no service to null', async () => {
+      tmdbFetch.mockResolvedValue(
+        withProviders({ link: 'https://www.themoviedb.org/movie/550/watch?locale=IN' }),
+      )
+
+      await expect(getMovie(550)).resolves.toMatchObject({ providers: null })
+    })
+
+    it('keeps the absent logo TMDB reports for one service', async () => {
+      tmdbFetch.mockResolvedValue(
+        withProviders({ flatrate: [{ provider_id: 1, provider_name: 'Nobody' }] }),
+      )
+
+      const movie = await getMovie(550)
+
+      expect(movie?.providers?.stream).toEqual([
+        { id: 1, name: 'Nobody', logo_path: null },
+      ])
     })
   })
 

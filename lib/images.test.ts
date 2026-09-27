@@ -1,4 +1,4 @@
-import { backdropUrl, posterUrl, profileUrl } from './images'
+import { backdropUrl, logoUrl, posterUrl, profileUrl } from './images'
 
 // TMDB returns a path fragment, never a URL. The null case is the one that
 // matters: a film with no artwork must produce null so the caller can render a
@@ -42,5 +42,15 @@ describe('profileUrl', () => {
   // The common case for a cast list: TMDB has no photo on file for a person.
   it('returns null when the person has no photo', () => {
     expect(profileUrl(null)).toBeNull()
+  })
+})
+
+describe('logoUrl', () => {
+  it('builds a URL at the tile size', () => {
+    expect(logoUrl('/netflix.jpg')).toBe('https://image.tmdb.org/t/p/w92/netflix.jpg')
+  })
+
+  it('returns null when the service has no logo', () => {
+    expect(logoUrl(null)).toBeNull()
   })
 })

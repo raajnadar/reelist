@@ -9,6 +9,8 @@ import type {
   Paged,
   PersonDetail,
   Video,
+  WatchProvider,
+  WatchProviders,
 } from './types'
 
 /**
@@ -54,7 +56,17 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
  * plain detail response, and the cast row, the trailer button, and the
  * recommendation row all go absent with no error to report.
  */
-const APPEND = 'credits,videos,recommendations,images'
+const APPEND = 'credits,videos,recommendations,images,watch/providers'
+
+/**
+ * The region the watch providers are read for.
+ *
+ * The `watch/providers` block holds every region TMDB knows, keyed by country
+ * code, and the app keeps one of them. One fixed value, because the response is
+ * cached per film and not per region, so the choice costs no extra request. A
+ * later change can read the device locale here instead.
+ */
+const WATCH_REGION = 'IN'
 
 /**
  * Which languages the `images` block may carry.
@@ -156,6 +168,63 @@ const pickTrailer = (raws: Record<string, unknown>[]): Video | null => {
   return trailers.find((v) => v.official) ?? trailers[0] ?? null
 }
 
+const toWatchProvider = (raw: Record<string, unknown>): WatchProvider => ({
+  id: raw.provider_id as number,
+  name: (raw.provider_name as string) ?? '',
+  logo_path: (raw.logo_path as string | null) ?? null,
+})
+
+/**
+ * One group of services, in the order TMDB ranks them.
+ *
+ * TMDB sends `display_priority`, lowest first, and does not sort the list by
+ * it. The rank is the order a reader in the region expects, with the large
+ * services first, so the row keeps it rather than the arrival order.
+ */
+const toProviderGroup = (raws: Record<string, unknown>[] | undefined): WatchProvider[] =>
+  [...(raws ?? [])]
+    .sort(
+      (a, b) =>
+        ((a.display_priority as number) ?? 0) - ((b.display_priority as number) ?? 0),
+    )
+    .map(toWatchProvider)
+
+type RawRegionProviders = {
+  link?: string
+  flatrate?: Record<string, unknown>[]
+  rent?: Record<string, unknown>[]
+  buy?: Record<string, unknown>[]
+}
+
+/**
+ * The services in `WATCH_REGION`, out of every region the block holds.
+ *
+ * TMDB omits a region with no service at all, so the read needs the `?? {}`
+ * guards, and a region with no list in any of the three groups maps to `null`.
+ * A region with a link and no services does occur, and `null` keeps the row
+ * absent for it rather than a heading over an empty box.
+ *
+ * `flatrate` is TMDB's name for a subscription. The app calls it `stream`,
+ * because that is the word the row prints.
+ */
+const toWatchProviders = (raw: Record<string, unknown>): WatchProviders | null => {
+  const results = (raw.results as Record<string, RawRegionProviders> | undefined) ?? {}
+  const region = results[WATCH_REGION]
+  if (!region) return null
+
+  const providers = {
+    link: region.link ?? '',
+    stream: toProviderGroup(region.flatrate),
+    rent: toProviderGroup(region.rent),
+    buy: toProviderGroup(region.buy),
+  }
+
+  if (!providers.stream.length && !providers.rent.length && !providers.buy.length) {
+    return null
+  }
+  return providers
+}
+
 /**
  * The detail endpoint adds six fields the list endpoints never send.
  *
@@ -164,7 +233,7 @@ const pickTrailer = (raws: Record<string, unknown>[]): Video | null => {
  * `""`. They map to an empty array and the `0` / `""` sentinels `lib/format.ts`
  * already reads as "do not print this".
  *
- * The last three arrive because the request carries `append_to_response`, which
+ * The last four arrive because the request carries `append_to_response`, which
  * nests each sub-resource under its own key. TMDB omits a block whose film has
  * nothing in it, so each read needs the `?? {}` guard before the field below it.
  * A film with no cast is common — an announced film has none — and reaching
@@ -179,6 +248,7 @@ const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
   const videos = (raw.videos as { results?: Record<string, unknown>[] }) ?? {}
   const recommendations = (raw.recommendations as RawPaged) ?? {}
   const images = (raw.images as { backdrops?: Record<string, unknown>[] }) ?? {}
+  const providers = (raw['watch/providers'] as Record<string, unknown>) ?? {}
 
   return {
     ...toMovie(raw),
@@ -194,6 +264,7 @@ const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
     trailer: pickTrailer(videos.results ?? []),
     recommendations: toPaged(recommendations).results,
     images: pickImages(images.backdrops ?? []),
+    providers: toWatchProviders(providers),
   }
 }
 

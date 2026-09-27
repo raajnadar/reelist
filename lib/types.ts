@@ -54,6 +54,39 @@ export type MovieDetail = Movie & {
   trailer: Video | null
   recommendations: Movie[]
   images: GalleryImage[]
+  providers: WatchProviders | null
+}
+
+/**
+ * One streaming service, from the `watch/providers` block.
+ *
+ * `logo_path` is nullable for the reason `poster_path` is: TMDB lists a few
+ * services with no artwork, and the row draws the name for those rather than a
+ * broken image.
+ */
+export type WatchProvider = {
+  id: number
+  name: string
+  logo_path: string | null
+}
+
+/**
+ * Where one film can be watched in one region.
+ *
+ * The three lists are the three ways TMDB groups a service: a subscription
+ * that streams the film, a rental, and a purchase. One service can be in more
+ * than one list. `link` is the TMDB page for the film's providers, which is
+ * the only link TMDB gives: it holds no deep link into each service.
+ *
+ * `MovieDetail.providers` is `null` when TMDB lists nothing for the region.
+ * TMDB omits the region from the block for that case, and the row draws no
+ * heading above nothing.
+ */
+export type WatchProviders = {
+  link: string
+  stream: WatchProvider[]
+  rent: WatchProvider[]
+  buy: WatchProvider[]
 }
 
 /**

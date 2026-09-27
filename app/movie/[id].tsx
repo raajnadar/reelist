@@ -15,6 +15,7 @@ import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
+import { WatchProviders } from '../../components/WatchProviders'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
 import { backdropUrl, posterUrl } from '../../lib/images'
@@ -283,6 +284,13 @@ export default function MovieScreen() {
                 <GenreChips genres={movie.genres} inset={0} gutter={0} />
 
                 <DetailOverview movie={movie} />
+
+                {/*
+                  The services that carry the film, after the synopsis and
+                  before the rows. It renders nothing for a film nobody
+                  carries, so it leaves no gap.
+                */}
+                <WatchProviders providers={movie.providers} />
               </Stagger>
             </View>
 

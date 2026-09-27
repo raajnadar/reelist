@@ -81,6 +81,10 @@ const ALLOWED_PARAMS = new Set([
  * path allowlist, because one allowed path would then reach every sub-resource
  * below it. So this parameter is checked by value.
  *
+ * `watch/providers` is in the film value on purpose. It is the one sub-resource
+ * the app reads that names a path of its own, and it is reached only inside the
+ * detail response, never as a path.
+ *
  * The two allowed values must stay identical to `APPEND` and `PERSON_APPEND` in
  * `lib/api.ts` — the film blocks and the person block. A mismatch is silent: the
  * parameter is dropped, TMDB answers with a plain detail response, and the
@@ -99,7 +103,7 @@ const ALLOWED_PARAMS = new Set([
 const ALLOWED_PARAM_VALUES = new Map([
   [
     'append_to_response',
-    new Set(['credits,videos,recommendations,images', 'movie_credits']),
+    new Set(['credits,videos,recommendations,images,watch/providers', 'movie_credits']),
   ],
   ['include_image_language', new Set(['en,null'])],
 ])

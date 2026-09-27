@@ -161,16 +161,25 @@ describe('the key', () => {
     expect(upstreamUrl().searchParams.has('sort_by')).toBe(false)
   })
 
-  // The detail screen asks for the cast, the videos, and the recommendations
-  // inside the film response, so it stays one request per film.
+  // The detail screen asks for the cast, the videos, the recommendations, the
+  // stills, and the watch providers inside the film response, so it stays one
+  // request per film.
   it('forwards the append value the app sends', async () => {
     await get(
-      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages',
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Cwatch%2Fproviders',
     )
 
     expect(upstreamUrl().searchParams.get('append_to_response')).toBe(
-      'credits,videos,recommendations,images',
+      'credits,videos,recommendations,images,watch/providers',
     )
+  })
+
+  // The providers are reached only inside the film response. The path form is
+  // still refused, so the allowlist stays one pattern per endpoint.
+  it('refuses the watch providers path on its own', async () => {
+    const response = await get('path=%2Fmovie%2F550%2Fwatch%2Fproviders')
+
+    expect(response.status).toBe(403)
   })
 
   // The stills come with the film, and TMDB drops the ones filed under no
@@ -216,7 +225,7 @@ describe('the key', () => {
   // through, which is the mistake this test exists to catch.
   it('drops an append value that only starts with the allowed one', async () => {
     await get(
-      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Creviews',
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Cwatch%2Fproviders%2Creviews',
     )
 
     expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)

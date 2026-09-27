@@ -26,3 +26,11 @@ export const backdropUrl = (path: string | null, size: 'w780' | 'w1280' = 'w780'
  */
 export const profileUrl = (path: string | null, size: 'w185' | 'h632' = 'w185') =>
   path ? `${IMAGE_BASE}/${size}${path}` : null
+
+/**
+ * A streaming service logo. TMDB serves logos from the same base, square, in
+ * its own set of sizes. `w92` fills the tile in the watch providers row at
+ * twice its point size.
+ */
+export const logoUrl = (path: string | null, size: 'w92' | 'w154' = 'w92') =>
+  path ? `${IMAGE_BASE}/${size}${path}` : null
