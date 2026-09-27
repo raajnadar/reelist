@@ -6,12 +6,14 @@ import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
 import { BookmarkIcon } from './BookmarkIcon'
+import { ShareButton } from './ShareButton'
 import { restoreSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
 
 /**
- * What the reader can do with the film: watch the trailer, and keep it.
+ * What the reader can do with the film: watch the trailer, keep it, and send
+ * it on.
  *
- * One row rather than two children of the cascade, so the two buttons arrive
+ * One row rather than three children of the cascade, so the buttons arrive
  * together. `<Stagger>` re-derives the whole cascade from render order, so this
  * needs no delay of its own.
  */
@@ -96,6 +98,13 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       >
         {saved ? 'Saved' : 'Save'}
       </Button>
+
+      {/*
+        The quietest of the three: a share is the action the reader takes
+        last, after the film is watched or saved. It is a sheet on a phone
+        and a menu in a browser, which is the component's own split.
+      */}
+      <ShareButton movie={movie} />
     </Motion.View>
   )
 }

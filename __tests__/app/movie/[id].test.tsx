@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { fireEvent, waitFor } from '@testing-library/react-native'
-import { Dimensions } from 'react-native'
+import { Dimensions, Share } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import MovieScreen from '../../../app/movie/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
+import { movieUrl } from '../../../lib/share'
 import { parseStored, STORAGE_KEY } from '../../../lib/watchlist'
 
 // This test mirrors the path of the screen it covers, but it stays outside
@@ -289,6 +290,51 @@ describe('the trailer button', () => {
     expect(await screen.findByText(noTrailer.overview)).toBeTruthy()
     expect(screen.queryByText('Watch trailer')).toBeNull()
     expect(mockPush).not.toHaveBeenCalled()
+  })
+})
+
+describe('the share button', () => {
+  const shareSpy = jest.spyOn(Share, 'share')
+
+  afterEach(() => {
+    shareSpy.mockReset()
+  })
+
+  it('opens the sheet with the web link for the film', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+    shareSpy.mockResolvedValue({ action: Share.sharedAction })
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByText('Share'))
+
+    await waitFor(() =>
+      expect(shareSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ url: movieUrl(movie.id) }),
+        expect.anything(),
+      ),
+    )
+    // The sheet reported the share itself, so the screen says nothing.
+    expect(screen.queryByText('Link copied')).toBeNull()
+  })
+
+  // A browser without the Web Share API gets the link on the clipboard. The
+  // reader cannot see a clipboard, so the screen has to say it happened.
+  it('tells the reader when the link went to the clipboard instead', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+    shareSpy.mockRejectedValue(new Error('Share is not supported in this browser'))
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { clipboard: { writeText: jest.fn().mockResolvedValue(undefined) } },
+      configurable: true,
+    })
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByText('Share'))
+
+    expect(await screen.findByText('Link copied')).toBeTruthy()
   })
 })
 

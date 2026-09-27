@@ -13,6 +13,7 @@ import { DetailOverview } from '../../components/DetailOverview'
 import { GalleryRow } from '../../components/GalleryRow'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
+import { PageHead } from '../../components/PageHead'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { WatchProviders } from '../../components/WatchProviders'
@@ -188,6 +189,13 @@ export default function MovieScreen() {
         // first entry in the history and there is nothing to go back to.
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       />
+
+      {/*
+        The document head on the web: the tab title and the tags a share
+        unfurls. Outside the Presence block, because it draws nothing on the
+        screen and needs no exit.
+      */}
+      {movie ? <PageHead movie={movie} /> : null}
 
       <Presence>
         {loading ? (
