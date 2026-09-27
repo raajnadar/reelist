@@ -53,7 +53,13 @@ const isAllowed = (path: string): boolean =>
  * rather than forwarded, so a caller cannot append `api_key` of their own or
  * reach a TMDB feature this app does not use.
  */
-const ALLOWED_PARAMS = new Set(['query', 'page', 'with_genres', 'append_to_response'])
+const ALLOWED_PARAMS = new Set([
+  'query',
+  'page',
+  'with_genres',
+  'append_to_response',
+  'include_image_language',
+])
 
 /**
  * A few parameters carry a path of their own, so the name check above is not
@@ -70,13 +76,22 @@ const ALLOWED_PARAMS = new Set(['query', 'page', 'with_genres', 'append_to_respo
  * parameter is dropped, TMDB answers with a plain detail response, and the
  * sections that needed it render empty with no error.
  *
+ * `include_image_language` is checked the same way, against `IMAGE_LANGUAGES`
+ * in `lib/api.ts`. It names languages rather than a path, so it cannot reach
+ * past the allowlist; it is held to one value so the cache holds one copy of
+ * each film rather than one per spelling of the list.
+ *
  * The value is checked on its own rather than against the path it arrives with.
  * A film value sent to the person endpoint is one TMDB ignores, not a way past
  * the allowlist, and pairing the two here would only add a rule with nothing to
  * enforce.
  */
 const ALLOWED_PARAM_VALUES = new Map([
-  ['append_to_response', new Set(['credits,videos,recommendations', 'movie_credits'])],
+  [
+    'append_to_response',
+    new Set(['credits,videos,recommendations,images', 'movie_credits']),
+  ],
+  ['include_image_language', new Set(['en,null'])],
 ])
 
 /**

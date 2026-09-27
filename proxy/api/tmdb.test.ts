@@ -147,11 +147,30 @@ describe('the key', () => {
   // The detail screen asks for the cast, the videos, and the recommendations
   // inside the film response, so it stays one request per film.
   it('forwards the append value the app sends', async () => {
-    await get('path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations')
+    await get(
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages',
+    )
 
     expect(upstreamUrl().searchParams.get('append_to_response')).toBe(
-      'credits,videos,recommendations',
+      'credits,videos,recommendations,images',
     )
+  })
+
+  // The stills come with the film, and TMDB drops the ones filed under no
+  // language unless the request names it. The value must stay identical to
+  // `IMAGE_LANGUAGES` in `lib/api.ts`.
+  it('forwards the image language list the app sends', async () => {
+    await get('path=%2Fmovie%2F550&include_image_language=en%2Cnull')
+
+    expect(upstreamUrl().searchParams.get('include_image_language')).toBe('en,null')
+  })
+
+  // One spelling, so the edge cache holds one copy of a film rather than one
+  // per list a caller can write.
+  it('drops an image language list the app does not send', async () => {
+    await get('path=%2Fmovie%2F550&include_image_language=fr%2Cnull')
+
+    expect(upstreamUrl().searchParams.has('include_image_language')).toBe(false)
   })
 
   /**
@@ -180,7 +199,7 @@ describe('the key', () => {
   // through, which is the mistake this test exists to catch.
   it('drops an append value that only starts with the allowed one', async () => {
     await get(
-      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Creviews',
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Creviews',
     )
 
     expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)

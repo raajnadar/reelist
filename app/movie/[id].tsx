@@ -10,6 +10,7 @@ import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
 import { DetailHero } from '../../components/DetailHero'
 import { DetailIdentity, DetailIdentitySkeleton } from '../../components/DetailIdentity'
 import { DetailOverview } from '../../components/DetailOverview'
+import { GalleryRow } from '../../components/GalleryRow'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
 import { SkeletonRow } from '../../components/Skeleton'
@@ -291,11 +292,12 @@ export default function MovieScreen() {
               16. The cap is applied on its own, so on a wide window the rows
               start where the text above them does instead of at the window edge.
 
-              Each returns nothing for an empty list, so a film with no cast and
-              no recommendation ends at the overview.
+              Each returns nothing for an empty list, so a film with no cast, no
+              stills, and no recommendation ends at the overview.
             */}
             <View style={[styles.bodyCap, styles.rows]}>
               <CastRow title="Cast" cast={movie.cast} />
+              <GalleryRow movieId={movie.id} images={movie.images} />
               <MovieRow title="More like this" movies={movie.recommendations} />
             </View>
           </Motion.ScrollView>

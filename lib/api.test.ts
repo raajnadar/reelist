@@ -172,13 +172,14 @@ describe('the appended blocks', () => {
     known_for_department: 'Acting',
   }
 
-  it('asks TMDB for all three blocks in one request', async () => {
+  it('asks TMDB for all four blocks in one request', async () => {
     tmdbFetch.mockResolvedValue(rawMovie)
 
     await getMovie(550)
 
     expect(tmdbFetch).toHaveBeenCalledWith('/movie/550', {
-      append_to_response: 'credits,videos,recommendations',
+      append_to_response: 'credits,videos,recommendations,images',
+      include_image_language: 'en,null',
     })
   })
 
@@ -194,8 +195,21 @@ describe('the appended blocks', () => {
     await getMovie(550)
 
     expect(tmdbFetch.mock.calls[0][1].append_to_response).toBe(
-      'credits,videos,recommendations',
+      'credits,videos,recommendations,images',
     )
+  })
+
+  /**
+   * The same rule for the language list. TMDB filters the appended images to
+   * the request language without it, and the stills with no text on them —
+   * most of them — are filed under no language and would be dropped.
+   */
+  it('sends the exact image language list the proxy allows', async () => {
+    tmdbFetch.mockResolvedValue(rawMovie)
+
+    await getMovie(550)
+
+    expect(tmdbFetch.mock.calls[0][1].include_image_language).toBe('en,null')
   })
 
   describe('the cast', () => {
@@ -319,6 +333,92 @@ describe('the appended blocks', () => {
       tmdbFetch.mockResolvedValue(rawMovie)
 
       await expect(getMovie(550)).resolves.toMatchObject({ trailer: null })
+    })
+  })
+
+  describe('the images', () => {
+    const rawStill = (file_path: string, extra: Record<string, unknown> = {}) => ({
+      file_path,
+      aspect_ratio: 1.778,
+      width: 3840,
+      height: 2160,
+      iso_639_1: null,
+      vote_average: 5.3,
+      ...extra,
+    })
+
+    it('maps each backdrop to the path and the ratio the viewer reads', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        images: { backdrops: [rawStill('/a.jpg'), rawStill('/b.jpg')] },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.images).toEqual([
+        { file_path: '/a.jpg', aspect_ratio: 1.778 },
+        { file_path: '/b.jpg', aspect_ratio: 1.778 },
+      ])
+    })
+
+    // The block carries posters and logos beside the backdrops. The poster is
+    // the picture the screen already leads with, and a logo is a title on a
+    // transparent ground, so neither belongs among the stills.
+    it('keeps the backdrops only', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        images: {
+          backdrops: [rawStill('/a.jpg')],
+          posters: [rawStill('/poster.jpg', { aspect_ratio: 0.667 })],
+          logos: [rawStill('/logo.png', { aspect_ratio: 3.2 })],
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.images.map((image) => image.file_path)).toEqual(['/a.jpg'])
+    })
+
+    it('drops a backdrop with no path, which would page to a blank frame', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        images: { backdrops: [rawStill('/a.jpg'), { aspect_ratio: 1.778 }] },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.images).toHaveLength(1)
+    })
+
+    // TMDB sends the list best first, so the cap keeps the front of it.
+    it('caps the list at twenty, keeping the first twenty', async () => {
+      const backdrops = Array.from({ length: 30 }, (_, i) => rawStill(`/${i}.jpg`))
+      tmdbFetch.mockResolvedValue({ ...rawMovie, images: { backdrops } })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.images).toHaveLength(20)
+      expect(movie?.images[0].file_path).toBe('/0.jpg')
+      expect(movie?.images[19].file_path).toBe('/19.jpg')
+    })
+
+    it('falls back to 16:9 for a backdrop with no ratio', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        images: { backdrops: [{ file_path: '/a.jpg' }] },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.images[0].aspect_ratio).toBeCloseTo(16 / 9)
+    })
+
+    it('maps an absent images block to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      const movie = await getMovie(550)
+
+      expect(movie?.images).toEqual([])
     })
   })
 

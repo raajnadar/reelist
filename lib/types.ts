@@ -53,6 +53,22 @@ export type MovieDetail = Movie & {
   cast: CastMember[]
   trailer: Video | null
   recommendations: Movie[]
+  images: GalleryImage[]
+}
+
+/**
+ * One still from the `images` block: a backdrop, in the gallery.
+ *
+ * `file_path` is a path fragment like `poster_path`, and `lib/images.ts` turns
+ * it into a URL at the size a slot needs. `aspect_ratio` travels with it
+ * because the viewer has to lay the picture out before the bytes land, and a
+ * backdrop is not always 16:9: TMDB accepts anything from 1.77 to 1.78 and
+ * rounds, so the value is what keeps a page from reflowing when the image
+ * arrives.
+ */
+export type GalleryImage = {
+  file_path: string
+  aspect_ratio: number
 }
 
 /**

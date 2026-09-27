@@ -80,6 +80,7 @@ describe('useWatchlist', () => {
       cast: [{ id: 1, name: 'A', character: 'B', profile_path: null }],
       trailer: null,
       recommendations: mockMovies,
+      images: [{ file_path: '/still.jpg', aspect_ratio: 1.778 }],
     }
 
     act(() => toggleSaved(detail))

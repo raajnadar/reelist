@@ -7,6 +7,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StateMessage } from '../../components/StateMessage'
 import { TrailerPlayer } from '../../components/TrailerPlayer'
+import { ON_STAGE, STAGE } from '../../lib/stage'
 import { watchUrl } from '../../lib/youtube'
 
 /**
@@ -24,18 +25,6 @@ import { watchUrl } from '../../lib/youtube'
 
 /** The height of the control row over the video. */
 const BAR_HEIGHT = 56
-
-/**
- * The letterbox around the video, and the bar over it.
- *
- * Black in both themes, and deliberately not a theme colour. Every player puts
- * a video on black, and a light surface beside a bright frame reads as a fault
- * in the video rather than as the page behind it.
- */
-const STAGE = '#000000'
-
-/** White on that stage, for the same reason: the bar is not a themed surface. */
-const ON_STAGE = '#FFFFFF'
 
 /** The shape of the frame YouTube fills. */
 const ASPECT = 16 / 9

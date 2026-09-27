@@ -80,6 +80,20 @@ export const transitions = {
    * adds `repeat: 'infinite'`.
    */
   shimmer: { type: 'timing', duration: 1100 },
+
+  /**
+   * A dragged surface let go short of the point that would dismiss it, on its
+   * way back to rest. Stiff and well damped: the surface should arrive where
+   * the finger left it without a bounce, or the drag reads as loose.
+   */
+  snap: { type: 'spring', tension: 320, friction: 28 },
+
+  /**
+   * The gallery picture growing under a double tap, and shrinking back. A
+   * spring with a little give, so the zoom lands with a small settle rather
+   * than a stop, which is what a pinch would feel like.
+   */
+  zoom: { type: 'spring', tension: 180, friction: 22 },
 } satisfies Record<string, TransitionConfig>
 
 /**

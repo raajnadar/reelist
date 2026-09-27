@@ -1,6 +1,7 @@
 import { tmdbFetch } from './tmdb'
 import type {
   CastMember,
+  GalleryImage,
   Genre,
   Movie,
   MovieDetail,
@@ -52,7 +53,31 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
  * plain detail response, and the cast row, the trailer button, and the
  * recommendation row all go absent with no error to report.
  */
-const APPEND = 'credits,videos,recommendations'
+const APPEND = 'credits,videos,recommendations,images'
+
+/**
+ * Which languages the `images` block may carry.
+ *
+ * Without this TMDB filters the appended images to the request language, and
+ * that drops the stills it holds under no language at all — which is most of
+ * them, because a backdrop with no text on it is filed as `null`. `en` keeps
+ * the ones with English titling beside them.
+ *
+ * Like `APPEND`, this string must stay identical to the one allowed value in
+ * `ALLOWED_PARAM_VALUES` in `proxy/api/tmdb.ts`, and a mismatch fails the same
+ * silent way: the gallery arrives with only the titled stills, or with none.
+ */
+const IMAGE_LANGUAGES = 'en,null'
+
+/**
+ * The most stills the gallery shows.
+ *
+ * TMDB lists every backdrop ever uploaded, sorted by vote, and a popular film
+ * has over a hundred. The viewer pages through them one at a time, and nobody
+ * swipes past twenty. The cap keeps the row and the filmstrip to a size that
+ * mounts at once.
+ */
+const MAX_IMAGES = 20
 
 /**
  * One performer from the `credits` block.
@@ -68,6 +93,36 @@ const toCastMember = (raw: Record<string, unknown>): CastMember => ({
   character: (raw.character as string) ?? '',
   profile_path: (raw.profile_path as string | null) ?? null,
 })
+
+/**
+ * One still from the `images` block.
+ *
+ * `aspect_ratio` falls back to 16:9, the shape of every backdrop TMDB accepts,
+ * so a record that omits it still lays out at the right height rather than at
+ * zero. The pixel sizes TMDB sends beside it are dropped: the viewer sizes the
+ * picture from the window, so it never reads them.
+ */
+const toGalleryImage = (raw: Record<string, unknown>): GalleryImage => ({
+  file_path: (raw.file_path as string) ?? '',
+  aspect_ratio: (raw.aspect_ratio as number) || 16 / 9,
+})
+
+/**
+ * The backdrops the gallery shows, out of everything TMDB lists.
+ *
+ * Backdrops only. The block carries posters and logos as well, and a poster is
+ * the picture the screen already leads with, while a logo is a transparent PNG
+ * of the title that has no place in a set of stills. A record with no path is
+ * dropped rather than mapped, because it would page to a blank frame.
+ *
+ * TMDB sends the list sorted by vote, best first, so the cap keeps the stills
+ * the most people picked.
+ */
+const pickImages = (raws: Record<string, unknown>[]): GalleryImage[] =>
+  raws
+    .map(toGalleryImage)
+    .filter((image) => image.file_path)
+    .slice(0, MAX_IMAGES)
 
 const toVideo = (raw: Record<string, unknown>): Video => ({
   id: (raw.id as string) ?? '',
@@ -122,6 +177,7 @@ const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
   const credits = (raw.credits as { cast?: Record<string, unknown>[] }) ?? {}
   const videos = (raw.videos as { results?: Record<string, unknown>[] }) ?? {}
   const recommendations = (raw.recommendations as RawPaged) ?? {}
+  const images = (raw.images as { backdrops?: Record<string, unknown>[] }) ?? {}
 
   return {
     ...toMovie(raw),
@@ -136,6 +192,7 @@ const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
     cast: (credits.cast ?? []).map(toCastMember),
     trailer: pickTrailer(videos.results ?? []),
     recommendations: toPaged(recommendations).results,
+    images: pickImages(images.backdrops ?? []),
   }
 }
 
@@ -262,6 +319,7 @@ export const getMovie = async (id: number): Promise<MovieDetail | null> => {
     return toMovieDetail(
       await tmdbFetch<Record<string, unknown>>(`/movie/${id}`, {
         append_to_response: APPEND,
+        include_image_language: IMAGE_LANGUAGES,
       }),
     )
   } catch (e) {

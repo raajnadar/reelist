@@ -1,4 +1,4 @@
-import type { CastMember, Movie, MovieDetail, PersonDetail } from './types'
+import type { CastMember, GalleryImage, Movie, MovieDetail, PersonDetail } from './types'
 
 /**
  * Poster paths are real TMDB paths, so the images load without an API key.
@@ -134,6 +134,21 @@ export const mockCast: CastMember[] = [
  * the three appended blocks — giving them those fields would let a card test
  * pass against data the API never sends.
  */
+/**
+ * Four stills, in the shape the `images` block sends a backdrop.
+ *
+ * Real TMDB paths, like the posters, so the gallery draws without a key. The
+ * last one carries the ratio TMDB rounds to for a still that is not quite
+ * 16:9, so a layout test meets the case where the page and the picture do not
+ * share a shape.
+ */
+export const mockImages: GalleryImage[] = [
+  { file_path: '/xOMo8BRK7PfcJv9JCnx7s5hj0PX.jpg', aspect_ratio: 1.778 },
+  { file_path: '/87xmFHi5NpxVfP66QxYkN3wgLuU.jpg', aspect_ratio: 1.778 },
+  { file_path: '/oGT0sNw7E2f4XRpxLzn9M4M5jQ3.jpg', aspect_ratio: 1.778 },
+  { file_path: '/zOp7dc2r0pOyUxCXZYJqWyGTaIF.jpg', aspect_ratio: 1.775 },
+]
+
 export const mockMovieDetail: MovieDetail = {
   ...mockMovies[0],
   genres: [
@@ -154,6 +169,7 @@ export const mockMovieDetail: MovieDetail = {
   // The recommendation row reads plain `Movie` entries, so it reuses the list
   // fixtures rather than repeating them.
   recommendations: mockMovies.slice(1, 4),
+  images: mockImages,
 }
 
 /**
