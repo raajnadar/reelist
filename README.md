@@ -192,7 +192,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `__tests__/app/movie/[id].test.tsx`  | The detail screen: every state and every error         |
 | `__tests__/app/search.test.tsx`      | Search: the debounce, both empty states, staleness     |
 | `__tests__/app/index.test.tsx`       | The home screen's search entry point and the chips     |
-| `__tests__/app/genre/[id].test.tsx`  | The genre grid: paging, a bad id, a stale page         |
+| `__tests__/app/genre/[id].test.tsx`  | The genre grid: paging, filters, a bad id, a stale page |
 | `__tests__/app/watchlist.test.tsx`   | The saved grid, both empty states, and a live change   |
 | `__tests__/app/person/[id].test.tsx` | The person screen: every state, and no films           |
 | `__tests__/app/trailer/[key].test.tsx` | The player: the frame, both exits, and a bad link   |
@@ -214,7 +214,7 @@ app/                     # Expo Router: one file is one screen
 ├── index.tsx            # Home screen
 ├── search.tsx           # Search screen, debounced as you type
 ├── watchlist.tsx        # The films saved on this device
-├── genre/[id].tsx       # One genre, as an endless grid
+├── genre/[id].tsx       # One genre, as an endless grid, with filters
 ├── movie/[id].tsx       # Film detail screen
 ├── person/[id].tsx      # One person, and the films they appear in
 ├── trailer/[key].tsx    # The trailer, played in the app
@@ -227,6 +227,7 @@ components/
 ├── CastRow.tsx          # The billed cast on the detail screen
 ├── CastCard.tsx         # One person in the cast row
 ├── GenreChips.tsx       # The genre shortcuts under the home header
+├── DiscoverFilterRow.tsx # The decade, rating, language, and runtime chips
 ├── DetailHeader.tsx     # The floating bar that arrives with the scroll
 ├── DetailHero.tsx       # The backdrop frame, and its two scrims
 ├── DetailIdentity.tsx   # The poster and title box, filled and empty
@@ -246,6 +247,7 @@ lib/
 ├── tmdb.ts              # The transport. Calls the proxy
 ├── config.ts            # Reads the proxy URL from the environment
 ├── types.ts             # Movie, Paged, Genre, CastMember, Video
+├── discover.ts          # The genre filters, and the TMDB parameters they become
 ├── mock.ts              # Static film data, now a test fixture only
 ├── images.ts            # Builds a TMDB image URL from a path fragment
 ├── format.ts            # Rating and year labels

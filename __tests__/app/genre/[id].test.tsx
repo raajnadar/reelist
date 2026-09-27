@@ -29,14 +29,25 @@ jest.mock('../../../lib/api', () => ({
 
 const { getMoviesByGenre } = jest.requireMock('../../../lib/api')
 
-/** A page of `count` films whose ids start at `from`, so pages never overlap. */
-const pageOf = (from: number, count: number, total = 5) => ({
+/**
+ * A page of `count` films whose ids start at `from`, so pages never overlap.
+ *
+ * The page number follows from the first id, twenty to a page, unless the test
+ * names one. A filtered list starts its ids past every unfiltered page, so its
+ * pages are named.
+ */
+const pageOf = (
+  from: number,
+  count: number,
+  total = 5,
+  page = Math.ceil(from / 20) || 1,
+) => ({
   results: Array.from({ length: count }, (_, i) => ({
     ...mockMovies[0],
     id: from + i,
     title: `Film ${from + i}`,
   })),
-  page: Math.ceil(from / 20) || 1,
+  page,
   total_pages: total,
 })
 
@@ -126,7 +137,7 @@ describe('the screen states', () => {
 
       await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
       expect(getMoviesByGenre).toHaveBeenCalledTimes(2)
-      expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1)
+      expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, {})
     })
 
     // Same reason as the other screens: the fix is a file on disk and a
@@ -181,7 +192,7 @@ describe('the paging', () => {
   it('asks for the first page on mount', async () => {
     renderWithProviders(<GenreScreen />)
 
-    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1))
+    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, {}))
   })
 
   it('loads the next page when the grid reaches its end', async () => {
@@ -192,7 +203,7 @@ describe('the paging', () => {
     getMoviesByGenre.mockResolvedValueOnce(pageOf(21, 20))
     fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached')
 
-    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 2))
+    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 2, {}))
     await waitFor(() => expect(screen.getByText('Film 21')).toBeTruthy())
     // The first page stays: a new page appends rather than replaces.
     expect(screen.getByText('Film 1')).toBeTruthy()
@@ -268,7 +279,7 @@ describe('switching genre', () => {
       }),
     )
     fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached')
-    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 2))
+    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 2, {}))
 
     // The user opens a different genre, which loads its own first page.
     mockParams = { id: '35', name: 'Comedy' }
@@ -281,6 +292,141 @@ describe('switching genre', () => {
 
     await waitFor(() => expect(screen.getByText('Film 500')).toBeTruthy())
     // Genre 28's second page must not appear under Comedy.
+    expect(screen.queryByText('Film 21')).toBeNull()
+  })
+})
+
+describe('the filters', () => {
+  it('shows no filter row for a broken link', async () => {
+    mockParams = { id: 'abc' }
+
+    const screen = renderWithProviders(<GenreScreen />)
+
+    await waitFor(() => expect(screen.getByText('Broken link')).toBeTruthy())
+    expect(screen.queryByTestId('filter-rating')).toBeNull()
+  })
+
+  /**
+   * A pick is a new list, not a narrowing of the one on screen. The first page
+   * is asked for again under the filter, and every page loaded before the pick
+   * goes, or the grid would show unfiltered films above the filtered ones.
+   */
+  it('reloads from the first page with the pick, and drops the pages before it', async () => {
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 20))
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(21, 20))
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached')
+    await waitFor(() => expect(screen.getByText('Film 21')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
+    fireEvent.press(screen.getByTestId('filter-rating'))
+    fireEvent.press(await screen.findByText('7+'))
+
+    await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
+    expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, { rating: 7 })
+    expect(screen.queryByText('Film 1')).toBeNull()
+    expect(screen.queryByText('Film 21')).toBeNull()
+  })
+
+  it('names the pick on its chip', async () => {
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId('filter-language'))
+    fireEvent.press(await screen.findByText('Tamil'))
+
+    await waitFor(() => expect(screen.getByText('Tamil')).toBeTruthy())
+    expect(screen.queryByText('Language')).toBeNull()
+  })
+
+  it('sends the next page under the same pick', async () => {
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 3, 1))
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 20, 5, 1))
+    fireEvent.press(screen.getByTestId('filter-decade'))
+    fireEvent.press(await screen.findByText('1990s'))
+    await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(120, 20, 5, 2))
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached')
+
+    await waitFor(() =>
+      expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 2, { decade: 1990 }),
+    )
+  })
+
+  // The chip carries its own clear, so a reader never has to open the menu to
+  // undo one pick. The unfiltered page is in the store, so no request follows.
+  it('clears one pick from its chip', async () => {
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 3, 1))
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
+    fireEvent.press(screen.getByTestId('filter-runtime'))
+    fireEvent.press(await screen.findByText('Under 90 min'))
+    await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
+
+    fireEvent.press(screen.getByLabelText('Remove Under 90 min'))
+
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+    expect(screen.queryByText('Film 100')).toBeNull()
+    expect(getMoviesByGenre).toHaveBeenCalledTimes(2)
+  })
+
+  /**
+   * An empty answer under a pick is not an empty genre. The films are there,
+   * and the message says what to change rather than that there is nothing.
+   */
+  it('offers to clear the filters when nothing matches', async () => {
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 3, 1))
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce({ results: [], page: 1, total_pages: 1 })
+    fireEvent.press(screen.getByTestId('filter-rating'))
+    fireEvent.press(await screen.findByText('8+'))
+
+    await waitFor(() => expect(screen.getByTestId('genre-no-match')).toBeTruthy())
+    expect(screen.queryByText('Nothing here yet')).toBeNull()
+
+    fireEvent.press(screen.getByText('Clear filters'))
+
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+  })
+
+  /**
+   * A page requested under one pick can land after the reader changed it. The
+   * outcome carries the key it belongs to, so a late page is dropped rather
+   * than appended under the new pick.
+   */
+  it('ignores a page that arrives for the previous pick', async () => {
+    let resolvePageTwo: (value: unknown) => void = () => {}
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 20))
+
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePageTwo = resolve
+      }),
+    )
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached')
+    await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 2, {}))
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
+    fireEvent.press(screen.getByTestId('filter-rating'))
+    fireEvent.press(await screen.findByText('7+'))
+    await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
+
+    resolvePageTwo(pageOf(21, 20))
+
+    await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
     expect(screen.queryByText('Film 21')).toBeNull()
   })
 })

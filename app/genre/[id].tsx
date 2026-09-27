@@ -11,10 +11,17 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { DiscoverFilterRow } from '../../components/DiscoverFilterRow'
 import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMoviesByGenre } from '../../lib/api'
+import {
+  EMPTY_FILTERS,
+  filterKey,
+  hasFilters,
+  type DiscoverFilters,
+} from '../../lib/discover'
 import { missingFailure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
 import { useResource } from '../../lib/useResource'
@@ -84,21 +91,34 @@ export default function GenreScreen() {
   const validId = Number.isInteger(genreId) && genreId > 0
 
   /**
-   * The first page.
+   * The filters the reader picked. Screen state rather than a route parameter:
+   * a genre link from the home chips carries none, and a pick belongs to this
+   * visit rather than to the address.
+   */
+  const [filters, setFilters] = useState<DiscoverFilters>(EMPTY_FILTERS)
+
+  /**
+   * What is being asked for: one genre under one set of filters.
    *
    * A null key while the id is bad: a deep link can carry anything, TMDB
    * answers an unparseable `with_genres` with an unfiltered list, and a request
    * that cannot be trusted is better not sent. The failure for that case is
    * built below, where it is found.
+   *
+   * The filters are part of the key, so a pick is a new request and a return to
+   * a previous pick draws from the store.
    */
+  const key = validId ? `genre:${genreId}:${filterKey(filters)}` : null
+
+  /** The first page. */
   const first = useResource<Paged>(
-    validId ? `genre:${genreId}` : null,
-    () => getMoviesByGenre(genreId, 1),
+    key,
+    () => getMoviesByGenre(genreId, 1, filters),
     'Could not load movies',
   )
 
   /**
-   * The pages after the first, tagged with the genre they belong to.
+   * The pages after the first, tagged with the key they belong to.
    *
    * They stay outside the hook because they are not the answer to one request:
    * the hook holds one answer per key, and this is a list that grows as the
@@ -106,7 +126,7 @@ export default function GenreScreen() {
    * to the same genre draw immediately.
    */
   const [appended, setAppended] = useState<{
-    genreId: number
+    key: string
     movies: Movie[]
     page: number
     totalPages: number
@@ -115,19 +135,19 @@ export default function GenreScreen() {
   const [loadingMore, setLoadingMore] = useState(false)
 
   /**
-   * The genre on screen right now, readable from inside a promise.
+   * The key on screen right now, readable from inside a promise.
    *
    * `loadMore` is a callback rather than an effect, so it has no cleanup to
-   * cancel a request when the reader opens another genre. This is what a late
-   * page is checked against.
+   * cancel a request when the reader opens another genre or picks a filter.
+   * This is what a late page is checked against.
    */
-  const genreRef = useRef(genreId)
+  const keyRef = useRef(key)
   useEffect(() => {
-    genreRef.current = genreId
-  }, [genreId])
+    keyRef.current = key
+  }, [key])
 
-  // The appended pages count only while they describe the genre being shown.
-  const more = appended && appended.genreId === genreId ? appended : null
+  // The appended pages count only while they describe the key being shown.
+  const more = appended && appended.key === key ? appended : null
   // The first page dedupes the rest. TMDB pages a ranking, not a snapshot, so a
   // film can move between pages while the reader scrolls and arrive twice.
   const movies = mergePages(first.data?.results ?? [], more?.movies ?? [])
@@ -157,24 +177,22 @@ export default function GenreScreen() {
    * comparison is the only stop condition the screen needs.
    */
   const loadMore = useCallback(() => {
-    if (loading || loadingMore || failure) return
+    if (key === null || loading || loadingMore || failure) return
     if (page >= totalPages) return
 
     setLoadingMore(true)
 
-    getMoviesByGenre(genreId, page + 1)
+    getMoviesByGenre(genreId, page + 1, filters)
       .then((paged) => {
-        // A page that lands after the reader opened another genre is dropped.
-        // Appending it would show one genre's films under another's name.
-        if (genreRef.current !== genreId) return
+        // A page that lands after the reader opened another genre or picked a
+        // filter is dropped. Appending it would show one list's films under
+        // another's name.
+        if (keyRef.current !== key) return
         setAppended((prev) => ({
-          genreId,
+          key,
           // Read through the updater, so the merge sees the pages actually
-          // stored. A list left over from a previous genre is not one of them.
-          movies: mergePages(
-            prev && prev.genreId === genreId ? prev.movies : [],
-            paged.results,
-          ),
+          // stored. A list left over from a previous key is not one of them.
+          movies: mergePages(prev && prev.key === key ? prev.movies : [], paged.results),
           page: paged.page,
           totalPages: paged.total_pages,
         }))
@@ -184,7 +202,7 @@ export default function GenreScreen() {
         // and the next scroll to the end tries again — so this needs no message.
       })
       .finally(() => setLoadingMore(false))
-  }, [genreId, page, totalPages, loading, loadingMore, failure])
+  }, [key, genreId, filters, page, totalPages, loading, loadingMore, failure])
 
   const title = params.name ?? 'Genre'
 
@@ -207,6 +225,13 @@ export default function GenreScreen() {
         // screen is the first entry in the history, as it is on a deep link.
         onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       />
+
+      {/*
+        Above the states rather than inside the grid, so the row stays while the
+        placeholders show and after a pick that matched nothing. A bad id has
+        no list to filter, so it gets no row.
+      */}
+      {validId ? <DiscoverFilterRow filters={filters} onChange={setFilters} /> : null}
 
       <Presence>
         {loading ? (
@@ -273,6 +298,19 @@ export default function GenreScreen() {
               showsVerticalScrollIndicator={false}
             />
           </Motion.View>
+        ) : hasFilters(filters) ? (
+          /* A pick that matched nothing. The way out is the pick itself, so the
+             action clears every filter rather than sending the reader back. */
+          <StateMessage
+            key="no-match"
+            testID="genre-no-match"
+            icon="filter-off-outline"
+            title="No matches"
+            body="No movie in this genre matches these filters."
+            actionLabel="Clear filters"
+            actionIcon="filter-remove-outline"
+            onAction={() => setFilters(EMPTY_FILTERS)}
+          />
         ) : (
           /* The request succeeded and returned nothing, so there is nothing to
              retry. The AppBar already carries the way back, and a second exit

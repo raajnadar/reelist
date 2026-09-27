@@ -136,6 +136,23 @@ describe('the key', () => {
     expect(params.get('page')).toBe('2')
   })
 
+  // The genre screen's filters. A dropped one answers the unfiltered list
+  // under a chip that says otherwise, with no error to report. The names must
+  // stay identical to the ones `lib/discover.ts` writes.
+  it.each([
+    ['primary_release_date.gte', '2010-01-01'],
+    ['primary_release_date.lte', '2019-12-31'],
+    ['vote_average.gte', '7'],
+    ['vote_count.gte', '100'],
+    ['with_original_language', 'hi'],
+    ['with_runtime.gte', '90'],
+    ['with_runtime.lte', '120'],
+  ])('forwards the %s filter', async (name, value) => {
+    await get(`path=%2Fdiscover%2Fmovie&${encodeURIComponent(name)}=${value}`)
+
+    expect(upstreamUrl().searchParams.get(name)).toBe(value)
+  })
+
   // `with_genres` is now on the list, so it must still be dropped where it
   // does not belong rather than forwarded on any path a caller names.
   it('still drops an unknown parameter on the discover path', async () => {

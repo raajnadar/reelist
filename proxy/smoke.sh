@@ -66,6 +66,9 @@ check 200 'path=/person/287' 'one person'
 # and the same note above applies to a wrong one.
 check 200 'path=/person/287&append_to_response=movie_credits' 'one person with their films'
 check 200 'path=/search/movie&query=dune' 'search'
+# The genre screen's filtered request. The same note applies: a dropped filter
+# still answers 200, so the names are checked in api/tmdb.test.ts.
+check 200 'path=/discover/movie&with_genres=28&vote_average.gte=7&vote_count.gte=100' 'a filtered genre'
 
 echo
 echo "These must be refused:"

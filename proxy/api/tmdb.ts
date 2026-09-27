@@ -59,6 +59,16 @@ const ALLOWED_PARAMS = new Set([
   'with_genres',
   'append_to_response',
   'include_image_language',
+  // The genre screen filters. Each is a plain value on `/discover/movie` and
+  // names no path, so the name check is enough. The names must stay identical
+  // to the ones `toDiscoverParams` in `lib/discover.ts` writes.
+  'primary_release_date.gte',
+  'primary_release_date.lte',
+  'vote_average.gte',
+  'vote_count.gte',
+  'with_original_language',
+  'with_runtime.gte',
+  'with_runtime.lte',
 ])
 
 /**

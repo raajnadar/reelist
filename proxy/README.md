@@ -153,8 +153,16 @@ GET /api/tmdb?path=/search/movie&query=dune
 | `/genre/movie/list`    | The genre chips on the home screen |
 | `/discover/movie`      | The genre screen                   |
 
-Only `query`, `page`, `with_genres`, and `append_to_response` are forwarded. Any
-other parameter is dropped, including an `api_key` supplied by the caller.
+Only the parameters in `ALLOWED_PARAMS` are forwarded: `query`, `page`,
+`with_genres`, `append_to_response`, `include_image_language`, and the genre
+screen filters (`primary_release_date.gte`, `primary_release_date.lte`,
+`vote_average.gte`, `vote_count.gte`, `with_original_language`,
+`with_runtime.gte`, `with_runtime.lte`). Any other parameter is dropped,
+including an `api_key` supplied by the caller.
+
+The filter names must stay identical to the ones `toDiscoverParams` in
+[lib/discover.ts](../lib/discover.ts) writes. A mismatch is silent: the proxy
+drops the parameter and TMDB answers the unfiltered list.
 
 `append_to_response` is checked by value, not only by name. It is the one
 parameter that names a path of its own: TMDB uses it to include a sub-resource

@@ -1,3 +1,4 @@
+import { EMPTY_FILTERS, toDiscoverParams, type DiscoverFilters } from './discover'
 import { tmdbFetch } from './tmdb'
 import type {
   CastMember,
@@ -350,18 +351,28 @@ export const getGenres = async (): Promise<Genre[]> => {
 }
 
 /**
- * One page of films in one genre.
+ * One page of films in one genre, narrowed by the filters the reader picked.
  *
  * `page` is 1-based, which is what TMDB expects; the caller passes the next page
  * it wants rather than an offset. An id that names no genre is not an error:
  * TMDB ignores `with_genres` it cannot parse and answers with an unfiltered
  * list, so the screen shows films rather than a failure.
+ *
+ * `filters` becomes the extra parameters `lib/discover.ts` names. Each of them
+ * must be in `ALLOWED_PARAMS` in `proxy/api/tmdb.ts`, or the proxy drops it
+ * and the grid shows the unfiltered list under a filter chip that says
+ * otherwise.
  */
-export const getMoviesByGenre = async (genreId: number, page = 1): Promise<Paged> =>
+export const getMoviesByGenre = async (
+  genreId: number,
+  page = 1,
+  filters: DiscoverFilters = EMPTY_FILTERS,
+): Promise<Paged> =>
   toPaged(
     await tmdbFetch<RawPaged>('/discover/movie', {
       with_genres: String(genreId),
       page: String(page),
+      ...toDiscoverParams(filters),
     }),
   )
 

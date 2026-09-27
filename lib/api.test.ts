@@ -569,6 +569,30 @@ describe('getMoviesByGenre', () => {
     })
   })
 
+  // The filter names are the ones the proxy allows. A rename on either side
+  // would drop the parameter silently, so the request is checked by name here.
+  it('adds the filter parameters to the request', async () => {
+    tmdbFetch.mockResolvedValue({ results: [] })
+
+    await getMoviesByGenre(28, 1, {
+      decade: 2010,
+      rating: 7,
+      language: 'hi',
+      runtime: 'short',
+    })
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/discover/movie', {
+      with_genres: '28',
+      page: '1',
+      'primary_release_date.gte': '2010-01-01',
+      'primary_release_date.lte': '2019-12-31',
+      'vote_average.gte': '7',
+      'vote_count.gte': '100',
+      with_original_language: 'hi',
+      'with_runtime.lte': '89',
+    })
+  })
+
   it('maps the results to Movie', async () => {
     tmdbFetch.mockResolvedValue({ results: [rawMovie], page: 1, total_pages: 1 })
 
