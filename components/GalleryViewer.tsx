@@ -1,6 +1,6 @@
 import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
-import { useBreakpoint } from '@rootnative/core'
+import { useBreakpoint, useWindowDimensions } from '@rootnative/core'
 import {
   Motion,
   Presence,
@@ -19,7 +19,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  useWindowDimensions,
   View,
   type GestureResponderEvent,
   type PanResponderGestureState,

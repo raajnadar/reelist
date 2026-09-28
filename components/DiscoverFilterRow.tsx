@@ -1,6 +1,7 @@
 import { Chip } from '@rootnative/components/chip'
 import { Menu } from '@rootnative/components/menu'
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native'
+import { useWindowDimensions } from '@rootnative/core'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import {
   DECADES,
   LANGUAGES,

@@ -1783,20 +1783,20 @@
     invariant "^2.2.4"
     nullthrows "^1.1.1"
 
-"@rootnative/components@0.0.0-alpha.18":
-  version "0.0.0-alpha.18"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.18.tgz#5c0bdb122af6101040fe74d30ec4cf4161ee60a0"
-  integrity sha512-uGU/bLxJ5LOfuchBLYlGyV62ThBb3TUp5rI2Bxwz8F+t3pkl/PJ5UJNYpjg92/ZfrLTZ7bpIy8m2KFNetsjbWA==
+"@rootnative/components@0.0.0-alpha.19":
+  version "0.0.0-alpha.19"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.19.tgz#449bb0b1f513ae99a2d6453bc8b21b826c372d21"
+  integrity sha512-d9A7llpHv/30HwaN3v8Zw6VI3Kb/J0QXQjJEjflr2eWYgC70rTcarU9MKYjreXeR0DpfKo2imd1zfoaJlJEXKA==
 
-"@rootnative/core@0.0.0-alpha.18":
-  version "0.0.0-alpha.18"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.18.tgz#94bc18df728a84526853e1ce130392260b9b8f9b"
-  integrity sha512-B5Jus2Os6L4iRBFXn6Pwbax3pnwWP6BE6LIA3PZXD9HepWf2U1BvVDD4Z+/8w44P3H9ERXPRo5bHk/GVYqIfRA==
+"@rootnative/core@0.0.0-alpha.19":
+  version "0.0.0-alpha.19"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.19.tgz#cd9a68e992e228e92403bb55e67c031328f234b9"
+  integrity sha512-uxSJKt2amxH5Zdu4LkqogIYkGzQRD6FV5Qjc6YimRADGHIONsTLpbsc7kHyUcvP9n+8sUX1xRfn8P+9m/dIjJQ==
 
-"@rootnative/inertia@0.0.12":
-  version "0.0.12"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.12.tgz#1afd63720405215552482aea43e0b0490371e3ff"
-  integrity sha512-A2I3aePZW+fg/R6koTpyLHf5Ff2unbReF4fOXOuVcJIudKpGnz7bLqoNluvDNkMH9dn3mpyEkD63LIdbu0Qmaw==
+"@rootnative/inertia@0.0.13":
+  version "0.0.13"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.13.tgz#577e851ef4e5dd61c4f0121c603d39c0278e0c94"
+  integrity sha512-W6ajrNrjFfQF/UJR9uX/XJ8Jvb/6bQB+Fl7EEcQmvcR59P2HpcN1uUXGxqXCYi4gSS2n8+J5MRGYha9IEDOaHw==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"

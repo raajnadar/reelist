@@ -35,13 +35,22 @@ describe('carousel geometry', () => {
   )
 
   // A capped inset moves slot 0 off the viewport center, so the interpolation
-  // must move with it or every card peaks at the wrong scroll position.
-  it.each(widths)('keeps the scale peak on the viewport center at width %i', (width) => {
-    const { cardWidth, sidePadding, centerOffset } = geometry(width)
-    // Slot 0's own center, in scroll coordinates, measured from the viewport
-    // center. This is the value each card subtracts from its input range.
-    expect(sidePadding + cardWidth / 2 + centerOffset).toBe(width / 2)
-  })
+  // must move with it or every card peaks at the wrong scroll position. The
+  // list snaps by whole slots, so the peak must sit on a scroll stop: the one
+  // nearest the viewport center, never more than half a slot from it. A peak
+  // at the exact center is a position no stop reaches on a wide window, and
+  // every card then sits at rest scaled down and faded.
+  it.each(widths)(
+    'keeps the scale peak on the scroll stop nearest the viewport center at width %i',
+    (width) => {
+      const { cardWidth, sidePadding, snap, centerOffset } = geometry(width)
+      expect(centerOffset % snap).toBe(0)
+      // Slot 0's own center, in scroll coordinates, moved by the offset each
+      // card subtracts from its input range.
+      const peak = sidePadding + cardWidth / 2 + centerOffset
+      expect(Math.abs(peak - width / 2)).toBeLessThanOrEqual(snap / 2)
+    },
+  )
 
   it.each(widths)('never lets the card exceed the ceiling at width %i', (width) => {
     expect(geometry(width).cardWidth).toBeLessThanOrEqual(CAROUSEL_MAX_CARD_WIDTH)

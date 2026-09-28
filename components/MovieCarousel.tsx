@@ -1,7 +1,8 @@
 import { Typography } from '@rootnative/components/typography'
+import { useWindowDimensions } from '@rootnative/core'
 import { Motion, useScroll } from '@rootnative/inertia'
 import { useCallback } from 'react'
-import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
 import type { Movie } from '../lib/types'
 import {
@@ -37,18 +38,25 @@ export function carouselGeometry(width: number) {
   // limit and leaves the centered card alone in blank space. The cap keeps the
   // neighbouring card visible at each edge instead. Once capped the row scrolls
   // off-center, so the scale peak must move with it: the parent shifts the
-  // interpolation by the same amount.
+  // interpolation by whole slots.
   const centerPadding = (width - cardWidth) / 2
   const sidePadding = Math.min(centerPadding, CAROUSEL_PEEK + CAROUSEL_SPACING)
+  const snap = cardWidth + CAROUSEL_SPACING
 
   return {
     cardWidth,
     sidePadding,
-    snap: cardWidth + CAROUSEL_SPACING,
-    // How far the capped inset moved slot 0 away from the viewport center. Each
-    // card subtracts this from its input range so full scale still lands on the
-    // card under the center of the screen.
-    centerOffset: centerPadding - sidePadding,
+    snap,
+    // How far the capped inset moved slot 0 away from the viewport center,
+    // rounded to whole slots. Each card subtracts this from its input range so
+    // full scale lands on the card nearest the center of the screen.
+    //
+    // Whole slots, because the list snaps by whole slots. A peak at the exact
+    // viewport center is a position no scroll stop reaches once the inset is
+    // capped: on a 1440 window it fell between two stops, and every card sat
+    // at rest scaled down and faded. The stop nearest the center is at most
+    // half a slot from it.
+    centerOffset: Math.round((centerPadding - sidePadding) / snap) * snap,
   }
 }
 

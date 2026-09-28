@@ -44,6 +44,11 @@ home lists. The deploy fetches that list with `yarn prerender:seed` before it
 exports, so a search engine gets each of those films with its text and its head
 tags. Every other film loads in the browser. See `lib/prerender.ts`.
 
+The server lays each page out for a 0 by 0 window, and React keeps a mismatched
+inline style from that HTML after hydration. So a screen reads the window
+through `useWindowDimensions` from `@rootnative/core`, which reports the
+server's window until the page is hydrated. ESLint rejects the `react-native` hook in app code.
+
 The browser build has no gestures and no native animation driver, so the carousel
 feels different there. Use the phone build to judge the motion.
 

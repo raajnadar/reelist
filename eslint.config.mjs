@@ -93,6 +93,32 @@ export default [
     },
   },
 
+  {
+    // The static web export renders each page for a 0 by 0 window, and React
+    // keeps a mismatched inline style from that HTML after hydration. The hook
+    // in @rootnative/core reports the server's window while the page
+    // hydrates, so app code reads the window through it. This rule fails the
+    // build if a screen goes back to the react-native hook, because the
+    // mistake is invisible on native and in a test: only the exported site
+    // breaks, and only until the reader resizes the window.
+    files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['useWindowDimensions'],
+              message:
+                'Import useWindowDimensions from @rootnative/core. The react-native hook leaves the static web export laid out for a 0 by 0 window after hydration.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   prettier,
 
   {

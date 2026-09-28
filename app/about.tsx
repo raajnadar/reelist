@@ -6,13 +6,18 @@ import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
 import { NoIndex } from '../components/NoIndex'
-import { useBreakpoint, useTheme, type ThemeMode } from '@rootnative/core'
+import {
+  useBreakpoint,
+  useTheme,
+  useWindowDimensions,
+  type ThemeMode,
+} from '@rootnative/core'
 import corePackage from '@rootnative/core/package.json'
 import { Motion, Stagger } from '@rootnative/inertia'
 import inertiaPackage from '@rootnative/inertia/package.json'
 import { useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
-import { Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Linking, Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { setMode, useAppearance } from '../lib/appearance'
 import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib/language'

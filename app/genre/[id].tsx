@@ -1,16 +1,10 @@
 import { AppBar } from '@rootnative/components/appbar'
-import { useTheme } from '@rootnative/core'
+import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../../lib/language'
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native'
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DiscoverFilterRow } from '../../components/DiscoverFilterRow'
 import { MovieCard } from '../../components/MovieCard'
