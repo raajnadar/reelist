@@ -8,7 +8,7 @@ import {
   type SharedValue,
 } from '@rootnative/inertia'
 import { Link } from 'expo-router'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
@@ -85,72 +85,62 @@ export function MovieCard({ movie, index = 0, progress }: Props) {
         {/*
           A link, not a press handler, so the web renders an anchor: a crawler
           can follow it, and a reader can open it in a new tab. `asChild` puts
-          the href and the handler on the child.
-
-          The child is a Pressable, not the Card. Card sets `role="button"`
-          after it spreads its props, so a Card under the link becomes a
-          `<button href>` on the web, which no crawler follows. The Card inside
-          is a plain surface, and the gesture layer above draws the hover and
-          the press. See R6 in the RootNative DX feedback.
+          the href and the handler on the Card, which forwards both.
         */}
         <Link href={`/movie/${movie.id}`} asChild>
-          <Pressable
+          <Card
+            variant="filled"
             style={styles.card}
             accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
           >
-            <Card variant="filled">
-              {/* 2:3 is the TMDB poster ratio.
+            {/* 2:3 is the TMDB poster ratio.
 
           The image needs its own size. A remote picture has no measurable
           size until it loads, so one with no dimensions lays out at zero
           height and the poster never appears, whatever the parent sets. The
           fallback View below is fine with `flex: 1`, because a View has no
           intrinsic size to wait for. */}
-              <Card.Media aspectRatio={2 / 3}>
-                {uri ? (
-                  <RemoteImage
-                    testID="movie-poster"
-                    uri={uri}
-                    // The row recycles this view as it scrolls. See RemoteImage.
-                    recyclingKey={String(movie.id)}
-                    style={styles.poster}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.fallback,
-                      { backgroundColor: theme.colors.surfaceVariant },
-                    ]}
-                  >
-                    <Typography
-                      variant="labelSmall"
-                      color={theme.colors.onSurfaceVariant}
-                    >
-                      No poster
-                    </Typography>
-                  </View>
-                )}
-              </Card.Media>
+            <Card.Media aspectRatio={2 / 3}>
+              {uri ? (
+                <RemoteImage
+                  testID="movie-poster"
+                  uri={uri}
+                  // The row recycles this view as it scrolls. See RemoteImage.
+                  recyclingKey={String(movie.id)}
+                  style={styles.poster}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.fallback,
+                    { backgroundColor: theme.colors.surfaceVariant },
+                  ]}
+                >
+                  <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+                    No poster
+                  </Typography>
+                </View>
+              )}
+            </Card.Media>
 
-              <Card.Content>
-                {/* The title box is always two lines tall, even when the title needs
+            <Card.Content>
+              {/* The title box is always two lines tall, even when the title needs
             one. numberOfLines caps the text but reserves no space, so without
             a fixed height a short title makes a shorter card, and a horizontal
             row of cards ends up ragged along the bottom. The height comes from
             the theme, so a change to the type scale keeps the two lines. */}
-                <Typography
-                  variant="labelLargeEmphasized"
-                  numberOfLines={2}
-                  style={{ height: theme.typography.labelLargeEmphasized.lineHeight * 2 }}
-                >
-                  {movie.title}
-                </Typography>
-                <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
-                  {metaLine(movie.vote_average, movie.release_date)}
-                </Typography>
-              </Card.Content>
-            </Card>
-          </Pressable>
+              <Typography
+                variant="labelLargeEmphasized"
+                numberOfLines={2}
+                style={{ height: theme.typography.labelLargeEmphasized.lineHeight * 2 }}
+              >
+                {movie.title}
+              </Typography>
+              <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+                {metaLine(movie.vote_average, movie.release_date)}
+              </Typography>
+            </Card.Content>
+          </Card>
         </Link>
       </Motion.View>
     </Motion.View>

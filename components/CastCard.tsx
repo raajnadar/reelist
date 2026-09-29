@@ -8,7 +8,7 @@ import {
   type SharedValue,
 } from '@rootnative/inertia'
 import { Link } from 'expo-router'
-import { Pressable, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { profileUrl } from '../lib/images'
 import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
@@ -82,74 +82,64 @@ export function CastCard({ member, index = 0, progress }: Props) {
           only the name would drop the reason the person is on this screen.
         */}
         <Link href={`/person/${member.id}`} asChild>
-          {/*
-            A Pressable under the link, not the Card, for the reason MovieCard
-            gives: Card sets `role="button"` after its props, and the web then
-            renders a `<button href>` that no crawler follows. See R6 in the
-            RootNative DX feedback.
-          */}
-          <Pressable
+          <Card
+            variant="filled"
             style={styles.card}
             accessibilityLabel={
               member.character ? `${member.name}. ${member.character}` : member.name
             }
           >
-            <Card variant="filled">
-              {/* 2:3, the ratio TMDB uses for a profile image as well as a poster.
+            {/* 2:3, the ratio TMDB uses for a profile image as well as a poster.
           The image carries its own width and ratio for the reason MovieCard
           explains: a remote picture has no measurable size until it loads, so
           one with no size lays out at zero height. */}
-              <Card.Media aspectRatio={2 / 3}>
-                {uri ? (
-                  <RemoteImage
-                    testID="cast-photo"
-                    uri={uri}
-                    recyclingKey={String(member.id)}
-                    style={styles.photo}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.fallback,
-                      { backgroundColor: theme.colors.surfaceVariant },
-                    ]}
-                  >
-                    <Typography
-                      variant="labelSmall"
-                      color={theme.colors.onSurfaceVariant}
-                    >
-                      No photo
-                    </Typography>
-                  </View>
-                )}
-              </Card.Media>
+            <Card.Media aspectRatio={2 / 3}>
+              {uri ? (
+                <RemoteImage
+                  testID="cast-photo"
+                  uri={uri}
+                  recyclingKey={String(member.id)}
+                  style={styles.photo}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.fallback,
+                    { backgroundColor: theme.colors.surfaceVariant },
+                  ]}
+                >
+                  <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+                    No photo
+                  </Typography>
+                </View>
+              )}
+            </Card.Media>
 
-              <Card.Content>
-                {/* Both lines hold a fixed height, for the reason MovieCard's title
+            <Card.Content>
+              {/* Both lines hold a fixed height, for the reason MovieCard's title
             does: numberOfLines caps the text but reserves no space, and a row
             of cards sized by their longest name goes ragged along the bottom.
             The role line needs it more than the name does — TMDB sends an empty
             character for an uncredited part, and an empty Typography collapses
             to nothing. */}
-                <Typography
-                  variant="labelLargeEmphasized"
-                  numberOfLines={2}
-                  style={{ height: theme.typography.labelLargeEmphasized.lineHeight * 2 }}
-                >
-                  {member.name}
-                </Typography>
-                <Typography
-                  testID="cast-character"
-                  variant="labelSmall"
-                  color={theme.colors.onSurfaceVariant}
-                  numberOfLines={1}
-                  style={{ height: theme.typography.labelSmall.lineHeight }}
-                >
-                  {member.character}
-                </Typography>
-              </Card.Content>
-            </Card>
-          </Pressable>
+              <Typography
+                variant="labelLargeEmphasized"
+                numberOfLines={2}
+                style={{ height: theme.typography.labelLargeEmphasized.lineHeight * 2 }}
+              >
+                {member.name}
+              </Typography>
+              <Typography
+                testID="cast-character"
+                variant="labelSmall"
+                color={theme.colors.onSurfaceVariant}
+                numberOfLines={1}
+                style={{ height: theme.typography.labelSmall.lineHeight }}
+              >
+                {member.character}
+              </Typography>
+            </Card.Content>
+          </Card>
         </Link>
       </Motion.View>
     </Motion.View>
