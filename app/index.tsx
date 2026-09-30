@@ -9,6 +9,7 @@ import { BrandMark } from '../components/BrandMark'
 import { GenreChips } from '../components/GenreChips'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
+import { PageHead } from '../components/PageHead'
 import { SkeletonRow } from '../components/Skeleton'
 import { SpinningCog } from '../components/SpinningCog'
 import { StateMessage } from '../components/StateMessage'
@@ -20,6 +21,7 @@ import {
   getTrending,
 } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
+import { homeMeta } from '../lib/head'
 import { languageName, useLanguage } from '../lib/language'
 import { prerenderedGenres, prerenderedLists } from '../lib/prerender'
 import { useResource } from '../lib/useResource'
@@ -140,6 +142,7 @@ export default function HomeScreen() {
         { backgroundColor: theme.colors.background, paddingTop: insets.top },
       ]}
     >
+      <PageHead {...homeMeta} />
       <View style={styles.header}>
         <View style={styles.brand}>
           <BrandMark size={26} />

@@ -19,6 +19,7 @@ import { StateMessage } from '../../components/StateMessage'
 import { WatchProviders } from '../../components/WatchProviders'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
+import { movieMeta } from '../../lib/head'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import { STAGGER_INTERVAL } from '../../lib/motion'
 import { prerenderedIds, prerenderedMovie } from '../../lib/prerender'
@@ -220,7 +221,7 @@ export default function MovieScreen() {
         unfurls. Outside the Presence block, because it draws nothing on the
         screen and needs no exit.
       */}
-      {movie ? <PageHead movie={movie} /> : null}
+      {movie ? <PageHead {...movieMeta(movie)} /> : null}
 
       <Presence>
         {loading ? (

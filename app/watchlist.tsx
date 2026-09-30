@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
-import { NoIndex } from '../components/NoIndex'
+import { PageHead } from '../components/PageHead'
 import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import {
@@ -68,7 +68,7 @@ export default function WatchlistScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <NoIndex />
+      <PageHead title="Watchlist" noindex />
       <AppBar
         title="Watchlist"
         insetTop

@@ -6,12 +6,14 @@ import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
 import { MovieCard } from '../../components/MovieCard'
+import { PageHead } from '../../components/PageHead'
 import { PersonProfile, PersonProfileSkeleton } from '../../components/PersonProfile'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getPerson } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, GRID_PADDING, posterColumns } from '../../lib/grid'
+import { personMeta } from '../../lib/head'
 import type { PersonDetail } from '../../lib/types'
 import { useResource } from '../../lib/useResource'
 
@@ -130,6 +132,7 @@ export default function PersonScreen() {
         Outside the Presence block: the back button has to answer a tap while
         the person is still loading and while an error is on screen.
       */}
+      {person ? <PageHead {...personMeta(person)} /> : null}
       <DetailHeader
         title={person?.name ?? ''}
         scrollY={scrollY}

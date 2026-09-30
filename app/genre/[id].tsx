@@ -8,6 +8,7 @@ import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DiscoverFilterRow } from '../../components/DiscoverFilterRow'
 import { MovieCard } from '../../components/MovieCard'
+import { PageHead } from '../../components/PageHead'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getMoviesByGenre } from '../../lib/api'
@@ -19,6 +20,7 @@ import {
 } from '../../lib/discover'
 import { missingFailure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
+import { genreMeta, seededGenreName } from '../../lib/head'
 import { useResource } from '../../lib/useResource'
 import type { Movie, Paged } from '../../lib/types'
 
@@ -206,7 +208,8 @@ export default function GenreScreen() {
       .finally(() => setLoadingMore(false))
   }, [key, genreId, filters, page, totalPages, loading, loadingMore, failure])
 
-  const title = params.name ?? 'Genre'
+  const name = params.name ?? (validId ? seededGenreName(genreId) : undefined)
+  const title = name ?? 'Genre'
 
   // The handler behind REPORTS, which carries only the words. `setup` has none:
   // the fix is a file on the developer's disk and a restart, and no button on
@@ -219,6 +222,7 @@ export default function GenreScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+      {validId && name ? <PageHead {...genreMeta(genreId, name)} /> : null}
       <AppBar
         title={title}
         insetTop

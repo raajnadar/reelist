@@ -14,6 +14,16 @@ export const SITE_URL = 'https://raajnadar.github.io/reelist'
 /** The canonical web page for one film. */
 export const movieUrl = (id: number) => `${SITE_URL}/movie/${id}`
 
+/** The canonical web page for one person. */
+export const personUrl = (id: number) => `${SITE_URL}/person/${id}`
+
+/**
+ * The canonical web page for one genre. It keeps the name in the query, the
+ * same as the genre chips and scripts/sitemap.js, so the three agree.
+ */
+export const genreUrl = (genre: { id: number; name: string }) =>
+  `${SITE_URL}/genre/${genre.id}?name=${encodeURIComponent(genre.name)}`
+
 /**
  * The line that names the film in a share: `Dune: Part Two (2024)`.
  *
