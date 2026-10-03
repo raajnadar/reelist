@@ -1,4 +1,4 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons'
 import { Motion } from '@rootnative/inertia'
 
 const PAUSE_MS = 3000
@@ -29,7 +29,7 @@ export function SpinningCog({ size, color }: { size: number; color?: string }) {
       }}
       transition={{ type: 'timing', repeat: 'infinite' }}
     >
-      <MaterialCommunityIcons name="cog-outline" size={size} color={color} />
+      <MaterialDesignIcons name="cog-outline" size={size} color={color} />
     </Motion.View>
   )
 }

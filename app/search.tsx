@@ -1,4 +1,4 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons'
 import { IconButton } from '@rootnative/components/icon-button'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
@@ -231,7 +231,7 @@ export default function SearchScreen() {
               transition="expand"
               style={styles.iconBox}
             >
-              <MaterialCommunityIcons
+              <MaterialDesignIcons
                 name="magnify"
                 size={ICON_SIZE}
                 color={theme.colors.onSurfaceVariant}

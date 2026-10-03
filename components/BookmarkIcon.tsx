@@ -1,4 +1,4 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
+import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons'
 import { Motion } from '@rootnative/inertia'
 
 /**
@@ -28,7 +28,7 @@ export function BookmarkIcon({
       animate={{ scale: 1 }}
       transition="pop"
     >
-      <MaterialCommunityIcons
+      <MaterialDesignIcons
         name={saved ? 'bookmark' : 'bookmark-outline'}
         size={size}
         color={color}

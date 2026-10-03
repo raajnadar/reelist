@@ -24,7 +24,7 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
   }
 
   return (
-    <Button variant="outlined" size="m" leadingIcon="share-variant" onPress={share}>
+    <Button variant="outlined" size="medium" leadingIcon="share-variant" onPress={share}>
       Share
     </Button>
   )

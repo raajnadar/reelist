@@ -1,20 +1,9 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import { Button } from '@rootnative/components/button'
+import { Icon } from '@rootnative/components/icon'
 import { Typography } from '@rootnative/components/typography'
-import {
-  useIconResolver,
-  useTheme,
-  type IconRenderProps,
-  type IconResolver,
-  type IconSource,
-} from '@rootnative/core'
+import { useTheme, type IconSource } from '@rootnative/core'
 import { Motion, Stagger } from '@rootnative/inertia'
-import {
-  isValidElement,
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-} from 'react'
+import type { RefObject } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 
 /** Milliseconds between the badge, the text, and the action. */
@@ -31,32 +20,6 @@ const ICON_SIZE = 32
  * as one line, and a centred paragraph is hardest to read when it is widest.
  */
 const MAX_TEXT_WIDTH = 340
-
-/**
- * Resolves an `IconSource` the way every RootNative component does.
- *
- * The library exports no standalone icon component, so this repeats the three
- * cases its props accept: a name for the theme resolver, a ready element, and a
- * render function. Without the resolver lookup an app-wide icon set would apply
- * to every control on the screen except this one.
- */
-function renderIcon(
-  source: IconSource,
-  props: IconRenderProps,
-  resolver: IconResolver | null,
-): ReactNode {
-  if (typeof source === 'string') {
-    if (resolver) return resolver(source, props)
-    // The same default the library falls back to when no resolver is set. The
-    // cast is the one the library also makes: `IconSource` is a plain string,
-    // and MaterialCommunityIcons types `name` as its own glyph union.
-    const name = source as ComponentProps<typeof MaterialCommunityIcons>['name']
-    return <MaterialCommunityIcons name={name} size={props.size} color={props.color} />
-  }
-  if (typeof source === 'function') return source(props)
-  if (isValidElement(source)) return source
-  return null
-}
 
 /**
  * `error` paints the badge in the error container, `neutral` in a plain
@@ -112,7 +75,6 @@ export function StateMessage({
   testID,
 }: Props) {
   const theme = useTheme()
-  const resolver = useIconResolver()
 
   const badge =
     tone === 'error'
@@ -153,7 +115,7 @@ export function StateMessage({
             { backgroundColor: badge.container, borderRadius: theme.shape.cornerFull },
           ]}
         >
-          {renderIcon(icon, { size: ICON_SIZE, color: badge.content }, resolver)}
+          <Icon source={icon} size={ICON_SIZE} color={badge.content} />
         </Motion.View>
 
         {/* The two lines move together: they are one sentence split by weight,
@@ -198,7 +160,7 @@ export function StateMessage({
             <View ref={actionRef} collapsable={false}>
               <Button
                 variant="tonal"
-                size="m"
+                size="medium"
                 leadingIcon={actionIcon}
                 onPress={action.onAction}
               >

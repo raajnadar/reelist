@@ -502,7 +502,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                   <IconButton
                     icon="chevron-left"
                     variant="tonal"
-                    size="m"
+                    size="medium"
                     accessibilityLabel="Previous still"
                     disabled={index === 0}
                     onPress={() => goTo(index - 1)}
@@ -512,7 +512,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                   <IconButton
                     icon="chevron-right"
                     variant="tonal"
-                    size="m"
+                    size="medium"
                     accessibilityLabel="Next still"
                     disabled={index === count - 1}
                     onPress={() => goTo(index + 1)}

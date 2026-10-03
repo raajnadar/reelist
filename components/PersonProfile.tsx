@@ -143,7 +143,11 @@ export function PersonProfile({ person, photoWidth, wide }: Props) {
         */}
         {long ? (
           <View style={styles.toggle}>
-            <Button variant="text" size="s" onPress={() => setExpanded((open) => !open)}>
+            <Button
+              variant="text"
+              size="small"
+              onPress={() => setExpanded((open) => !open)}
+            >
               {expanded ? 'Show less' : 'Show more'}
             </Button>
           </View>

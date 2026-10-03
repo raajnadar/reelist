@@ -60,7 +60,7 @@ export const copyMovieLink = (movie: Pick<Movie, 'id'>) =>
 /**
  * One place the web can send a link to without the system sheet.
  *
- * `icon` is a MaterialCommunityIcons name, and `url` is the site's share
+ * `icon` is a Material Design Icons name, and `url` is the site's share
  * intent, which opens in a new tab with the film filled in.
  */
 export type ShareTarget = { id: string; label: string; icon: string; url: string }

@@ -38,7 +38,7 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
       anchor={
         <Button
           variant="outlined"
-          size="m"
+          size="medium"
           leadingIcon="share-variant"
           accessibilityLabel="Share this movie"
           testID="share-button"

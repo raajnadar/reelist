@@ -1,3 +1,4 @@
+import { mdiResolver } from '@rootnative/components/mdi'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider, useThemeMode } from '@rootnative/core'
@@ -96,7 +97,12 @@ export default function RootLayout() {
         provider's own `storage`, so the about screen reads and writes the same
         value the provider applies.
       */}
-      <ThemeProvider theme={themes} mode={mode} onModeChange={setMode}>
+      <ThemeProvider
+        theme={themes}
+        mode={mode}
+        onModeChange={setMode}
+        iconResolver={mdiResolver}
+      >
         {/*
           Registers the app's named transitions (lib/motion.ts) for the whole
           tree, so a component writes `transition="press"` rather than its own

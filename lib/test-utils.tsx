@@ -1,3 +1,4 @@
+import { mdiResolver } from '@rootnative/components/mdi'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider } from '@rootnative/core'
@@ -58,7 +59,10 @@ export function expoRouterMock<R extends { push: (href: string) => void }>(
 function Providers({ children }: { children: ReactElement }) {
   return (
     <SafeAreaProvider initialMetrics={metrics}>
-      <ThemeProvider theme={{ light: lightTheme, dark: darkTheme }}>
+      <ThemeProvider
+        theme={{ light: lightTheme, dark: darkTheme }}
+        iconResolver={mdiResolver}
+      >
         {/*
           The app registers its named transitions at the root, so a component
           that writes `transition="press"` only resolves the name under this

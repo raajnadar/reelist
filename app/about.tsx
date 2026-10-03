@@ -419,7 +419,7 @@ export default function AboutScreen() {
                 <View style={styles.links}>
                   <Button
                     variant="tonal"
-                    size="m"
+                    size="medium"
                     leadingIcon="book-open-variant"
                     onPress={() => void Linking.openURL(DOCS_URL)}
                   >
@@ -432,7 +432,7 @@ export default function AboutScreen() {
                 */}
                   <Button
                     variant="outlined"
-                    size="m"
+                    size="medium"
                     leadingIcon="github"
                     onPress={() => void Linking.openURL(SOURCE_URL)}
                   >

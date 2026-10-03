@@ -94,6 +94,10 @@ it('reports a search that matched nothing, distinctly from the first prompt', as
   await waitFor(() => expect(screen.getByText('No matches')).toBeTruthy())
   // The query is quoted back, so the state names the search it answers.
   expect(screen.getByTestId('search-no-results-body').props.children).toContain('zzzzz')
+  // The prompt leaves through its exit fade, so it is gone only after the fade.
+  await act(async () => {
+    jest.advanceTimersByTime(2000)
+  })
   expect(screen.queryByText('Search for a movie')).toBeNull()
 })
 
