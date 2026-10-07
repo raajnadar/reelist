@@ -1,38 +1,25 @@
-import {
-  clipDescription,
-  DESCRIPTION_LIMIT,
-  documentTitle,
-  genreMeta,
-  homeMeta,
-  movieMeta,
-  personMeta,
-} from './head'
+import { genreMeta, homeMeta, movieMeta, personMeta } from './head'
 import { mockMovieDetail, mockPerson } from './mock'
 import { genreUrl, movieUrl, personUrl, SITE_URL } from './share'
-
-describe('clipDescription', () => {
-  it('keeps a short text as it is', () => {
-    expect(clipDescription('A short line.')).toBe('A short line.')
-  })
-
-  it('cuts a long text to the limit and ends it with an ellipsis', () => {
-    const clipped = clipDescription('word '.repeat(100))
-    expect(clipped).toHaveLength(DESCRIPTION_LIMIT)
-    expect(clipped.endsWith('…')).toBe(true)
-  })
-
-  it('folds line breaks into single spaces', () => {
-    expect(clipDescription('One.\n\nTwo.')).toBe('One. Two.')
-  })
-})
+import { site } from './site'
 
 it('adds the site name to the tab title only', () => {
-  expect(documentTitle('Search')).toBe('Search · Reelist')
+  expect(site.titleTemplate('Search')).toBe('Search · Reelist')
 })
 
 it('gives the home page a description and a canonical link', () => {
   expect(homeMeta.url).toBe(`${SITE_URL}/`)
-  expect(homeMeta.description?.length).toBeLessThanOrEqual(DESCRIPTION_LIMIT)
+  expect(homeMeta.description?.length).toBeLessThanOrEqual(site.descriptionLimit)
+})
+
+it('describes the site with a search box that opens the search sheet', () => {
+  expect(homeMeta.jsonLd?.[0]).toMatchObject({
+    '@type': 'WebSite',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { urlTemplate: `${SITE_URL}/search?q={search_term_string}` },
+    },
+  })
 })
 
 describe('movieMeta', () => {
@@ -50,6 +37,49 @@ describe('movieMeta', () => {
     expect(movieMeta({ ...mockMovieDetail, overview: '', tagline: '' }).description).toBe(
       `${mockMovieDetail.title} on Reelist.`,
     )
+  })
+
+  it('sizes the share image by the TMDB ratio of the artwork it uses', () => {
+    expect(movieMeta(mockMovieDetail).imageSize).toEqual({ width: 780, height: 439 })
+    expect(movieMeta({ ...mockMovieDetail, backdrop_path: null }).imageSize).toEqual({
+      width: 500,
+      height: 750,
+    })
+  })
+
+  it('describes the film as a schema.org Movie with its cast and rating', () => {
+    const [movie, breadcrumbs] = movieMeta(mockMovieDetail).jsonLd ?? []
+    expect(movie).toMatchObject({
+      '@type': 'Movie',
+      name: mockMovieDetail.title,
+      url: movieUrl(mockMovieDetail.id),
+      datePublished: mockMovieDetail.release_date,
+      genre: ['Science Fiction', 'Adventure'],
+      duration: 'PT2H47M',
+      aggregateRating: {
+        ratingValue: mockMovieDetail.vote_average,
+        ratingCount: mockMovieDetail.vote_count,
+        bestRating: 10,
+        worstRating: 0,
+      },
+    })
+    expect(movie?.actor).toHaveLength(mockMovieDetail.cast.length)
+    expect(breadcrumbs).toMatchObject({
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { position: 1, name: 'Reelist' },
+        { position: 2, name: 'Science Fiction' },
+        { position: 3, name: mockMovieDetail.title },
+      ],
+    })
+  })
+
+  it('leaves out the rating, the cast, and the duration when the film has none', () => {
+    const [movie] =
+      movieMeta({ ...mockMovieDetail, vote_count: 0, cast: [], runtime: 0 }).jsonLd ?? []
+    expect(movie).not.toHaveProperty('aggregateRating')
+    expect(movie).not.toHaveProperty('actor')
+    expect(movie).not.toHaveProperty('duration')
   })
 })
 
@@ -70,6 +100,17 @@ describe('personMeta', () => {
 
   it('has no image when the person has no photo', () => {
     expect(personMeta({ ...mockPerson, profile_path: null }).image).toBeNull()
+  })
+
+  it('describes the person as a schema.org Person', () => {
+    const [person] = personMeta(mockPerson).jsonLd ?? []
+    expect(person).toMatchObject({
+      '@type': 'Person',
+      name: mockPerson.name,
+      url: personUrl(mockPerson.id),
+      birthDate: mockPerson.birthday,
+    })
+    expect(person).not.toHaveProperty('deathDate')
   })
 })
 

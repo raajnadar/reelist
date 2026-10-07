@@ -15,6 +15,11 @@ type Props = {
   /** The TMDB URL. A film with no artwork draws its own fallback instead. */
   uri: string
   /**
+   * What the picture shows, for a screen reader and for the `alt` attribute
+   * on the web. A crawler indexes an image by this text.
+   */
+  alt: string
+  /**
    * Resets the view when a recycled row is handed a different film.
    *
    * Every row here is a FlatList, which reuses the host view behind a card as
@@ -45,6 +50,7 @@ type Props = {
  */
 export function RemoteImage({
   uri,
+  alt,
   recyclingKey,
   priority = 'normal',
   style,
@@ -56,6 +62,10 @@ export function RemoteImage({
     <Image
       testID={testID}
       source={{ uri }}
+      // Both props. expo-image writes the web `alt` attribute from
+      // `accessibilityLabel`, and native reads the same prop.
+      alt={alt}
+      accessibilityLabel={alt}
       // The caller's style comes second, so a call site can still set its own
       // background — the detail poster does, to match the hairline around it.
       style={[{ backgroundColor: theme.colors.surfaceVariant }, style]}

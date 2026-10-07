@@ -1,0 +1,10 @@
+{
+  "name": "Reelist",
+  "short_name": "Reelist",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#4C0519",
+  "theme_color": "#4C0519",
+  "icons": [{ "src": "./apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }]
+}

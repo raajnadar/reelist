@@ -66,6 +66,7 @@ const toEntry = (raw) => ({
   genres: (raw.genres ?? []).map((g) => ({ id: g.id, name: g.name })),
   runtime: raw.runtime ?? 0,
   tagline: raw.tagline ?? '',
+  vote_count: raw.vote_count ?? 0,
 })
 
 async function main() {

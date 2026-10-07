@@ -13,7 +13,7 @@ import { DetailOverview } from '../../components/DetailOverview'
 import { GalleryRow } from '../../components/GalleryRow'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
-import { PageHead } from '../../components/PageHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { WatchProviders } from '../../components/WatchProviders'
@@ -282,6 +282,7 @@ export default function MovieScreen() {
           >
             <DetailHero
               uri={artwork}
+              title={movie.title}
               height={heroHeight}
               headerSpace={headerSpace}
               recyclingKey={String(movieId)}
@@ -339,7 +340,7 @@ export default function MovieScreen() {
             */}
             <View style={[styles.bodyCap, styles.rows]}>
               <CastRow title="Cast" cast={movie.cast} />
-              <GalleryRow movieId={movie.id} images={movie.images} />
+              <GalleryRow movieId={movie.id} title={movie.title} images={movie.images} />
               <MovieRow title="More like this" movies={movie.recommendations} />
             </View>
           </Motion.ScrollView>

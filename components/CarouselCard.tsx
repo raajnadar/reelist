@@ -125,6 +125,7 @@ export function CarouselCard({
               <RemoteImage
                 testID="carousel-poster"
                 uri={uri}
+                alt={movie.title}
                 // The carousel is a FlatList too, so it recycles the same way a
                 // row does. See RemoteImage.
                 recyclingKey={String(movie.id)}

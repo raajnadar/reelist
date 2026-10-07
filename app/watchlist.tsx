@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
-import { PageHead } from '../components/PageHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import {

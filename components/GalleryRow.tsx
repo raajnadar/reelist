@@ -30,6 +30,8 @@ const STILL_ASPECT = 16 / 9
 type Props = {
   /** The film the stills belong to. The viewer route reads it back from the cache. */
   movieId: number
+  /** The film title, which names each still for a crawler and a screen reader. */
+  title: string
   images: GalleryImage[]
 }
 
@@ -40,7 +42,7 @@ type Props = {
  * reason CastRow records: the three rows differ in their data type and their
  * card, which is all a shared version would take as parameters.
  */
-export function GalleryRow({ movieId, images }: Props) {
+export function GalleryRow({ movieId, title, images }: Props) {
   const theme = useTheme()
   const ref = useRef<View>(null)
 
@@ -56,7 +58,9 @@ export function GalleryRow({ movieId, images }: Props) {
   return (
     <View ref={ref} style={styles.row}>
       <View style={styles.head}>
-        <Typography variant="titleMediumEmphasized">Gallery</Typography>
+        <Typography variant="titleMediumEmphasized" level={2}>
+          Gallery
+        </Typography>
         <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
           {images.length === 1 ? '1 still' : `${images.length} stills`}
         </Typography>
@@ -73,6 +77,7 @@ export function GalleryRow({ movieId, images }: Props) {
             index={index}
             count={images.length}
             movieId={movieId}
+            title={title}
             progress={progress}
           />
         )}
@@ -88,12 +93,14 @@ function Still({
   index,
   count,
   movieId,
+  title,
   progress,
 }: {
   image: GalleryImage
   index: number
   count: number
   movieId: number
+  title: string
   progress: SharedValue<number>
 }) {
   const theme = useTheme()
@@ -145,6 +152,7 @@ function Still({
           */}
           <RemoteImage
             uri={backdropUrl(image.file_path) ?? ''}
+            alt={`${title} still ${index + 1} of ${count}`}
             recyclingKey={image.file_path}
             style={styles.picture}
           />

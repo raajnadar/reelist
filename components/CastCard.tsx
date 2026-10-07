@@ -98,6 +98,7 @@ export function CastCard({ member, index = 0, progress }: Props) {
                 <RemoteImage
                   testID="cast-photo"
                   uri={uri}
+                  alt={member.name}
                   recyclingKey={String(member.id)}
                   style={styles.photo}
                 />

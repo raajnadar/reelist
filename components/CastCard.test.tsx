@@ -143,6 +143,9 @@ describe('the press', () => {
   it('announces the name alone for an uncredited part', () => {
     const screen = renderWithProviders(<CastCard member={{ ...member, character: '' }} />)
 
-    expect(screen.getByLabelText('Edward Norton')).toBeTruthy()
+    // The photo carries the same text as its alt, so the card is the labelled
+    // element that is not the photo.
+    const labelled = screen.getAllByLabelText('Edward Norton')
+    expect(labelled.some((node) => node.props.testID !== 'cast-photo')).toBe(true)
   })
 })

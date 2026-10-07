@@ -77,6 +77,7 @@ describe('useWatchlist', () => {
       genres: [{ id: 28, name: 'Action' }],
       runtime: 130,
       tagline: 'A tagline',
+      vote_count: 10,
       cast: [{ id: 1, name: 'A', character: 'B', profile_path: null }],
       trailer: null,
       recommendations: mockMovies,

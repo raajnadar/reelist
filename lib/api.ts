@@ -257,6 +257,7 @@ const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
     ),
     runtime: (raw.runtime as number | null) ?? 0,
     tagline: (raw.tagline as string) ?? '',
+    vote_count: (raw.vote_count as number) ?? 0,
     cast: (credits.cast ?? []).map(toCastMember),
     trailer: pickTrailer(videos.results ?? []),
     recommendations: toPaged(recommendations).results,

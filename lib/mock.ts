@@ -157,6 +157,7 @@ export const mockMovieDetail: MovieDetail = {
   ],
   runtime: 167,
   tagline: 'Long live the fighters.',
+  vote_count: 5321,
   cast: mockCast,
   trailer: {
     id: '65d1b1e1c0c1b40163a4b4a1',

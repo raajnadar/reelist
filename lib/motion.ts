@@ -134,16 +134,10 @@ export function stagger(index: number, step = 55, max = 6) {
  * The entrance transition for item `index`, spread across the properties an
  * entrance animates.
  *
- * A `transition` object is EITHER one config OR a per-key map — Inertia tells
- * them apart by testing whether every key is a config field. So a component
- * that animates an entrance AND declares a `gesture` layer cannot put the
- * entrance spring at the top level: the object already has a `pressed` key,
- * which makes it a map, and a stray `type: 'spring'` beside it is then read as
- * a transition *name*. That lookup misses and falls back to the default
- * spring, losing the tuning below without failing.
- *
- * Spreading this into the map keeps the entrance on the keys it belongs to and
- * leaves the gesture layers free to answer a touch immediately.
+ * A per-key map, not one config, so the stagger delay reaches only the keys
+ * the entrance animates. A component spreads it next to its gesture layers,
+ * and each layer keeps its own transition, so a touch gets an answer
+ * immediately.
  */
 export function entranceTransition(index: number) {
   const config = { ...transitions.enter, delay: stagger(index) } as const

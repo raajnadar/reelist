@@ -1,7 +1,0 @@
-# The overlay routes (search, watchlist, about, trailer, gallery) are not
-# listed here on purpose. Each of them carries a noindex tag, and a crawler
-# reads that tag only when it is allowed to fetch the page.
-User-agent: *
-Allow: /
-
-Sitemap: https://raajnadar.github.io/reelist/sitemap.xml

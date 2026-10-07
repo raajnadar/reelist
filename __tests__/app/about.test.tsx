@@ -16,14 +16,14 @@ const mockBack = jest.fn()
 const mockReplace = jest.fn()
 const mockCanGoBack = jest.fn(() => true)
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({
+jest.mock('expo-router', () =>
+  jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: jest.fn(),
     back: mockBack,
     replace: mockReplace,
     canGoBack: mockCanGoBack,
-  }),
-}))
+  })),
+)
 
 // Spied rather than replaced with a module mock. `Linking` is one export of
 // the react-native module the whole render tree imports, and a factory mock of

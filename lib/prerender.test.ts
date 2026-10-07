@@ -18,6 +18,7 @@ const entry: PrerenderedMovie = {
   genres: [{ id: 878, name: 'Science Fiction' }],
   runtime: 155,
   tagline: 'Beyond fear, destiny awaits.',
+  vote_count: 11204,
 }
 
 it('widens a seed entry to a detail with every list empty', () => {

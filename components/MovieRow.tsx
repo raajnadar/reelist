@@ -28,7 +28,7 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
 
   return (
     <View ref={ref} style={styles.row}>
-      <Typography variant="titleMediumEmphasized" style={styles.heading}>
+      <Typography variant="titleMediumEmphasized" level={2} style={styles.heading}>
         {title}
       </Typography>
 

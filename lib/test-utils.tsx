@@ -5,6 +5,7 @@ import { ThemeProvider } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { render, screen } from '@testing-library/react-native'
 import { cloneElement, type ReactElement } from 'react'
+import { Linking } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { transitions } from './motion'
 import { darkTheme, lightTheme } from '../theme'
@@ -33,7 +34,8 @@ type LinkMockProps = {
  * The cards and the chips are links, and the real `Link` needs a navigation
  * container that no test mounts. This one puts a press handler on its child
  * that calls `router.push` with the href, so a test that presses a card can
- * assert the same call it asserted when the card was a press handler.
+ * assert the same call it asserted when the card was a press handler. An href
+ * with a scheme goes to `Linking.openURL`, as the real `Link` sends it.
  *
  * `router` is a function, because a mock factory runs when the module is
  * first required, which is before the `mockPush` at the top of a test file is
@@ -48,7 +50,8 @@ export function expoRouterMock<R extends { push: (href: string) => void }>(
     return cloneElement(children, {
       onPress: (event?: unknown) => {
         children.props.onPress?.(event)
-        router().push(href)
+        if (/^[a-z][a-z\d+.-]*:/i.test(href)) void Linking.openURL(href)
+        else router().push(href)
       },
     })
   }

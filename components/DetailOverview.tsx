@@ -19,7 +19,9 @@ export function DetailOverview({ movie }: { movie: MovieDetail }) {
         A heading, so the overview is a section like the two rows below it
         rather than a paragraph that starts without warning.
       */}
-      <Typography variant="titleMediumEmphasized">Overview</Typography>
+      <Typography variant="titleMediumEmphasized" level={2}>
+        Overview
+      </Typography>
 
       {/*
         The tagline, when the film has one. TMDB sends `""` for a film with

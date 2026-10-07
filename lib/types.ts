@@ -50,6 +50,8 @@ export type MovieDetail = Movie & {
   genres: Genre[]
   runtime: number
   tagline: string
+  /** How many TMDB votes `vote_average` averages. The structured data needs it. */
+  vote_count: number
   cast: CastMember[]
   trailer: Video | null
   recommendations: Movie[]

@@ -14,7 +14,11 @@ import { RemoteImage } from './RemoteImage'
 
 const props = () =>
   renderWithProviders(
-    <RemoteImage uri="https://image.tmdb.org/t/p/w342/a.jpg" recyclingKey="42" />,
+    <RemoteImage
+      uri="https://image.tmdb.org/t/p/w342/a.jpg"
+      alt="Dune"
+      recyclingKey="42"
+    />,
   ).UNSAFE_getByType(Image).props
 
 it('blanks a recycled view rather than keeping the previous film on screen', () => {
@@ -29,6 +33,13 @@ it('keeps decoded images in memory', () => {
 
 it('cross-dissolves the picture in rather than snapping it', () => {
   expect(props().transition).toBeGreaterThan(0)
+})
+
+// expo-image writes the web `alt` attribute from `accessibilityLabel`, not
+// from `alt`, so the name has to be on both.
+it('names the picture for a screen reader and for the web alt attribute', () => {
+  expect(props().alt).toBe('Dune')
+  expect(props().accessibilityLabel).toBe('Dune')
 })
 
 it('crops to fill the box it is given', () => {
@@ -46,6 +57,7 @@ it('lets the call site override the background', () => {
   const screen = renderWithProviders(
     <RemoteImage
       uri="https://image.tmdb.org/t/p/w342/a.jpg"
+      alt="Dune"
       recyclingKey="42"
       style={{ backgroundColor: '#123456' }}
     />,

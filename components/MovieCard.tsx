@@ -71,8 +71,6 @@ export function MovieCard({ movie, index = 0, progress }: Props) {
           hovered: { scale: 1.04, translateY: -6 },
           pressed: { scale: 0.96 },
         }}
-        // Per-key map, not a single config — see entranceTransition for why the
-        // entrance spring cannot sit at the top level next to a gesture layer.
         // The stagger delay stays on the entrance keys; on the gesture layers it
         // would delay the answer to a tap.
         transition={
@@ -105,6 +103,7 @@ export function MovieCard({ movie, index = 0, progress }: Props) {
                 <RemoteImage
                   testID="movie-poster"
                   uri={uri}
+                  alt={movie.title}
                   // The row recycles this view as it scrolls. See RemoteImage.
                   recyclingKey={String(movie.id)}
                   style={styles.poster}

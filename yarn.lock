@@ -1801,20 +1801,25 @@
     invariant "^2.2.4"
     nullthrows "^1.1.1"
 
-"@rootnative/components@0.0.0-alpha.22":
-  version "0.0.0-alpha.22"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.22.tgz#1cd52c9bbfcb188fc3531427127a26ae25197ab0"
-  integrity sha512-TJmZMWou78EChAKtsGBU8EZOM9YGOfYJYsheANfvlr/Du1WBqUkHGxOcJXw1B2yoAc54iLrw6nPHZQWCJl2U/w==
+"@rootnative/components@0.0.0-alpha.24":
+  version "0.0.0-alpha.24"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.24.tgz#e9e3d99d9db8d016868b70a970ac37d8bbbd1c25"
+  integrity sha512-/8QvvSdjDsiCsU5b0fLFwcbj2mnqRuOEh7/7qj7wJZPNQBPQTFHt/MweuhFCPoTKEglkE2sed/z+CheMSC85mw==
 
-"@rootnative/core@0.0.0-alpha.22":
-  version "0.0.0-alpha.22"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.22.tgz#1bde7fee14213c9782753cdefb624463a38b6272"
-  integrity sha512-FHqV2+bJyqQh21CVksou2M6oFyhwt9JLx1mNt+ulH8bkKZyDEZvj8nVLCVT6T5o/V9kUTLNeZgenUctk1DpG0Q==
+"@rootnative/core@0.0.0-alpha.24":
+  version "0.0.0-alpha.24"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.24.tgz#f95d4e6eb2b2180ac28556b2c64028d3b8a2a150"
+  integrity sha512-qwykL75c2sthrYn+pHNLcfslnEgCjbZ1Ymf841+W9EbGPDhL3YZZa5IC6P3ICP5Ttf+eZQG2+qUoncSE02srkg==
 
-"@rootnative/inertia@0.0.17":
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.17.tgz#02fbdd9f0a26ece995d56ddc8934965b197e7f80"
-  integrity sha512-bLWKsrO/1O9XyqrqTjg/kx6rnNsDazIW5T4gpvBohk63KStAXkpxK/FBa53hCjD1k/gkqOd3uWOIDN99vfGf0g==
+"@rootnative/inertia@0.0.18":
+  version "0.0.18"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.18.tgz#f8e9da5107fdd90162e186ed61f6699b9cb55364"
+  integrity sha512-RgoO0rKnFbeWZeLtZ56m7kwW16N2DeLt/AZkpl5QKEWHRYhnu7W0X6LBiV+16ByPhjXBaop01lOPrISU2clBCQ==
+
+"@rootnative/seo@0.0.0-alpha.24":
+  version "0.0.0-alpha.24"
+  resolved "https://registry.yarnpkg.com/@rootnative/seo/-/seo-0.0.0-alpha.24.tgz#be60e937e7f75d699eb4b8138584bd3344b96fbe"
+  integrity sha512-VYYFKOYLo/u0uDfXH+aeq3bYLiuiIAqstC601JWvM4rK7KdnSenAGk2t3aGmXxPAqqkwsPs0JOyQFEHgdAqSuw==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"

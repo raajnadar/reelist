@@ -34,6 +34,8 @@ const TOP_SCRIM: readonly ScrimStop[] = [
 type Props = {
   /** The backdrop, or the poster when the film has no backdrop. */
   uri: string | null
+  /** The film title, which names the artwork for a crawler and a screen reader. */
+  title: string
   height: number
   /** The room the floating header takes, which the top wash matches. */
   headerSpace: number
@@ -47,7 +49,7 @@ type Props = {
  * speed reads as a panel behind the page, and it put the title over a moving
  * image for the whole first screen.
  */
-export function DetailHero({ uri, height, headerSpace, recyclingKey }: Props) {
+export function DetailHero({ title, uri, height, headerSpace, recyclingKey }: Props) {
   const theme = useTheme()
 
   return (
@@ -73,6 +75,7 @@ export function DetailHero({ uri, height, headerSpace, recyclingKey }: Props) {
           <RemoteImage
             testID="detail-backdrop"
             uri={uri}
+            alt={`${title} backdrop`}
             recyclingKey={recyclingKey}
             // The picture the screen is built around.
             priority="high"

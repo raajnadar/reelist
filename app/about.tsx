@@ -5,7 +5,7 @@ import { Divider } from '@rootnative/components/divider'
 import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
-import { PageHead } from '../components/PageHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import {
   useBreakpoint,
   useTheme,
@@ -15,13 +15,14 @@ import {
 import corePackage from '@rootnative/core/package.json'
 import { Motion, Stagger } from '@rootnative/inertia'
 import inertiaPackage from '@rootnative/inertia/package.json'
-import { useRouter } from 'expo-router'
+import { Link, useRouter, type Href } from 'expo-router'
 import type { ReactNode } from 'react'
-import { Linking, Pressable, StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { setMode, useAppearance } from '../lib/appearance'
 import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib/language'
 import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
+import { NEW_TAB } from '../lib/share'
 
 const DOCS_URL = 'https://rootnative.github.io/ui/'
 const SOURCE_URL = 'https://github.com/raajnadar/reelist'
@@ -391,16 +392,18 @@ export default function AboutScreen() {
                 {PACKAGES.map((item) => (
                   <View key={item.name} style={styles.package}>
                     <View style={styles.packageHead}>
-                      <Pressable
-                        accessibilityRole="link"
-                        accessibilityLabel={`${item.name} on GitHub`}
-                        testID={`repo-${item.name}`}
-                        onPress={() => void Linking.openURL(item.repo)}
-                      >
-                        <Typography variant="titleSmall" color={theme.colors.primary}>
-                          {item.name}
-                        </Typography>
-                      </Pressable>
+                      <Link href={item.repo as Href} asChild>
+                        <Pressable
+                          accessibilityRole="link"
+                          accessibilityLabel={`${item.name} on GitHub`}
+                          testID={`repo-${item.name}`}
+                          hrefAttrs={NEW_TAB}
+                        >
+                          <Typography variant="titleSmall" color={theme.colors.primary}>
+                            {item.name}
+                          </Typography>
+                        </Pressable>
+                      </Link>
                       <Typography
                         variant="labelSmall"
                         color={theme.colors.onSurfaceVariant}
@@ -417,27 +420,31 @@ export default function AboutScreen() {
 
               <Section title="Read more">
                 <View style={styles.links}>
-                  <Button
-                    variant="tonal"
-                    size="medium"
-                    leadingIcon="book-open-variant"
-                    onPress={() => void Linking.openURL(DOCS_URL)}
-                  >
-                    RootNative UI documentation
-                  </Button>
+                  <Link href={DOCS_URL} asChild>
+                    <Button
+                      variant="tonal"
+                      size="medium"
+                      leadingIcon="book-open-variant"
+                      hrefAttrs={NEW_TAB}
+                    >
+                      RootNative UI documentation
+                    </Button>
+                  </Link>
                   {/*
                   This app, not the library. Everything the page claims is in
                   one small repository, so a reader can go and check it — the
                   same reason each look prints the call that builds it.
                 */}
-                  <Button
-                    variant="outlined"
-                    size="medium"
-                    leadingIcon="github"
-                    onPress={() => void Linking.openURL(SOURCE_URL)}
-                  >
-                    Reelist on GitHub
-                  </Button>
+                  <Link href={SOURCE_URL} asChild>
+                    <Button
+                      variant="outlined"
+                      size="medium"
+                      leadingIcon="github"
+                      hrefAttrs={NEW_TAB}
+                    >
+                      Reelist on GitHub
+                    </Button>
+                  </Link>
                 </View>
               </Section>
             </Stagger>

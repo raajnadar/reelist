@@ -18,7 +18,7 @@ beforeEach(() => {
 const renderRow = (images: GalleryImage[]) =>
   renderWithProviders(
     <Motion.ScrollView>
-      <GalleryRow movieId={693134} images={images} />
+      <GalleryRow movieId={693134} title="Dune: Part Two" images={images} />
     </Motion.ScrollView>,
   )
 

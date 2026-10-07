@@ -9,7 +9,7 @@ import { BrandMark } from '../components/BrandMark'
 import { GenreChips } from '../components/GenreChips'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
-import { PageHead } from '../components/PageHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../components/Skeleton'
 import { SpinningCog } from '../components/SpinningCog'
 import { StateMessage } from '../components/StateMessage'
@@ -146,7 +146,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.brand}>
           <BrandMark size={26} />
-          <Typography variant="headlineMedium" style={styles.title}>
+          <Typography variant="headlineMedium" level={1} style={styles.title}>
             Reelist
           </Typography>
         </View>

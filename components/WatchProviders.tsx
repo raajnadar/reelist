@@ -63,7 +63,9 @@ export function WatchProviders({ providers }: { providers: Record<string, Provid
       style={styles.section}
     >
       <View style={styles.head}>
-        <Typography variant="titleMediumEmphasized">Where to watch</Typography>
+        <Typography variant="titleMediumEmphasized" level={2}>
+          Where to watch
+        </Typography>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Region: ${name}. Change`}
@@ -140,6 +142,7 @@ function ProviderTile({
         <RemoteImage
           testID="provider-logo"
           uri={uri}
+          alt={provider.name}
           recyclingKey={String(provider.id)}
           style={styles.logo}
         />

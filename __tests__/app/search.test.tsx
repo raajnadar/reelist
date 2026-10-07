@@ -10,15 +10,17 @@ import { MissingProxyUrlError } from '../../lib/config'
 // becomes a route and Metro then bundles the testing library into the app.
 
 const mockPush = jest.fn()
+let mockParams: { q?: string } = {}
 
-jest.mock('expo-router', () =>
-  jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
+jest.mock('expo-router', () => ({
+  ...jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     back: jest.fn(),
     replace: jest.fn(),
     canGoBack: () => true,
   })),
-)
+  useLocalSearchParams: () => mockParams,
+}))
 
 jest.mock('../../lib/api', () => ({
   searchMovies: jest.fn(),
@@ -31,6 +33,7 @@ const FIELD = 'Search movies'
 beforeEach(() => {
   jest.clearAllMocks()
   jest.useFakeTimers()
+  mockParams = {}
   searchMovies.mockResolvedValue({ results: [] })
 })
 
@@ -50,6 +53,17 @@ it('shows the prompt and searches for nothing before the user types', () => {
 
   expect(screen.getByText('Search for a movie')).toBeTruthy()
   expect(searchMovies).not.toHaveBeenCalled()
+})
+
+// A search result page sends `?q=` to the search sheet. See the WebSite
+// structured data in lib/head.ts.
+it('fills the field from the q parameter and searches for it', async () => {
+  mockParams = { q: 'dune' }
+  const screen = renderWithProviders(<SearchScreen />)
+
+  expect(screen.getByLabelText(FIELD).props.value).toBe('dune')
+  await settle()
+  expect(searchMovies).toHaveBeenCalledWith('dune')
 })
 
 it('sends one request for a burst of keystrokes, carrying the last value', async () => {

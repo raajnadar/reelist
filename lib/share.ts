@@ -19,10 +19,17 @@ export const personUrl = (id: number) => `${SITE_URL}/person/${id}`
 
 /**
  * The canonical web page for one genre. It keeps the name in the query, the
- * same as the genre chips and scripts/sitemap.js, so the three agree.
+ * same as the genre chips, so the two agree.
  */
 export const genreUrl = (genre: { id: number; name: string }) =>
   `${SITE_URL}/genre/${genre.id}?name=${encodeURIComponent(genre.name)}`
+
+/**
+ * The `hrefAttrs` of a link to another site, for a component inside
+ * `<Link asChild>`. The web opens it in a new tab, as `Linking.openURL` did.
+ * Native ignores it.
+ */
+export const NEW_TAB = { target: '_blank', rel: 'noopener' }
 
 /**
  * The line that names the film in a share: `Dune: Part Two (2024)`.

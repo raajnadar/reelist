@@ -1,8 +1,8 @@
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons'
+import { Icon } from '@rootnative/components/icon'
 import { IconButton } from '@rootnative/components/icon-button'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -10,7 +10,7 @@ import { GlassLayer } from '../components/GlassLayer'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
-import { PageHead } from '../components/PageHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { searchMovies } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
 import { GRID_GAP, GRID_PADDING, gridInset, posterColumns } from '../lib/grid'
@@ -127,7 +127,11 @@ export default function SearchScreen() {
    */
   const { lineHeight: _lineHeight, ...inputType } = theme.typography.bodyLarge
 
-  const [query, setQuery] = useState('')
+  // `q` is the parameter the search box on a result page sends. See the
+  // WebSite structured data in lib/head.ts. The app itself opens the sheet
+  // with no query.
+  const params = useLocalSearchParams<{ q?: string }>()
+  const [query, setQuery] = useState(params.q ?? '')
   // The field reads `query` so it answers every keystroke. The fetch reads this,
   // so it fires once the typing stops. See lib/useDebounced.ts.
   const debouncedQuery = useDebounced(query)
@@ -231,8 +235,8 @@ export default function SearchScreen() {
               transition="expand"
               style={styles.iconBox}
             >
-              <MaterialDesignIcons
-                name="magnify"
+              <Icon
+                source="magnify"
                 size={ICON_SIZE}
                 color={theme.colors.onSurfaceVariant}
               />
@@ -273,33 +277,27 @@ export default function SearchScreen() {
                 screen give a screen reader no way to tell them apart.
               */}
               {/*
-                Each button gets a column frame that centres it. IconButton
-                pins itself to the top of its parent with `alignSelf:
-                'flex-start'`, which wins over the row's `alignItems`, so
-                without the frame the two sit above the text. A column, not a
-                row: `alignSelf` sets the cross axis, and in a column that is
-                the horizontal one, which leaves `justifyContent` free to
-                centre the height. Same fix as the about screen's close button.
+                IconButton pins itself to the top of its parent with
+                `alignSelf: 'flex-start'`, which wins over the row's
+                `alignItems`. Its own `alignSelf` centres it on the text.
               */}
               {query ? (
-                <View style={styles.buttonFrame}>
-                  <IconButton
-                    icon="close-circle"
-                    variant="standard"
-                    accessibilityLabel="Clear the search box"
-                    onPress={() => setQuery('')}
-                  />
-                </View>
-              ) : null}
-              <View style={styles.buttonFrame}>
                 <IconButton
-                  icon="close"
+                  icon="close-circle"
                   variant="standard"
-                  accessibilityLabel="Close search"
-                  testID="search-close"
-                  onPress={dismiss}
+                  accessibilityLabel="Clear the search box"
+                  onPress={() => setQuery('')}
+                  style={styles.centred}
                 />
-              </View>
+              ) : null}
+              <IconButton
+                icon="close"
+                variant="standard"
+                accessibilityLabel="Close search"
+                testID="search-close"
+                onPress={dismiss}
+                style={styles.centred}
+              />
             </Motion.View>
           </Motion.View>
         </View>
@@ -472,7 +470,7 @@ const styles = StyleSheet.create({
     outlineStyle: 'solid',
     outlineWidth: 0,
   },
-  buttonFrame: { height: FIELD_HEIGHT, justifyContent: 'center' },
+  centred: { alignSelf: 'center' },
   results: { flex: 1, alignSelf: 'stretch', pointerEvents: 'box-none' },
   /*
     The top inset is inside the scroller, not above it: a vertical scroller

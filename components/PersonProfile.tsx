@@ -79,6 +79,7 @@ export function PersonProfile({ person, photoWidth, wide }: Props) {
           <RemoteImage
             testID="person-photo"
             uri={photo}
+            alt={person.name}
             recyclingKey={String(person.id)}
             priority="high"
             style={[
@@ -96,8 +97,11 @@ export function PersonProfile({ person, photoWidth, wide }: Props) {
         <View style={styles.identityText}>
           {/* The larger variant only where there is room for it, the same rule
               the film masthead follows: on a phone the headline wraps a long
-              name to three lines. */}
-          <Typography variant={wide ? 'headlineLargeEmphasized' : 'titleLargeEmphasized'}>
+              name to three lines. On the web this is the page's h1. */}
+          <Typography
+            variant={wide ? 'headlineLargeEmphasized' : 'titleLargeEmphasized'}
+            level={1}
+          >
             {person.name}
           </Typography>
 
@@ -142,15 +146,14 @@ export function PersonProfile({ person, photoWidth, wide }: Props) {
           on screen.
         */}
         {long ? (
-          <View style={styles.toggle}>
-            <Button
-              variant="text"
-              size="small"
-              onPress={() => setExpanded((open) => !open)}
-            >
-              {expanded ? 'Show less' : 'Show more'}
-            </Button>
-          </View>
+          <Button
+            variant="text"
+            size="small"
+            onPress={() => setExpanded((open) => !open)}
+            style={styles.toggle}
+          >
+            {expanded ? 'Show less' : 'Show more'}
+          </Button>
         ) : null}
       </View>
     </Motion.View>

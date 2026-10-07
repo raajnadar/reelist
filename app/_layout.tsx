@@ -3,10 +3,12 @@ import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider, useThemeMode } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
+import { SeoProvider } from '@rootnative/seo/react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { setMode, useAppearance } from '../lib/appearance'
+import { site } from '../lib/site'
 import { transitions } from '../lib/motion'
 import { darkTheme, lightTheme } from '../theme'
 
@@ -121,7 +123,9 @@ export default function RootLayout() {
           */}
           <PortalHost>
             <SnackbarProvider>
-              <Screens />
+              <SeoProvider site={site}>
+                <Screens />
+              </SeoProvider>
             </SnackbarProvider>
           </PortalHost>
         </MotionConfig>

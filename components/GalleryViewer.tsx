@@ -437,6 +437,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                 image={item}
                 index={i}
                 count={count}
+                title={title}
                 width={width}
                 stageHeight={stageHeight}
                 scrollX={scrollX}
@@ -474,21 +475,19 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
         >
           <View style={styles.bar}>
             {/*
-              Each IconButton on this screen sits in a column frame that
-              centres it. The button pins itself to the top of its parent with
+              Each IconButton on this screen takes `alignSelf: 'center'`. The
+              button pins itself to the top of its parent with
               `alignSelf: 'flex-start'`, which wins over the row's
-              `alignItems`. Same fix as the search and about screens; filed
-              as R1 in the RootNative DX feedback.
+              `alignItems`. Same fix as the search screen.
             */}
-            <View style={styles.buttonFrame}>
-              <IconButton
-                icon="close"
-                variant="standard"
-                iconColor={ON_STAGE}
-                accessibilityLabel="Close the gallery"
-                onPress={close}
-              />
-            </View>
+            <IconButton
+              icon="close"
+              variant="standard"
+              iconColor={ON_STAGE}
+              accessibilityLabel="Close the gallery"
+              onPress={close}
+              style={styles.centred}
+            />
             <Typography variant="titleMedium" numberOfLines={1} style={styles.title}>
               {title}
             </Typography>
@@ -498,26 +497,24 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
           <View style={styles.middle} pointerEvents="box-none">
             {roomy ? (
               <>
-                <View style={styles.arrowFrame} pointerEvents="box-none">
-                  <IconButton
-                    icon="chevron-left"
-                    variant="tonal"
-                    size="medium"
-                    accessibilityLabel="Previous still"
-                    disabled={index === 0}
-                    onPress={() => goTo(index - 1)}
-                  />
-                </View>
-                <View style={styles.arrowFrame} pointerEvents="box-none">
-                  <IconButton
-                    icon="chevron-right"
-                    variant="tonal"
-                    size="medium"
-                    accessibilityLabel="Next still"
-                    disabled={index === count - 1}
-                    onPress={() => goTo(index + 1)}
-                  />
-                </View>
+                <IconButton
+                  icon="chevron-left"
+                  variant="tonal"
+                  size="medium"
+                  accessibilityLabel="Previous still"
+                  disabled={index === 0}
+                  onPress={() => goTo(index - 1)}
+                  style={styles.centred}
+                />
+                <IconButton
+                  icon="chevron-right"
+                  variant="tonal"
+                  size="medium"
+                  accessibilityLabel="Next still"
+                  disabled={index === count - 1}
+                  onPress={() => goTo(index + 1)}
+                  style={styles.centred}
+                />
               </>
             ) : null}
           </View>
@@ -542,7 +539,13 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                   { paddingHorizontal: stripInset },
                 ]}
                 renderItem={({ item, index: i }) => (
-                  <Thumb image={item} index={i} active={i === index} onPress={goTo} />
+                  <Thumb
+                    image={item}
+                    index={i}
+                    title={title}
+                    active={i === index}
+                    onPress={goTo}
+                  />
                 )}
               />
             ) : null}
@@ -566,6 +569,7 @@ function Page({
   image,
   index,
   count,
+  title,
   width,
   stageHeight,
   scrollX,
@@ -578,6 +582,7 @@ function Page({
   image: GalleryImage
   index: number
   count: number
+  title: string
   width: number
   stageHeight: number
   scrollX: SharedValue<number>
@@ -649,6 +654,7 @@ function Page({
             */}
             <RemoteImage
               uri={backdropUrl(image.file_path, 'w1280') ?? ''}
+              alt={`${title} still ${index + 1} of ${count}`}
               recyclingKey={image.file_path}
               priority="high"
               style={styles.fill}
@@ -694,11 +700,13 @@ function Counter({ index, count }: { index: number; count: number }) {
 function Thumb({
   image,
   index,
+  title,
   active,
   onPress,
 }: {
   image: GalleryImage
   index: number
+  title: string
   active: boolean
   onPress: (index: number) => void
 }) {
@@ -718,6 +726,7 @@ function Thumb({
       >
         <RemoteImage
           uri={backdropUrl(image.file_path) ?? ''}
+          alt={`${title} still ${index + 1}`}
           recyclingKey={image.file_path}
           priority="low"
           style={styles.fill}
@@ -770,7 +779,7 @@ const styles = StyleSheet.create({
   // See the trailer screen for why the line height is dropped: it puts the
   // title on the same centreline as the close button.
   title: { flex: 1, flexBasis: 0, color: ON_STAGE, lineHeight: undefined },
-  buttonFrame: { height: BAR_HEIGHT, justifyContent: 'center' },
+  centred: { alignSelf: 'center' },
   stripBar: { height: BAR_HEIGHT, justifyContent: 'center' },
   middle: {
     flex: 1,
@@ -778,8 +787,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
-  // Stretched to the row's height, so the arrow centres on the still.
-  arrowFrame: { justifyContent: 'center' },
   counter: { width: 72, height: BAR_HEIGHT, marginRight: 8 },
   counterSlot: {
     ...StyleSheet.absoluteFill,

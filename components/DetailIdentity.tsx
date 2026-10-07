@@ -51,6 +51,7 @@ export function DetailIdentity({ movie, posterWidth, wide }: Props) {
         <RemoteImage
           testID="detail-poster"
           uri={poster}
+          alt={`${movie.title} poster`}
           recyclingKey={String(movie.id)}
           priority="high"
           style={[
@@ -67,8 +68,13 @@ export function DetailIdentity({ movie, posterWidth, wide }: Props) {
 
       <View style={styles.identityText}>
         {/* The larger variant only where there is room for it. On a phone the
-            headline would wrap a long title to three lines. */}
-        <Typography variant={wide ? 'headlineLargeEmphasized' : 'titleLargeEmphasized'}>
+            headline would wrap a long title to three lines.
+
+            On the web this is the page's h1. */}
+        <Typography
+          variant={wide ? 'headlineLargeEmphasized' : 'titleLargeEmphasized'}
+          level={1}
+        >
           {movie.title}
         </Typography>
 

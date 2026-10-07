@@ -1,4 +1,4 @@
-import { MaterialDesignIcons } from '@react-native-vector-icons/material-design-icons'
+import { Icon } from '@rootnative/components/icon'
 import { Motion } from '@rootnative/inertia'
 
 /**
@@ -28,11 +28,7 @@ export function BookmarkIcon({
       animate={{ scale: 1 }}
       transition="pop"
     >
-      <MaterialDesignIcons
-        name={saved ? 'bookmark' : 'bookmark-outline'}
-        size={size}
-        color={color}
-      />
+      <Icon source={saved ? 'bookmark' : 'bookmark-outline'} size={size} color={color} />
     </Motion.View>
   )
 }
