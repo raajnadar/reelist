@@ -6,7 +6,6 @@ import {
   webSite,
 } from '@rootnative/seo/schema'
 import { backdropUrl, posterUrl, profileUrl } from './images'
-import { prerenderedGenres } from './prerender'
 import { SITE_URL, genreUrl, movieUrl, personUrl, shareTitle } from './share'
 import { site } from './site'
 import type { MovieDetail, PersonDetail } from './types'
@@ -107,14 +106,6 @@ export const personMeta = (person: PersonDetail): PageMeta => {
     ],
   }
 }
-
-/**
- * The genre name for an id, from the prerender seed. A genre link from the
- * app carries the name as a parameter, but a link typed or shared without it
- * does not, and the static export renders the page with no query at all.
- */
-export const seededGenreName = (id: number) =>
-  prerenderedGenres()?.find((genre) => genre.id === id)?.name
 
 export const genreMeta = (id: number, name: string): PageMeta => ({
   title: `${name} films`,

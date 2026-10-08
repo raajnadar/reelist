@@ -22,8 +22,15 @@ import { missingFailure, type Failure, type FailureKind } from '../../lib/errors
 import { movieMeta } from '../../lib/head'
 import { backdropUrl, posterUrl } from '../../lib/images'
 import { STAGGER_INTERVAL } from '../../lib/motion'
-import { prerenderedIds, prerenderedMovie } from '../../lib/prerender'
+import {
+  fromSeed,
+  loadSeed,
+  movieEntry,
+  movieIds,
+  type PrerenderedMovie,
+} from '../../lib/prerender'
 import type { MovieDetail } from '../../lib/types'
+import { usePrerendered } from '../../lib/usePrerendered'
 import { useResource } from '../../lib/useResource'
 
 /**
@@ -32,8 +39,16 @@ import { useResource } from '../../lib/useResource'
  * Expo Router calls this at export time only. A film that is not in the list
  * still opens: the client router draws it, and it loads from the proxy.
  */
-export function generateStaticParams(): { id: string }[] {
-  return prerenderedIds().map((id) => ({ id: String(id) }))
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  return movieIds(await loadSeed()).map((id) => ({ id: String(id) }))
+}
+
+/**
+ * The seed copy of the film, which the export writes into its page. Expo
+ * Router calls this at export time only, and removes it from the app bundle.
+ */
+export async function loader(_request: unknown, params: { id: string }) {
+  return movieEntry(await loadSeed(), params.id)
 }
 
 /**
@@ -114,10 +129,12 @@ export default function MovieScreen() {
    * two agree. It stands in until the proxy answers, and it stays up if the
    * request fails, for the reason a stale cache entry does: the reader has the
    * film in front of them. A `null` answer outranks it, because that is TMDB
-   * saying the film is gone. Native and a local build have no seed, so this
-   * is always null there. See lib/prerender.ts.
+   * saying the film is gone. It is null on native, in a local build, and
+   * after an in-app link, because only the page the browser opened carries
+   * its data. See lib/usePrerendered.web.ts.
    */
-  const seed = validId ? prerenderedMovie(movieId) : null
+  const entry = usePrerendered<PrerenderedMovie>(`/movie/${id}`)
+  const seed = validId && entry ? fromSeed(entry) : null
   const gone =
     validId && !detail.loading && detail.failure === null && detail.data === null
   const movie = detail.data ?? (gone ? null : seed)

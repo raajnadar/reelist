@@ -20,10 +20,11 @@ import {
 } from '../../lib/discover'
 import { missingFailure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
-import { genreMeta, seededGenreName } from '../../lib/head'
-import { prerenderedGenres } from '../../lib/prerender'
+import { genreMeta } from '../../lib/head'
+import { genreEntry, loadSeed } from '../../lib/prerender'
+import { usePrerendered } from '../../lib/usePrerendered'
 import { useResource } from '../../lib/useResource'
-import type { Movie, Paged } from '../../lib/types'
+import type { Genre, Movie, Paged } from '../../lib/types'
 
 /**
  * The genres the static web export writes a page for: the chip row of the
@@ -33,8 +34,17 @@ import type { Movie, Paged } from '../../lib/types'
  * those links gets a 404 status from the host. The page has the head tags and
  * the heading only. The films load from the proxy after the page starts.
  */
-export function generateStaticParams(): { id: string }[] {
-  return (prerenderedGenres() ?? []).map((genre) => ({ id: String(genre.id) }))
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  return (await loadSeed()).genres.map((genre) => ({ id: String(genre.id) }))
+}
+
+/**
+ * The genre from the seed, which the export writes into its page. A link
+ * typed or shared without the `name` parameter gets the name from here, and
+ * the export renders the page with no query at all.
+ */
+export async function loader(_request: unknown, params: { id: string }) {
+  return genreEntry(await loadSeed(), params.id)
 }
 
 /**
@@ -221,7 +231,8 @@ export default function GenreScreen() {
       .finally(() => setLoadingMore(false))
   }, [key, genreId, filters, page, totalPages, loading, loadingMore, failure])
 
-  const name = params.name ?? (validId ? seededGenreName(genreId) : undefined)
+  const seeded = usePrerendered<Genre>(`/genre/${params.id}`)
+  const name = params.name ?? seeded?.name
   const title = name ?? 'Genre'
 
   // The handler behind REPORTS, which carries only the words. `setup` has none:

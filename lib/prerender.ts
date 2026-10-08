@@ -1,4 +1,3 @@
-import { seed } from './prerenderSeed'
 import type { Genre, Movie, MovieDetail } from './types'
 
 /**
@@ -8,7 +7,8 @@ import type { Genre, Movie, MovieDetail } from './types'
  * block, the genres, and the overview. The lists a film owns — the cast, the
  * trailer, the gallery, the recommendations, and the providers — arrive from
  * the proxy after the page hydrates, the same as for a film with no seed. They
- * are left out to keep the seed small, because the web bundle carries it.
+ * are left out to keep each page small, because the page carries its part of
+ * the seed in its HTML.
  */
 export type PrerenderedMovie = Omit<
   MovieDetail,
@@ -30,6 +30,90 @@ export type PrerenderSeed = {
   genres: Genre[]
 }
 
+/** The part of the seed the home page carries. */
+export type HomeSeed = {
+  /** Null when the build has no seed, so the screen draws its skeleton. */
+  lists: { trending: Movie[]; popular: Movie[]; topRated: Movie[] } | null
+  genres: Genre[]
+}
+
+/**
+ * The seed, for a route `loader` or `generateStaticParams` only.
+ *
+ * Both run at export time, in Node. The import is dynamic, so the bundler puts
+ * the seed in a chunk of its own that the browser never asks for. Each page
+ * gets its own part from its loader, in its HTML. See
+ * lib/usePrerendered.web.ts.
+ *
+ * Jest cannot run a dynamic import, so the tests give the functions below a
+ * seed of their own. The tracked copy is empty, so a local build finds
+ * nothing in it.
+ */
+export const loadSeed = async (): Promise<PrerenderSeed> =>
+  (await import('./prerender.json')).default as PrerenderSeed
+
+/** The ids the static export writes a film page for. */
+export const movieIds = (seed: PrerenderSeed): number[] =>
+  Object.keys(seed.movies)
+    .map(Number)
+    .filter((id) => Number.isInteger(id))
+
+/**
+ * The seed copy of one film, or null when the seed has none.
+ *
+ * `id` is the route parameter as the loader gets it. The export also renders
+ * the route template, where the parameter is `[id]`.
+ */
+export const movieEntry = (seed: PrerenderSeed, id: string): PrerenderedMovie | null =>
+  Object.hasOwn(seed.movies, id) ? seed.movies[id] : null
+
+/**
+ * The fields a film card draws. The home page carries 60 cards in its HTML,
+ * so the fields only the film page needs stay out.
+ */
+const toCard = ({
+  id,
+  title,
+  poster_path,
+  backdrop_path,
+  vote_average,
+  release_date,
+  overview,
+}: PrerenderedMovie): Movie => ({
+  id,
+  title,
+  poster_path,
+  backdrop_path,
+  vote_average,
+  release_date,
+  overview,
+})
+
+/** The home rows and the genre chips from the seed. */
+export const homeEntry = (seed: PrerenderSeed): HomeSeed => {
+  const toMovies = (ids: number[]): Movie[] =>
+    ids.flatMap((id) => {
+      const entry = seed.movies[String(id)]
+      return entry ? [toCard(entry)] : []
+    })
+  const { trending, popular, topRated } = seed.lists
+  const empty = !trending.length && !popular.length && !topRated.length
+  return {
+    lists: empty
+      ? null
+      : {
+          trending: toMovies(trending),
+          popular: toMovies(popular),
+          topRated: toMovies(topRated),
+        },
+    genres: seed.genres,
+  }
+}
+
+/** One genre from the seed, or null when the seed has none. */
+export const genreEntry = (seed: PrerenderSeed, id: string): Genre | null =>
+  seed.genres.find((genre) => String(genre.id) === id) ?? null
+
 /**
  * Widens a seed entry to the full detail the screen draws, with each list
  * empty. The screen then fills the lists from the proxy.
@@ -42,52 +126,3 @@ export const fromSeed = (entry: PrerenderedMovie): MovieDetail => ({
   images: [],
   providers: {},
 })
-
-/**
- * The prerendered copy of one film, or null when the build has none.
- *
- * On the web this is what the static HTML for `/movie/{id}` is rendered from,
- * and what the same page hydrates with, so the two agree. Native and a local
- * build have an empty seed and always get null.
- */
-export const prerenderedMovie = (id: number): MovieDetail | null => {
-  const entry = seed.movies[String(id)]
-  return entry ? fromSeed(entry) : null
-}
-
-/** The ids the static export writes a page for. */
-export const prerenderedIds = (): number[] =>
-  Object.keys(seed.movies)
-    .map(Number)
-    .filter((id) => Number.isInteger(id))
-
-const toMovies = (ids: number[]): Movie[] =>
-  ids.flatMap((id) => {
-    const entry = seed.movies[String(id)]
-    return entry ? [entry] : []
-  })
-
-/**
- * The three home rows from the seed, or null when the build has none.
- *
- * Null rather than three empty rows, so the home screen can tell a build
- * with no seed from one whose lists came back empty, and draw its skeleton
- * for the first.
- */
-export const prerenderedLists = (): {
-  trending: Movie[]
-  popular: Movie[]
-  topRated: Movie[]
-} | null => {
-  const { trending, popular, topRated } = seed.lists
-  if (!trending.length && !popular.length && !topRated.length) return null
-  return {
-    trending: toMovies(trending),
-    popular: toMovies(popular),
-    topRated: toMovies(topRated),
-  }
-}
-
-/** The genre chips from the seed, or null when the build has none. */
-export const prerenderedGenres = (): Genre[] | null =>
-  seed.genres.length ? seed.genres : null

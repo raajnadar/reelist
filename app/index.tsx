@@ -23,12 +23,22 @@ import {
 import { type FailureKind } from '../lib/errors'
 import { homeMeta } from '../lib/head'
 import { languageName, useLanguage } from '../lib/language'
-import { prerenderedGenres, prerenderedLists } from '../lib/prerender'
+import { homeEntry, loadSeed, type HomeSeed } from '../lib/prerender'
+import { usePrerendered } from '../lib/usePrerendered'
 import { useResource } from '../lib/useResource'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import type { Genre, Movie } from '../lib/types'
 
 type Row = { title: string; movies: Movie[] }
+
+/**
+ * The home rows and the genre chips from the seed, which the export writes
+ * into the page. Expo Router calls this at export time only, and removes it
+ * from the app bundle.
+ */
+export async function loader() {
+  return homeEntry(await loadSeed())
+}
 
 /**
  * How each kind of failure is presented. The action itself is bound inside the
@@ -119,9 +129,11 @@ export default function HomeScreen() {
    * the reader has no language preference: a language row has to come from
    * the proxy. The rows are drawn until the request answers, and they stay
    * up if it fails, the same as a stale cache entry. Native and a local build
-   * have no seed. See lib/prerender.ts.
+   * have no seed, and the browser has it only when the site opened on this
+   * page. See lib/usePrerendered.web.ts.
    */
-  const seeded = language ? null : prerenderedLists()
+  const home = usePrerendered<HomeSeed>('/index')
+  const seeded = language ? null : (home?.lists ?? null)
   const rowData: Row[] | null =
     rows.data ??
     (seeded
@@ -133,7 +145,7 @@ export default function HomeScreen() {
       : null)
   const loading = rows.loading && rowData === null
   const failure = rowData === null ? rows.failure : null
-  const genreData = genres.data ?? prerenderedGenres() ?? []
+  const genreData = genres.data ?? home?.genres ?? []
 
   return (
     <View

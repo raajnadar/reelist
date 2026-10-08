@@ -8,8 +8,8 @@ import { SITE_URL } from './share'
  * the card shows the site name on a line of its own. `toHeadTags` clips each
  * description to 160 characters, so lib/head.ts passes the full text.
  *
- * Apart from lib/head.ts, because the root layout imports this file, and
- * lib/head.ts carries the prerender seed, which stays out of the entry bundle.
+ * Apart from lib/head.ts, because the root layout imports this file, and the
+ * page builders in lib/head.ts stay out of the entry bundle.
  */
 export const site = defineSite({
   name: 'Reelist',
