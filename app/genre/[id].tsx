@@ -21,8 +21,21 @@ import {
 import { missingFailure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
 import { genreMeta, seededGenreName } from '../../lib/head'
+import { prerenderedGenres } from '../../lib/prerender'
 import { useResource } from '../../lib/useResource'
 import type { Movie, Paged } from '../../lib/types'
+
+/**
+ * The genres the static web export writes a page for: the chip row of the
+ * seed. See lib/prerender.ts.
+ *
+ * Each film page links to its genres, so without a file here every one of
+ * those links gets a 404 status from the host. The page has the head tags and
+ * the heading only. The films load from the proxy after the page starts.
+ */
+export function generateStaticParams(): { id: string }[] {
+  return (prerenderedGenres() ?? []).map((genre) => ({ id: String(genre.id) }))
+}
 
 /**
  * How each kind of failure is presented, and what it offers.

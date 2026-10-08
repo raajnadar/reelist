@@ -41,6 +41,10 @@ export function GenreChips({
         horizontal
         showsHorizontalScrollIndicator={false}
         keyExtractor={(g) => String(g.id)}
+        // Every chip on the first render, not the FlatList default of 10, so
+        // the static home page links to each genre page. A chip has no image,
+        // so the cost is small.
+        initialNumToRender={genres.length}
         contentContainerStyle={{ paddingHorizontal: inset }}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item, index }) => (
