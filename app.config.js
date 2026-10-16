@@ -1,5 +1,5 @@
-// Expo reads this file instead of app.json when both exist. `app.json` stays
-// the source of truth: this file loads it and changes one field.
+// Expo reads app.json first and passes its values to this file as `config`.
+// `app.json` stays the source of truth: this file changes one field.
 //
 // GitHub Pages serves a project site from a subpath (/reelist/), not from the
 // domain root. The default export writes absolute asset paths (/_expo/...),
@@ -8,15 +8,13 @@
 //
 // The variable is set only by the deploy workflow. A local `expo start` and a
 // local `expo export` see no baseUrl and keep serving from the root.
-const config = require('./app.json')
-
-module.exports = () => {
+module.exports = ({ config }) => {
   const baseUrl = process.env.EXPO_BASE_URL ?? ''
 
   return {
-    ...config.expo,
+    ...config,
     experiments: {
-      ...config.expo.experiments,
+      ...config.experiments,
       baseUrl,
     },
   }

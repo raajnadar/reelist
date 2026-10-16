@@ -48,3 +48,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Google Play listing material, kept on the local machine only
+/store/

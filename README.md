@@ -538,7 +538,7 @@ when the OS asks.
 ## Technology
 
 - Expo SDK 57 and Expo Router 57
-- React Native 0.81 and React 19
+- React Native 0.86 and React 19
 - `@rootnative/core` — the theme system with Material Design 3 tokens
 - `@rootnative/components` — the UI components
 - `@rootnative/inertia` — the animation primitives, over Reanimated
