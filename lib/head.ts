@@ -22,6 +22,7 @@ const POSTER_W500 = { width: 500, height: 750 }
 const PROFILE_H632 = { width: 421, height: 632 }
 
 const HOME_URL = `${SITE_URL}/`
+const PRIVACY_URL = `${SITE_URL}/privacy`
 
 /** The path from the home page to one page, as a search result shows it. */
 const trail = (...crumbs: { name: string; url: string }[]) =>
@@ -40,6 +41,19 @@ export const homeMeta: PageMeta = {
       searchUrlTemplate: `${SITE_URL}/search?q={search_term_string}`,
     }),
   ],
+}
+
+/**
+ * Indexed, not `noindex` like the other utility screens: Google Play links to
+ * this page, and a reviewer or a reader must be able to find it.
+ */
+export const privacyMeta: PageMeta = {
+  title: 'Privacy policy',
+  description:
+    'Reelist has no accounts, no ads, and no analytics. Your watchlist stays on your device. This page tells you which services see a request, and why.',
+  url: PRIVACY_URL,
+  type: 'website',
+  jsonLd: [trail({ name: 'Privacy policy', url: PRIVACY_URL })],
 }
 
 export const movieMeta = (movie: MovieDetail): PageMeta => {

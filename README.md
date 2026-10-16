@@ -228,6 +228,7 @@ app/                     # Expo Router: one file is one screen
 ├── movie/[id].tsx       # Film detail screen
 ├── person/[id].tsx      # One person, and the films they appear in
 ├── trailer/[key].tsx    # The trailer, played in the app
+├── privacy.tsx          # The privacy policy that Google Play links to
 └── about.tsx            # Light or dark, and what the app is built with
 components/
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
@@ -248,6 +249,7 @@ components/
 ├── PersonProfile.tsx    # The person masthead and their biography
 ├── Scrim.tsx            # The gradient that dissolves the detail masthead
 ├── BrandMark.tsx        # The app mark beside the home title
+├── TmdbLogo.tsx         # The TMDB logo that the TMDB API terms require
 ├── SpinningCog.tsx      # The settings icon, which turns once every few seconds
 ├── StateMessage.tsx     # The shared failure, empty, and prompt block
 ├── RemoteImage.tsx      # Every TMDB picture, cached and cross-dissolved
@@ -281,7 +283,7 @@ assets/                  # App icons, the splash screen, the README QR code
 theme.ts                 # The Material 3 light and dark themes
 app.json                 # Expo configuration
 app.config.js            # Adds `baseUrl` for the GitHub Pages build
-eas.json                 # EAS build and update profiles
+eas.json                 # EAS build profiles, each with its own update channel
 jest.config.js           # Two projects: app and proxy
 eslint.config.js         # Includes the rule that bans a key in app code
 CLAUDE.md                # Instructions for AI agents
@@ -566,6 +568,36 @@ To publish an app update by hand:
 ```bash
 npx eas update --branch main --message "What changed"
 ```
+
+### Update channels
+
+Each build profile in [eas.json](eas.json) has its own channel. A build gets
+updates only from its own channel.
+
+| Channel       | Used by                       | Published by                               |
+| ------------- | ----------------------------- | ------------------------------------------ |
+| `main`        | Expo Go, through the QR code  | `eas-update.yml`, on each push to `main`   |
+| `development` | A development build           | You, by hand                               |
+| `preview`     | An internal test build        | You, by hand                               |
+| `production`  | The Google Play build         | You, by hand                               |
+
+The store build does not get the automatic updates. The workflow publishes
+each commit on `main`, and an untested commit must not reach store users.
+
+To publish an update to the store build:
+
+```bash
+npx eas update --channel production --message "What changed"
+```
+
+Publish to `production` only for a change to JavaScript or to assets. The
+runtime version follows the Expo SDK (`"policy": "sdkVersion"`), so the store
+build also accepts an update that needs a new native module, and then it
+crashes. A new native module, a new config plugin, or a change to a native
+field in `app.json` needs a new store build.
+
+The policy stays `sdkVersion` because Expo Go loads only an update whose
+runtime version is the SDK version.
 
 ### Setup that this repository cannot do for itself
 

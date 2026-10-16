@@ -12,13 +12,14 @@ import { renderWithProviders } from '../../lib/test-utils'
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
 
+const mockPush = jest.fn()
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
 const mockCanGoBack = jest.fn(() => true)
 
 jest.mock('expo-router', () =>
   jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
-    push: jest.fn(),
+    push: mockPush,
     back: mockBack,
     replace: mockReplace,
     canGoBack: mockCanGoBack,
@@ -153,6 +154,30 @@ it('opens this app on GitHub', async () => {
   await waitFor(() =>
     expect(openURL).toHaveBeenCalledWith('https://github.com/raajnadar/reelist'),
   )
+})
+
+// The TMDB API terms require the logo and this exact notice. A test on the
+// words, unlike the tests above: a reworded notice breaks the terms.
+it('credits TMDB with its logo and the notice its terms require', async () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  expect(
+    screen.getByText(
+      'This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.',
+    ),
+  ).toBeTruthy()
+
+  fireEvent.press(screen.getByTestId('tmdb-logo'))
+  await waitFor(() => expect(openURL).toHaveBeenCalledWith('https://www.themoviedb.org/'))
+})
+
+it('opens the privacy policy in the app', () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  fireEvent.press(screen.getByText('Privacy policy'))
+
+  expect(mockPush).toHaveBeenCalledWith('/privacy')
+  expect(openURL).not.toHaveBeenCalled()
 })
 
 it('opens each package where its source is', async () => {

@@ -19,6 +19,7 @@ import { Link, useRouter, type Href } from 'expo-router'
 import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { TmdbLogo } from '../components/TmdbLogo'
 import { setMode, useAppearance } from '../lib/appearance'
 import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib/language'
 import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
@@ -26,6 +27,14 @@ import { NEW_TAB } from '../lib/share'
 
 const DOCS_URL = 'https://rootnative.github.io/ui/'
 const SOURCE_URL = 'https://github.com/raajnadar/reelist'
+const TMDB_URL = 'https://www.themoviedb.org/'
+
+/**
+ * The notice the TMDB API terms require, word for word. Do not rewrite it in
+ * the style of the rest of the screen.
+ */
+const TMDB_NOTICE =
+  'This application uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.'
 
 /**
  * The card's width on anything wider than a phone, and the widest the text ever
@@ -418,6 +427,27 @@ export default function AboutScreen() {
                 ))}
               </Section>
 
+              <Section title="Film data">
+                <Link href={TMDB_URL} asChild>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel="TMDB website"
+                    testID="tmdb-logo"
+                    hrefAttrs={NEW_TAB}
+                    style={styles.tmdbLogo}
+                  >
+                    <TmdbLogo />
+                  </Pressable>
+                </Link>
+                <Typography
+                  variant="bodySmall"
+                  color={theme.colors.onSurfaceVariant}
+                  style={styles.note}
+                >
+                  {TMDB_NOTICE}
+                </Typography>
+              </Section>
+
               <Section title="Read more">
                 <View style={styles.links}>
                   <Link href={DOCS_URL} asChild>
@@ -443,6 +473,15 @@ export default function AboutScreen() {
                       hrefAttrs={NEW_TAB}
                     >
                       Reelist on GitHub
+                    </Button>
+                  </Link>
+                  <Link href="/privacy" asChild>
+                    <Button
+                      variant="outlined"
+                      size="medium"
+                      leadingIcon="shield-lock-outline"
+                    >
+                      Privacy policy
                     </Button>
                   </Link>
                 </View>
@@ -516,6 +555,7 @@ const styles = StyleSheet.create({
   note: { marginTop: 10 },
   package: { marginTop: 12, gap: 2 },
   packageHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  tmdbLogo: { alignSelf: 'flex-start', paddingVertical: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 })
