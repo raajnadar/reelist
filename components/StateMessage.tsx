@@ -1,6 +1,6 @@
 import { Button } from '@rootnative/components/button'
 import { Icon } from '@rootnative/components/icon'
-import { Typography } from '@rootnative/components/typography'
+import { Typography, type TypographyProps } from '@rootnative/components/typography'
 import { useTheme, type IconSource } from '@rootnative/core'
 import { Motion, Stagger } from '@rootnative/inertia'
 import type { RefObject } from 'react'
@@ -34,6 +34,12 @@ type Props = {
   icon: IconSource
   /** One short line that says what happened. */
   title: string
+  /**
+   * The heading level of the title. Pass 1 when this block is the whole
+   * screen and no bar above it carries the `<h1>`. Without it, the title is
+   * plain text.
+   */
+  titleLevel?: TypographyProps['level']
   /** The detail under it: the message from the failure, or the prompt. */
   body?: string
   tone?: Tone
@@ -65,6 +71,7 @@ type Props = {
 export function StateMessage({
   icon,
   title,
+  titleLevel,
   body,
   tone = 'neutral',
   actionLabel,
@@ -126,7 +133,11 @@ export function StateMessage({
           transition="enter"
           style={styles.text}
         >
-          <Typography variant="titleMediumEmphasized" style={styles.centre}>
+          <Typography
+            variant="titleMediumEmphasized"
+            level={titleLevel}
+            style={styles.centre}
+          >
             {title}
           </Typography>
 

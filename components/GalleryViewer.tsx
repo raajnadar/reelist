@@ -481,7 +481,12 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
               accessibilityLabel="Close the gallery"
               onPress={close}
             />
-            <Typography variant="titleMedium" numberOfLines={1} style={styles.title}>
+            <Typography
+              variant="titleMedium"
+              level={1}
+              numberOfLines={1}
+              style={styles.title}
+            >
               {title}
             </Typography>
             <Counter index={index} count={count} />

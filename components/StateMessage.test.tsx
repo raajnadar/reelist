@@ -76,3 +76,18 @@ it('renders without a body', () => {
 
   expect(screen.getByText('Only a title')).toBeTruthy()
 })
+
+// Most of these blocks sit under a bar that already carries the page heading,
+// so the title is a heading only when the caller asks for one.
+it('makes the title a heading only when given a level', () => {
+  const plain = renderWithProviders(
+    <StateMessage icon="link-off" title="Movie not found" />,
+  )
+  expect(plain.queryByRole('header')).toBeNull()
+  plain.unmount()
+
+  const heading = renderWithProviders(
+    <StateMessage icon="link-off" title="Movie not found" titleLevel={1} />,
+  )
+  expect(heading.getByRole('header', { name: 'Movie not found' })).toBeTruthy()
+})

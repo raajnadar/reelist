@@ -1,5 +1,6 @@
 import { Icon } from '@rootnative/components/icon'
 import { IconButton } from '@rootnative/components/icon-button'
+import { Typography } from '@rootnative/components/typography'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -169,6 +170,14 @@ export default function SearchScreen() {
   return (
     <View style={styles.layer}>
       <PageHead title="Search" noindex />
+      {/*
+        The field is the sheet's title, and a field is not a heading. A screen
+        reader still needs one to name the sheet, so it gets one that only a
+        screen reader finds.
+      */}
+      <Typography level={1} style={styles.hiddenHeading}>
+        Search
+      </Typography>
       <GlassLayer onPress={dismiss} testID="search-glass" />
 
       {/*
@@ -408,6 +417,16 @@ const styles = StyleSheet.create({
     press. Nothing on the sheet is meant to draw past the window.
   */
   layer: { flex: 1, overflow: 'hidden' },
+  // Out of the layout and out of sight, but not out of the accessibility tree:
+  // `display: 'none'` would remove it from both.
+  hiddenHeading: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    overflow: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
+  },
   fill: { flex: 1 },
   column: {
     position: 'absolute',

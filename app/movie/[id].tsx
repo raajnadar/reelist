@@ -20,7 +20,7 @@ import { WatchProviders } from '../../components/WatchProviders'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
 import { movieMeta } from '../../lib/head'
-import { backdropUrl, posterUrl } from '../../lib/images'
+import { BACKDROP_W780, POSTER_W500, backdropUrl, posterUrl } from '../../lib/images'
 import { STAGGER_INTERVAL } from '../../lib/motion'
 import {
   fromSeed,
@@ -196,6 +196,7 @@ export default function MovieScreen() {
   const artwork = movie
     ? (backdropUrl(movie.backdrop_path) ?? posterUrl(movie.poster_path, 'w500'))
     : null
+  const artworkSize = movie?.backdrop_path ? BACKDROP_W780 : POSTER_W500
 
   // scrollY drives the header on the UI thread, so the bar arrives during a
   // fling without a re-render per frame.
@@ -237,8 +238,17 @@ export default function MovieScreen() {
         The document head on the web: the tab title and the tags a share
         unfurls. Outside the Presence block, because it draws nothing on the
         screen and needs no exit.
+
+        A missing film gets `noindex`. The export writes the route template in
+        that state, and a crawler must not index it or a broken link. A failed
+        request does not: a crawler that the proxy turns away must not drop a
+        page that exists.
       */}
-      {movie ? <PageHead {...movieMeta(movie)} /> : null}
+      {failure?.kind === 'missing' ? (
+        <PageHead title={REPORTS.missing.title} noindex />
+      ) : movie ? (
+        <PageHead {...movieMeta(movie)} />
+      ) : null}
 
       <Presence>
         {loading ? (
@@ -282,6 +292,8 @@ export default function MovieScreen() {
             icon={REPORTS[failure.kind].icon}
             tone={REPORTS[failure.kind].tone}
             title={REPORTS[failure.kind].title}
+            // The floating header has no title in this state, so this is the h1.
+            titleLevel={1}
             body={failure.message}
             actionLabel={REPORTS[failure.kind].actionLabel}
             actionIcon={REPORTS[failure.kind].actionIcon}
@@ -299,6 +311,7 @@ export default function MovieScreen() {
           >
             <DetailHero
               uri={artwork}
+              size={artworkSize}
               title={movie.title}
               height={heroHeight}
               headerSpace={headerSpace}

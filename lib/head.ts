@@ -5,21 +5,20 @@ import {
   person as personSchema,
   webSite,
 } from '@rootnative/seo/schema'
-import { backdropUrl, posterUrl, profileUrl } from './images'
+import {
+  BACKDROP_W780,
+  POSTER_W500,
+  PROFILE_H632,
+  backdropUrl,
+  posterUrl,
+  profileUrl,
+} from './images'
 import { SITE_URL, genreUrl, movieUrl, personUrl, shareTitle } from './share'
 import { site } from './site'
 import type { MovieDetail, PersonDetail } from './types'
 
 /** The most performers the film's structured data names. */
 const ACTOR_LIMIT = 10
-
-/**
- * The sizes of the share images, from the TMDB ratios: a backdrop is 16:9,
- * and a poster or a profile is 2:3. The `w` and `h` sizes fix one side.
- */
-const BACKDROP_W780 = { width: 780, height: 439 }
-const POSTER_W500 = { width: 500, height: 750 }
-const PROFILE_H632 = { width: 421, height: 632 }
 
 const HOME_URL = `${SITE_URL}/`
 const PRIVACY_URL = `${SITE_URL}/privacy`

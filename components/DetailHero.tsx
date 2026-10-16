@@ -2,6 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
 import { StyleSheet, View } from 'react-native'
+import type { ImageSize } from '../lib/images'
 import { RemoteImage } from './RemoteImage'
 import { Scrim, type ScrimStop } from './Scrim'
 
@@ -34,6 +35,8 @@ const TOP_SCRIM: readonly ScrimStop[] = [
 type Props = {
   /** The backdrop, or the poster when the film has no backdrop. */
   uri: string | null
+  /** The pixel size of that file. See RemoteImage. */
+  size: ImageSize
   /** The film title, which names the artwork for a crawler and a screen reader. */
   title: string
   height: number
@@ -49,7 +52,14 @@ type Props = {
  * speed reads as a panel behind the page, and it put the title over a moving
  * image for the whole first screen.
  */
-export function DetailHero({ title, uri, height, headerSpace, recyclingKey }: Props) {
+export function DetailHero({
+  title,
+  uri,
+  size,
+  height,
+  headerSpace,
+  recyclingKey,
+}: Props) {
   const theme = useTheme()
 
   return (
@@ -64,7 +74,8 @@ export function DetailHero({ title, uri, height, headerSpace, recyclingKey }: Pr
           The zoom is all the wrapper does. The fade belongs to the image, which
           cross-dissolves when the bytes land — timed to the download rather
           than to the mount, so a slow connection no longer fades an empty box
-          in and then snaps the picture into it.
+          in and then snaps the picture into it. On the web the picture is in
+          the page HTML and has no fade. See RemoteImage.
         */
         <Motion.View
           style={styles.fill}
@@ -79,6 +90,7 @@ export function DetailHero({ title, uri, height, headerSpace, recyclingKey }: Pr
             recyclingKey={recyclingKey}
             // The picture the screen is built around.
             priority="high"
+            size={size}
             style={styles.fill}
           />
         </Motion.View>

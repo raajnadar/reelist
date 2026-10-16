@@ -5,7 +5,7 @@ import { Link } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
-import { posterUrl } from '../lib/images'
+import { POSTER_W500, posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
 
 /**
@@ -132,6 +132,7 @@ export function CarouselCard({
                 // The featured row is the first thing on the home screen, so its
                 // posters are the ones worth downloading first.
                 priority="high"
+                size={POSTER_W500}
                 style={styles.poster}
               />
             ) : (

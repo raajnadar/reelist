@@ -12,7 +12,7 @@ import { StyleSheet, View } from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
-import { posterUrl } from '../lib/images'
+import { POSTER_W342, posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
 
 export const CARD_WIDTH = 160
@@ -106,6 +106,7 @@ export function MovieCard({ movie, index = 0, progress }: Props) {
                   alt={movie.title}
                   // The row recycles this view as it scrolls. See RemoteImage.
                   recyclingKey={String(movie.id)}
+                  size={POSTER_W342}
                   style={styles.poster}
                 />
               ) : (

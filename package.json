@@ -15,6 +15,8 @@
     "export:web": "expo export --platform web",
     "prerender:seed": "node scripts/prerender-seed.js",
     "seo": "rootnative-seo dist",
+    "seo:audit": "rootnative-seo audit dist",
+    "seo:browse": "rootnative-seo browse dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

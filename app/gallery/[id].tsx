@@ -86,6 +86,7 @@ export default function GalleryScreen() {
             icon="link-off"
             tone="error"
             title="Could not open the gallery"
+            titleLevel={1}
             body={failure.message}
             actionLabel="Go back"
             actionIcon="arrow-left"
@@ -107,6 +108,7 @@ export default function GalleryScreen() {
             testID="gallery-empty"
             icon="image-off-outline"
             title="No stills for this film"
+            titleLevel={1}
             body="TMDB has no backdrops for it yet."
             actionLabel="Go back"
             actionIcon="arrow-left"

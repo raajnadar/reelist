@@ -1,6 +1,18 @@
 const IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
 /**
+ * The pixel size of a file, from the TMDB ratios: a backdrop is 16:9, and a
+ * poster or a profile is 2:3. The `w` and `h` sizes fix one side. The share
+ * tags in lib/head.ts and the web `<img>` in RemoteImage read them.
+ */
+export type ImageSize = { width: number; height: number }
+
+export const BACKDROP_W780: ImageSize = { width: 780, height: 439 }
+export const POSTER_W342: ImageSize = { width: 342, height: 513 }
+export const POSTER_W500: ImageSize = { width: 500, height: 750 }
+export const PROFILE_H632: ImageSize = { width: 421, height: 632 }
+
+/**
  * TMDB returns a path fragment (`/abc.jpg`), not a URL. Pick the smallest size
  * that fits the slot — `original` is multiple megabytes per image and stalls a
  * horizontal row.

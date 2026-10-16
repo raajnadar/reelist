@@ -131,8 +131,14 @@ export default function PersonScreen() {
       {/*
         Outside the Presence block: the back button has to answer a tap while
         the person is still loading and while an error is on screen.
+
+        A missing person gets `noindex`, for the reason the film screen gives.
       */}
-      {person ? <PageHead {...personMeta(person)} /> : null}
+      {failure?.kind === 'missing' ? (
+        <PageHead title={REPORTS.missing.title} noindex />
+      ) : person ? (
+        <PageHead {...personMeta(person)} />
+      ) : null}
       <DetailHeader
         title={person?.name ?? ''}
         scrollY={scrollY}
@@ -159,6 +165,8 @@ export default function PersonScreen() {
             icon={REPORTS[failure.kind].icon}
             tone={REPORTS[failure.kind].tone}
             title={REPORTS[failure.kind].title}
+            // The floating header has no title in this state, so this is the h1.
+            titleLevel={1}
             body={failure.message}
             actionLabel={REPORTS[failure.kind].actionLabel}
             actionIcon={REPORTS[failure.kind].actionIcon}

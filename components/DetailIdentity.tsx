@@ -4,7 +4,7 @@ import { useTheme } from '@rootnative/core'
 import { Motion, Stagger } from '@rootnative/inertia'
 import { StyleSheet, View } from 'react-native'
 import { ratingLabel, releaseLine } from '../lib/format'
-import { posterUrl } from '../lib/images'
+import { POSTER_W500, posterUrl } from '../lib/images'
 import { STAGGER_INTERVAL } from '../lib/motion'
 import type { MovieDetail } from '../lib/types'
 import { RemoteImage } from './RemoteImage'
@@ -54,6 +54,7 @@ export function DetailIdentity({ movie, posterWidth, wide }: Props) {
           alt={`${movie.title} poster`}
           recyclingKey={String(movie.id)}
           priority="high"
+          size={POSTER_W500}
           style={[
             styles.poster,
             {

@@ -1,6 +1,8 @@
 import { Image, type ImageStyle } from 'expo-image'
 import { useTheme } from '@rootnative/core'
-import type { StyleProp } from 'react-native'
+import { Picture } from '@rootnative/seo/expo-image'
+import { Platform, type StyleProp } from 'react-native'
+import type { ImageSize } from '../lib/images'
 
 /**
  * How long the picture takes to cross-dissolve in, in milliseconds.
@@ -10,6 +12,35 @@ import type { StyleProp } from 'react-native'
  * all, so the dissolve only ever covers a real wait.
  */
 const FADE_MS = 220
+
+/**
+ * The web `<img>` behaves as a View only with these. The browser reads the
+ * `width` and `height` attributes as a CSS size, so without `auto` here an
+ * `<img>` with `flex: 1` does not stretch, and an `aspectRatio` does nothing
+ * because both sides are set. The call site's own `width` still wins.
+ *
+ * The rest are the defaults that react-native-web gives every View. Without
+ * `minHeight: 0`, a `flex: 1` picture keeps the height its ratio gives,
+ * overflows a shorter frame, and shows the top of the picture instead of the
+ * centre. Without `borderStyle`, a border width draws no border. Without
+ * `flexShrink: 0`, a row can squeeze it.
+ *
+ * The cast is for `borderStyle`: CSS takes it on an image, and the React
+ * Native image type does not list it.
+ *
+ * A workaround for a `@rootnative/seo` defect (DX item R17). Remove it when
+ * `Picture` sets this base itself.
+ */
+const WEB_BOX = {
+  width: 'auto',
+  height: 'auto',
+  boxSizing: 'border-box',
+  borderStyle: 'solid',
+  borderWidth: 0,
+  flexShrink: 0,
+  minHeight: 0,
+  minWidth: 0,
+} as ImageStyle
 
 type Props = {
   /** The TMDB URL. A film with no artwork draws its own fallback instead. */
@@ -30,6 +61,14 @@ type Props = {
   recyclingKey: string
   /** `high` for the one picture a screen is built around. */
   priority?: 'low' | 'normal' | 'high'
+  /**
+   * The pixel size of the file. With it, the web draws a plain `<img>` in
+   * place of expo-image, and the static export holds that tag: a crawler sees
+   * the picture and its `alt`, and the browser starts the download before the
+   * script runs. Give it to the pictures of the pages the export writes.
+   * Native ignores it.
+   */
+  size?: ImageSize
   style?: StyleProp<ImageStyle>
   testID?: string
 }
@@ -47,16 +86,37 @@ type Props = {
  * There is no `placeholder`: a blurhash has to be computed from the image, and
  * TMDB sends none. The surface colour under the picture does that job — an
  * unloaded box is a filled shape rather than a hole in the layout.
+ *
+ * On the web, a picture with a `size` is a plain `<img>` instead, because
+ * expo-image mounts its image in an effect and a static page holds none of
+ * them. That `<img>` has no cross-dissolve, and it needs no `recyclingKey`:
+ * a web list does not recycle its views.
  */
 export function RemoteImage({
   uri,
   alt,
   recyclingKey,
   priority = 'normal',
+  size,
   style,
   testID,
 }: Props) {
   const theme = useTheme()
+
+  if (Platform.OS === 'web' && size) {
+    return (
+      <Picture
+        testID={testID}
+        source={uri}
+        alt={alt}
+        width={size.width}
+        height={size.height}
+        contentFit="cover"
+        loading={priority === 'high' ? 'eager' : 'lazy'}
+        style={[WEB_BOX, { backgroundColor: theme.colors.surfaceVariant }, style]}
+      />
+    )
+  }
 
   return (
     <Image

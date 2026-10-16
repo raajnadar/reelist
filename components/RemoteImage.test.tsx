@@ -1,5 +1,5 @@
 import { Image } from 'expo-image'
-import { StyleSheet } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 import { renderWithProviders } from '../lib/test-utils'
 import { RemoteImage } from './RemoteImage'
 
@@ -72,4 +72,48 @@ it('lets the call site override the background', () => {
 // default must not claim it.
 it('downloads at normal priority unless the call site asks for more', () => {
   expect(props().priority).toBe('normal')
+})
+
+// On the web, expo-image mounts its image in an effect, so a static page holds
+// no `<img>` for it. A picture with a size is a plain `<img>` there instead.
+describe('on the web', () => {
+  beforeEach(() => {
+    jest.replaceProperty(Platform, 'OS', 'web')
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  const imgs = (size?: { width: number; height: number }) =>
+    renderWithProviders(
+      <RemoteImage
+        uri="https://image.tmdb.org/t/p/w500/a.jpg"
+        alt="Dune poster"
+        recyclingKey="42"
+        priority="high"
+        size={size}
+      />,
+    ).UNSAFE_root.findAll((node) => node.type === 'img')
+
+  it('draws a plain img with the file size and the alt text', () => {
+    const [img] = imgs({ width: 500, height: 750 })
+
+    expect(img.props).toMatchObject({
+      src: 'https://image.tmdb.org/t/p/w500/a.jpg',
+      alt: 'Dune poster',
+      width: 500,
+      height: 750,
+      loading: 'eager',
+    })
+    // The browser reads the size attributes as a CSS size, so the style has to
+    // reset them, or a `flex: 1` picture does not stretch and an aspect ratio
+    // does nothing. A raw img also has none of the View defaults: without
+    // `minHeight: 0` it shows the top of a shorter frame.
+    expect(img.props.style).toMatchObject({ width: 'auto', height: 'auto', minHeight: 0 })
+  })
+
+  it('keeps expo-image for a picture with no size', () => {
+    expect(imgs()).toHaveLength(0)
+  })
 })

@@ -85,7 +85,12 @@ export default function TrailerScreen() {
           onPress={close}
         />
 
-        <Typography variant="titleMedium" numberOfLines={1} style={styles.title}>
+        <Typography
+          variant="titleMedium"
+          level={1}
+          numberOfLines={1}
+          style={styles.title}
+        >
           {title ?? 'Trailer'}
         </Typography>
 

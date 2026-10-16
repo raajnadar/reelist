@@ -246,7 +246,12 @@ export default function GenreScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      {validId && name ? <PageHead {...genreMeta(genreId, name)} /> : null}
+      {/* A missing genre gets `noindex`, for the reason the film screen gives. */}
+      {failure?.kind === 'missing' ? (
+        <PageHead title={REPORTS.missing.title} noindex />
+      ) : validId && name ? (
+        <PageHead {...genreMeta(genreId, name)} />
+      ) : null}
       <AppBar
         title={title}
         insetTop

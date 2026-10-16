@@ -71,6 +71,15 @@ jobs:
       - name: Write the sitemap and robots.txt
         run: yarn seo
 
+      # The gate for the HTML files, on the seeded pages that go live. It fails
+      # the deploy when a page has no title, no canonical link and no
+      # `noindex`, not exactly one <h1> or <main>, or an <img> with no alt, or
+      # when the sitemap and the pages disagree. The browser pass runs in CI,
+      # not here: it loads every page, and about 70 seeded pages that each call
+      # the proxy go past its limit of 30 requests a minute.
+      - name: Audit the export
+        run: yarn seo:audit
+
       # The export writes one HTML file per route and per prerendered film, and
       # Pages serves `movie/123.html` for `/movie/123` with a 200. Every other
       # film is a deep link with no file. Pages has no rewrite rule, so it

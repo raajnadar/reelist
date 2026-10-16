@@ -82,9 +82,51 @@ jobs:
           key: jest-${{ runner.os }}-${{ hashFiles('yarn.lock', 'proxy/yarn.lock', 'babel.config.js', 'jest.config.js') }}
           restore-keys: jest-${{ runner.os }}-
 
-      # The only check that runs the code instead of reading it. `--ci` fails on
-      # a missing snapshot rather than writing one, so a snapshot never lands in
-      # the repository from a CI run.
+      # The only check in this job that runs the code instead of reading it.
+      # `--ci` fails on a missing snapshot rather than writing one, so a
+      # snapshot never lands in the repository from a CI run.
       - name: Test
         if: ${{ !cancelled() }}
         run: yarn test --ci
+
+  web:
+    name: Web export
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # No proxy URL and the empty seed that git tracks, on purpose. Each screen
+      # then shows its setup message and sends no request, so the result does
+      # not depend on the network or on the proxy's rate limit. The base path
+      # is the one the deploy gets from configure-pages. The browser pass
+      # serves the export under the path of the canonical link, and the two
+      # must agree, or every script request gets a 404.
+      - name: Export the web build
+        env:
+          EXPO_BASE_URL: /reelist
+        run: yarn export:web
+
+      - name: Write the sitemap and robots.txt
+        run: yarn seo
+
+      # The same gate as the deploy, on the route templates and the static
+      # pages. The deploy runs it again on the seeded pages.
+      - name: Audit the export
+        run: yarn seo:audit
+
+      # The audit reads the HTML. This loads each page in the Chrome that the
+      # runner has, and fails on an uncaught exception, a console error, or a
+      # failed request: a hydration mismatch leaves the file correct and the
+      # page broken.
+      - name: Load every page in Chrome
+        if: ${{ !cancelled() }}
+        run: yarn seo:browse
