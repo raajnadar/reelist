@@ -549,13 +549,15 @@ when the OS asks.
 
 ## Deployment
 
-Three things deploy, and the proxy is separate from the other two.
+Four things deploy. The proxy and the store build are separate from the two
+workflows.
 
 | What                                                 | Publishes             | Target                                  |
 | ---------------------------------------------------- | --------------------- | --------------------------------------- |
 | [`deploy.yml`](.github/workflows/deploy.yml)         | The static web build  | GitHub Pages                            |
 | [`eas-update.yml`](.github/workflows/eas-update.yml) | The JavaScript bundle | The EAS `main` channel, for the QR code |
 | [`proxy/`](proxy/README.md)                          | The TMDB proxy        | Vercel, by hand                         |
+| [`eas.json`](eas.json)                               | The Android app       | Google Play, by hand                    |
 
 The two workflows run on every push to `main`. The proxy deploys separately, with
 `vercel deploy --prod`, because it changes rarely and holds the key.
@@ -587,8 +589,11 @@ each commit on `main`, and an untested commit must not reach store users.
 To publish an update to the store build:
 
 ```bash
-npx eas update --channel production --message "What changed"
+npx eas update --channel production --environment production --message "What changed"
 ```
+
+`--environment production` loads the proxy URL from EAS, the same value that the
+store build uses.
 
 Publish to `production` only for a change to JavaScript or to assets. The
 runtime version follows the Expo SDK (`"policy": "sdkVersion"`), so the store
@@ -599,9 +604,42 @@ field in `app.json` needs a new store build.
 The policy stays `sdkVersion` because Expo Go loads only an update whose
 runtime version is the SDK version.
 
+### Store build
+
+The `production` profile builds an Android App Bundle (`.aab`) for Google Play.
+EAS keeps the upload key and increases the version code on each build.
+
+EAS Build does not receive `.env`, because git ignores it. The build reads the
+proxy URL from its EAS environment: `production` for the store build, `preview`
+for the test build. Step 7 below sets it.
+
+Test a `preview` build on a device before each store build. It is an APK that
+installs without the store:
+
+```bash
+npx eas build --platform android --profile preview
+```
+
+To build for Google Play:
+
+```bash
+npx eas build --platform android --profile production
+```
+
+Google Play accepts the first bundle only by hand. Download the `.aab` from the
+build page, and upload it in Play Console. Send each later build with:
+
+```bash
+npx eas submit --platform android --profile production --latest
+```
+
+The submit profile sends the build to the internal testing track as a draft.
+Google accepts only a draft until the app has a published release. Roll out the
+draft in Play Console, by hand.
+
 ### Setup that this repository cannot do for itself
 
-Six steps need a web interface:
+Eight steps need a web interface or an account login:
 
 1. **Turn on Pages.** In `Settings → Pages`, set **Source** to **GitHub
    Actions**. The deploy workflow fails until this is set.
@@ -624,6 +662,19 @@ Six steps need a web interface:
 6. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
    mark the `check` job as required. Until then CI reports a failure but does not
    stop a merge.
+7. **Add the proxy URL to EAS.** Use the same URL as step 3. Without it, every
+   screen of the store build shows the setup message.
+
+   ```bash
+   npx eas env:set --name EXPO_PUBLIC_TMDB_PROXY_URL --value <proxy URL> --visibility plaintext --environment production --environment preview
+   ```
+
+8. **Give EAS a Google service account key.** Create the account and give it
+   access to the app in Play Console, as
+   [expo.fyi/creating-google-service-account](https://expo.fyi/creating-google-service-account)
+   shows. Upload its JSON key with `npx eas credentials --platform android`,
+   under **Google Service Account**, then delete the file. `eas submit` reads
+   the key from EAS, so the key never enters the repository.
 
 ## More information
 
