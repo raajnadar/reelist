@@ -6,6 +6,7 @@ import { MotionConfig } from '@rootnative/inertia'
 import { SeoProvider } from '@rootnative/seo/react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { setMode, useAppearance } from '../lib/appearance'
 import { site } from '../lib/site'
@@ -124,7 +125,15 @@ export default function RootLayout() {
           <PortalHost>
             <SnackbarProvider>
               <SeoProvider site={site}>
-                <Screens />
+                {/*
+                  One `<main>` for each page of the web export. A crawler and a
+                  screen reader find the page content by this landmark, and
+                  `rootnative-seo audit` fails a page that has none. The menus
+                  and the snackbars stay outside it, in the portal layer.
+                */}
+                <View role="main" style={styles.main}>
+                  <Screens />
+                </View>
               </SeoProvider>
             </SnackbarProvider>
           </PortalHost>
@@ -134,3 +143,7 @@ export default function RootLayout() {
     </SafeAreaProvider>
   )
 }
+
+const styles = StyleSheet.create({
+  main: { flex: 1 },
+})

@@ -83,7 +83,6 @@ export default function TrailerScreen() {
           iconColor={ON_STAGE}
           accessibilityLabel="Close the trailer"
           onPress={close}
-          style={styles.centred}
         />
 
         <Typography variant="titleMedium" numberOfLines={1} style={styles.title}>
@@ -105,7 +104,6 @@ export default function TrailerScreen() {
             // A rejected promise means no installed app opens a YouTube link.
             // There is nothing better to do than stay on the player.
             onPress={() => void openURL(watchUrl(key)).catch(() => {})}
-            style={styles.centred}
           />
         ) : null}
       </View>
@@ -152,8 +150,5 @@ const styles = StyleSheet.create({
   // `alignItems: 'center'` centres the box itself. Without a line height the
   // box hugs the text, and the row centres what a reader actually sees.
   title: { flex: 1, flexBasis: 0, color: ON_STAGE, lineHeight: undefined },
-  // IconButton pins itself to the top of the bar with `alignSelf: 'flex-start'`,
-  // which wins over the bar's `alignItems`.
-  centred: { alignSelf: 'center' },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 })

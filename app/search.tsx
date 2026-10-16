@@ -276,18 +276,12 @@ export default function SearchScreen() {
                 with that label, and two controls of the same name on one
                 screen give a screen reader no way to tell them apart.
               */}
-              {/*
-                IconButton pins itself to the top of its parent with
-                `alignSelf: 'flex-start'`, which wins over the row's
-                `alignItems`. Its own `alignSelf` centres it on the text.
-              */}
               {query ? (
                 <IconButton
                   icon="close-circle"
                   variant="standard"
                   accessibilityLabel="Clear the search box"
                   onPress={() => setQuery('')}
-                  style={styles.centred}
                 />
               ) : null}
               <IconButton
@@ -296,7 +290,6 @@ export default function SearchScreen() {
                 accessibilityLabel="Close search"
                 testID="search-close"
                 onPress={dismiss}
-                style={styles.centred}
               />
             </Motion.View>
           </Motion.View>
@@ -470,7 +463,6 @@ const styles = StyleSheet.create({
     outlineStyle: 'solid',
     outlineWidth: 0,
   },
-  centred: { alignSelf: 'center' },
   results: { flex: 1, alignSelf: 'stretch', pointerEvents: 'box-none' },
   /*
     The top inset is inside the scroller, not above it: a vertical scroller

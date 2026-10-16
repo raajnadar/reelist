@@ -474,19 +474,12 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
           pointerEvents={chrome ? 'box-none' : 'none'}
         >
           <View style={styles.bar}>
-            {/*
-              Each IconButton on this screen takes `alignSelf: 'center'`. The
-              button pins itself to the top of its parent with
-              `alignSelf: 'flex-start'`, which wins over the row's
-              `alignItems`. Same fix as the search screen.
-            */}
             <IconButton
               icon="close"
               variant="standard"
               iconColor={ON_STAGE}
               accessibilityLabel="Close the gallery"
               onPress={close}
-              style={styles.centred}
             />
             <Typography variant="titleMedium" numberOfLines={1} style={styles.title}>
               {title}
@@ -504,7 +497,6 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                   accessibilityLabel="Previous still"
                   disabled={index === 0}
                   onPress={() => goTo(index - 1)}
-                  style={styles.centred}
                 />
                 <IconButton
                   icon="chevron-right"
@@ -513,7 +505,6 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                   accessibilityLabel="Next still"
                   disabled={index === count - 1}
                   onPress={() => goTo(index + 1)}
-                  style={styles.centred}
                 />
               </>
             ) : null}
@@ -779,11 +770,11 @@ const styles = StyleSheet.create({
   // See the trailer screen for why the line height is dropped: it puts the
   // title on the same centreline as the close button.
   title: { flex: 1, flexBasis: 0, color: ON_STAGE, lineHeight: undefined },
-  centred: { alignSelf: 'center' },
   stripBar: { height: BAR_HEIGHT, justifyContent: 'center' },
   middle: {
     flex: 1,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
