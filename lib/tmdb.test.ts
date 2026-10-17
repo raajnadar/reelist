@@ -166,3 +166,94 @@ describe('the failure branches', () => {
     })
   })
 })
+
+describe('the poster colour', () => {
+  it('asks the route beside the TMDB one', async () => {
+    const { fetchPosterColor } = load(PROXY)
+    mockFetch.mockResolvedValue(ok({ color: '#1e3a8a' }))
+
+    await fetchPosterColor('/poster.jpg')
+
+    const url = new URL(mockFetch.mock.calls[0][0])
+    expect(url.origin + url.pathname).toBe('https://proxy.example.com/api/poster-color')
+    expect(url.searchParams.get('poster')).toBe('/poster.jpg')
+  })
+
+  it('finds the route when the URL has a trailing slash', async () => {
+    const { fetchPosterColor } = load(`${PROXY}/`)
+    mockFetch.mockResolvedValue(ok({ color: '#1e3a8a' }))
+
+    await fetchPosterColor('/poster.jpg')
+
+    const url = new URL(mockFetch.mock.calls[0][0])
+    expect(url.pathname).toBe('/api/poster-color')
+  })
+
+  it('returns the colour', async () => {
+    const { fetchPosterColor } = load(PROXY)
+    mockFetch.mockResolvedValue(ok({ color: '#1e3a8a' }))
+
+    await expect(fetchPosterColor('/poster.jpg')).resolves.toBe('#1e3a8a')
+  })
+
+  it('returns null for a poster with no colour', async () => {
+    const { fetchPosterColor } = load(PROXY)
+    mockFetch.mockResolvedValue(ok({ color: null }))
+
+    await expect(fetchPosterColor('/poster.jpg')).resolves.toBeNull()
+  })
+
+  // The value becomes a theme seed. A value that is not a colour must not
+  // reach the theme engine.
+  it.each([['red'], ['#12345'], ['#1e3a8a; x'], [42]])(
+    'returns null for the value %p',
+    async (color) => {
+      const { fetchPosterColor } = load(PROXY)
+      mockFetch.mockResolvedValue(ok({ color }))
+
+      await expect(fetchPosterColor('/poster.jpg')).resolves.toBeNull()
+    },
+  )
+
+  // The colour is decoration. No failure here may fail the film.
+  it('returns null for an error status', async () => {
+    const { fetchPosterColor } = load(PROXY)
+    mockFetch.mockResolvedValue(failing(502, { status_message: 'Could not read' }))
+
+    await expect(fetchPosterColor('/poster.jpg')).resolves.toBeNull()
+  })
+
+  it('returns null for a dropped connection', async () => {
+    const { fetchPosterColor } = load(PROXY)
+    mockFetch.mockRejectedValue(new TypeError('Network request failed'))
+
+    await expect(fetchPosterColor('/poster.jpg')).resolves.toBeNull()
+  })
+
+  it('returns null when no proxy URL is set', async () => {
+    const { fetchPosterColor } = load('')
+
+    await expect(fetchPosterColor('/poster.jpg')).resolves.toBeNull()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('stops waiting after 1.2 seconds', async () => {
+    jest.useFakeTimers()
+    try {
+      const { fetchPosterColor } = load(PROXY)
+      mockFetch.mockImplementation(
+        (_url: string, { signal }: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            signal.addEventListener('abort', () => reject(new Error('Aborted')))
+          }),
+      )
+
+      const color = fetchPosterColor('/poster.jpg')
+      jest.advanceTimersByTime(1200)
+
+      await expect(color).resolves.toBeNull()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+})

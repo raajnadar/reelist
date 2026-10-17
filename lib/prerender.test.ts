@@ -21,6 +21,7 @@ const entry: PrerenderedMovie = {
   runtime: 155,
   tagline: 'Beyond fear, destiny awaits.',
   vote_count: 11204,
+  poster_color: '#c4823a',
 }
 
 const seed: PrerenderSeed = {
@@ -40,6 +41,15 @@ it('widens a seed entry to a detail with every list empty', () => {
     images: [],
     providers: {},
   })
+})
+
+// The deploy writes a new seed each time, but a local build can hold one from
+// before the poster colour. That film keeps the app colours.
+it('gives a seed entry with no poster colour the null colour', () => {
+  const older: Partial<PrerenderedMovie> = { ...entry }
+  delete older.poster_color
+
+  expect(fromSeed(older as PrerenderedMovie).poster_color).toBeNull()
 })
 
 it('reads the films, the rows, and the genres from a seed', () => {

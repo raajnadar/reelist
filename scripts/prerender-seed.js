@@ -12,6 +12,11 @@
 // requests per minute from one address, so the script paces itself under that
 // limit rather than failing halfway with a 429.
 //
+// Each film also gets the main colour of its poster, from the proxy route
+// beside the TMDB one. The static page then draws in the film colours from its
+// first frame. A colour that fails leaves that film in the app colours, and
+// does not stop the deploy.
+//
 // The script runs on plain Node. It does not import lib/api.ts, because Node
 // cannot resolve that file's extensionless imports without a bundler. The
 // field mapping below repeats `toMovie` from lib/api.ts for that reason.
@@ -35,27 +40,62 @@ if (!proxyUrl) {
   process.exit(1)
 }
 
+// `.../api/tmdb` becomes `.../api/poster-color`, as in lib/tmdb.ts.
+const colorUrl = proxyUrl.replace(/\/[^/]*$/, '/poster-color')
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** The response to `url`. A 429 waits for the window, up to three times. */
+async function fetchPaced(url, label) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(url)
+    if (response.status !== 429) return response
+    // The proxy names the seconds until the window resets in `Retry-After`.
+    const retryAfter = Number(response.headers.get('retry-after') ?? '60')
+    console.log(`Rate limited on ${label}. Waiting ${retryAfter} s.`)
+    await sleep(retryAfter * 1000)
+  }
+  throw new Error(`${label} stayed rate limited after three attempts`)
+}
 
 async function fetchTmdb(tmdbPath) {
   const url = new URL(proxyUrl)
   url.searchParams.set('path', tmdbPath)
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await fetch(url)
-    if (response.ok) return response.json()
-    if (response.status !== 429) {
-      throw new Error(`${tmdbPath} failed with status ${response.status}`)
-    }
-    // The proxy names the seconds until the window resets in `Retry-After`.
-    const retryAfter = Number(response.headers.get('retry-after') ?? '60')
-    console.log(`Rate limited on ${tmdbPath}. Waiting ${retryAfter} s.`)
-    await sleep(retryAfter * 1000)
+  const response = await fetchPaced(url, tmdbPath)
+  if (!response.ok) {
+    throw new Error(`${tmdbPath} failed with status ${response.status}`)
   }
-  throw new Error(`${tmdbPath} stayed rate limited after three attempts`)
+  return response.json()
 }
 
-const toEntry = (raw) => ({
+/**
+ * The poster colour of one film, or null.
+ *
+ * The answer for a poster never changes, so the Vercel cache keeps it for a
+ * year. A cached answer does not run the function and costs nothing against
+ * the rate limit, so the pause after it is skipped. That makes a deploy after
+ * the first one almost as fast as before the colour existed.
+ */
+async function fetchPosterColor(posterPath) {
+  if (!posterPath) return null
+
+  const url = new URL(colorUrl)
+  url.searchParams.set('poster', posterPath)
+
+  try {
+    const response = await fetchPaced(url, `the colour of ${posterPath}`)
+    if (response.headers.get('x-vercel-cache') !== 'HIT') await sleep(REQUEST_GAP_MS)
+    if (!response.ok) return null
+    const { color } = await response.json()
+    return typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color) ? color : null
+  } catch (error) {
+    console.log(`No colour for ${posterPath}: ${error.message}`)
+    return null
+  }
+}
+
+const toEntry = (raw, posterColor) => ({
   id: raw.id,
   title: raw.title ?? '',
   poster_path: raw.poster_path ?? null,
@@ -67,6 +107,7 @@ const toEntry = (raw) => ({
   runtime: raw.runtime ?? 0,
   tagline: raw.tagline ?? '',
   vote_count: raw.vote_count ?? 0,
+  poster_color: posterColor,
 })
 
 async function main() {
@@ -86,13 +127,15 @@ async function main() {
 
   const movies = {}
   for (const id of ids) {
-    movies[id] = toEntry(await fetchTmdb(`/movie/${id}`))
+    const raw = await fetchTmdb(`/movie/${id}`)
     await sleep(REQUEST_GAP_MS)
+    movies[id] = toEntry(raw, await fetchPosterColor(raw.poster_path))
   }
 
   fs.writeFileSync(OUTPUT, JSON.stringify({ movies, lists, genres }, null, 2) + '\n')
+  const colored = Object.values(movies).filter((movie) => movie.poster_color).length
   console.log(
-    `Wrote ${ids.length} films, ${genres.length} genres to ${path.relative(process.cwd(), OUTPUT)}.`,
+    `Wrote ${ids.length} films (${colored} with a poster colour), ${genres.length} genres to ${path.relative(process.cwd(), OUTPUT)}.`,
   )
 }
 

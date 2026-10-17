@@ -244,6 +244,7 @@ components/
 ├── DetailIdentity.tsx   # The poster and title box, filled and empty
 ├── DetailActions.tsx    # The trailer and save buttons
 ├── DetailOverview.tsx   # The tagline and the synopsis
+├── FilmTheme.tsx        # The film page theme, from the poster colour
 ├── TrailerPlayer.tsx    # The video surface. A web view on a phone
 ├── TrailerPlayer.web.tsx # The same surface in a browser: an iframe
 ├── PersonProfile.tsx    # The person masthead and their biography
@@ -275,6 +276,7 @@ lib/
 └── test-utils.tsx       # render() wrapped in the app's providers
 proxy/                   # The TMDB proxy. Deploys on its own
 ├── api/tmdb.ts          # The function that holds the key
+├── api/poster-color.ts  # The main colour of a poster
 ├── api/rate-limit.ts    # The per-caller request ceiling
 └── smoke.sh             # Checks a running proxy
 __tests__/               # Tests that do not sit beside their subject
@@ -519,6 +521,25 @@ The two themes come from one call in [theme.ts](theme.ts):
 `createMaterialTheme('#BE123C')`. The HCT colour engine behind
 `@rootnative/core/create-theme` derives all 49 MD3 roles from that seed, for
 light and for dark.
+
+### Each film in its own colours
+
+A film page takes its theme from the main colour of its poster. The proxy
+calculates the colour once for each poster (see
+[proxy/README.md](proxy/README.md#the-poster-colour)), and `getMovie` returns
+the film with its colour, so the page draws in the film colours from its first
+frame and does not repaint. The prerendered web pages carry the colour in
+their HTML.
+
+[components/FilmTheme.tsx](components/FilmTheme.tsx) puts a second
+`ThemeProvider` around the film page, with a theme from
+`createMaterialTheme(colour)`. The second provider takes the mode and the icon
+resolver from the root one, so the light or dark choice still applies to the
+film page, and the icons still draw. A film with no usable colour keeps the app
+theme.
+
+The MD3 roles keep their contrast whatever the seed is. A check of 40 posters
+in four scheme variants, light and dark, found no text pair under 4.5:1.
 
 ### Motion is a vocabulary, not a number
 

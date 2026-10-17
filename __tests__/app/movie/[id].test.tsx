@@ -1,12 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { createMaterialTheme } from '@rootnative/core/create-theme'
 import { fireEvent, waitFor } from '@testing-library/react-native'
-import { Dimensions, Share } from 'react-native'
+import { Dimensions, Share, StyleSheet } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import MovieScreen from '../../../app/movie/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
 import { movieUrl } from '../../../lib/share'
 import { parseStored, STORAGE_KEY } from '../../../lib/watchlist'
+import { lightTheme } from '../../../theme'
 
 // This test mirrors the path of the screen it covers, but it stays outside
 // `app/`. Expo Router builds the route table with `require.context('./app')`,
@@ -163,6 +165,43 @@ it('reports a failure from the data layer', async () => {
   const screen = renderWithProviders(<MovieScreen />)
 
   expect(await screen.findByText('Network is down')).toBeTruthy()
+})
+
+describe('the poster colour', () => {
+  const pageColor = (screen: ReturnType<typeof renderWithProviders>) =>
+    StyleSheet.flatten(screen.getByTestId('film-page').props.style).backgroundColor
+
+  it('paints the page in the theme of the poster colour', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+    await screen.findByText(movie.overview)
+
+    const film = createMaterialTheme(movie.poster_color!).lightTheme
+    expect(pageColor(screen)).toBe(film.colors.background)
+    expect(pageColor(screen)).not.toBe(lightTheme.colors.background)
+  })
+
+  it('keeps the app colours for a film with no poster colour', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue({ ...movie, poster_color: null })
+
+    const screen = renderWithProviders(<MovieScreen />)
+    await screen.findByText(movie.overview)
+
+    expect(pageColor(screen)).toBe(lightTheme.colors.background)
+  })
+
+  // The colour arrives with the film, so the skeleton has none to use.
+  it('draws the skeleton in the app colours', () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockReturnValue(new Promise(() => {}))
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(pageColor(screen)).toBe(lightTheme.colors.background)
+  })
 })
 
 // A film with no artwork must render the fallback, not an Image with a null

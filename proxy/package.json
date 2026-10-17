@@ -4,7 +4,9 @@
   "private": true,
   "description": "The TMDB proxy. Holds the API key on the server and rate limits the callers.",
   "dependencies": {
+    "@material/material-color-utilities": "^0.4.0",
     "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.38.2"
+    "@upstash/redis": "^1.38.2",
+    "jpeg-js": "^0.4.4"
   }
 }

@@ -14,13 +14,15 @@ import { TmdbError } from './tmdb'
 // lets CI run it.
 jest.mock('./tmdb', () => {
   const actual = jest.requireActual('./tmdb')
-  return { ...actual, tmdbFetch: jest.fn() }
+  return { ...actual, tmdbFetch: jest.fn(), fetchPosterColor: jest.fn() }
 })
 
-const { tmdbFetch } = jest.requireMock('./tmdb')
+const { tmdbFetch, fetchPosterColor } = jest.requireMock('./tmdb')
 
 beforeEach(() => {
   tmdbFetch.mockReset()
+  fetchPosterColor.mockReset()
+  fetchPosterColor.mockResolvedValue(null)
 })
 
 // A response with every field the app reads, plus one it does not. The extra
@@ -155,6 +157,35 @@ describe('the mapping to MovieDetail', () => {
     const movie = await getMovie(550)
 
     expect(movie?.genres[0]).toEqual({ id: 18, name: 'Drama' })
+  })
+})
+
+describe('the poster colour', () => {
+  it('asks for the colour of the poster the film names', async () => {
+    tmdbFetch.mockResolvedValue(rawMovie)
+    fetchPosterColor.mockResolvedValue('#1e3a8a')
+
+    const movie = await getMovie(550)
+
+    expect(fetchPosterColor).toHaveBeenCalledWith('/poster.jpg')
+    expect(movie?.poster_color).toBe('#1e3a8a')
+  })
+
+  it('sends no colour request for a film with no poster', async () => {
+    tmdbFetch.mockResolvedValue({ ...rawMovie, poster_path: null })
+
+    const movie = await getMovie(550)
+
+    expect(fetchPosterColor).not.toHaveBeenCalled()
+    expect(movie?.poster_color).toBeNull()
+  })
+
+  // A film that does not exist has no poster to ask about.
+  it('sends no colour request for a film TMDB does not have', async () => {
+    tmdbFetch.mockRejectedValue(new TmdbError('Not found', 404))
+
+    await expect(getMovie(550)).resolves.toBeNull()
+    expect(fetchPosterColor).not.toHaveBeenCalled()
   })
 })
 

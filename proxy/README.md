@@ -48,7 +48,8 @@ or `/movie/<random id>` — each is a new cache key, so each is a miss that
 reaches TMDB. That is what the limit closes.
 
 **30 requests each minute for each IP address**, in a sliding window. The app
-makes 3 requests to paint the home screen and 1 for each film opened, so a
+makes 3 requests to paint the home screen and 1 for each film opened, plus 1
+for the poster colour when the cache does not hold it yet, so a
 person browsing quickly stays near 10. The gap leaves room for a shared address
 — a household, an office, or a mobile carrier NAT, where many real users appear
 as one IP.
@@ -178,7 +179,8 @@ append_to_response=movie_credits                    # /person/{id}
 
 That is how the film screen gets the cast, the trailer, and the "More like this"
 row, and the person screen gets the filmography, without a second request —
-which is what keeps one page at one request against the rate limit. The two
+which keeps the film data at one request against the rate limit. The poster
+colour is the one other request; see [The poster colour](#the-poster-colour). The two
 strings must stay identical to `APPEND` and `PERSON_APPEND` in
 [lib/api.ts](../lib/api.ts). A mismatch is silent: the proxy drops the
 parameter, TMDB answers a plain detail response, and the sections that needed it
@@ -210,6 +212,44 @@ Add a path to `ALLOWED_EXACT` or `ALLOWED_PATTERNS` in
 [api/tmdb.test.ts](api/tmdb.test.ts) to cover it. Add a parameter to
 `ALLOWED_PARAMS`, and to `ALLOWED_PARAM_VALUES` as well if its value names
 anything TMDB would treat as a path.
+
+## The poster colour
+
+The film page takes its theme from the main colour of its poster. The app
+cannot read the pixels of an image without a native module, so a second
+function, [api/poster-color.ts](api/poster-color.ts), reads them.
+
+```
+GET /api/poster-color?poster=/kqjL17yufvn9OVLyXYpvtyrFfak.jpg
+-> { "color": "#1e3a8a" }
+```
+
+The function gets the w92 poster from the TMDB image host, and takes the
+colour with the two steps Android uses for a wallpaper: the Celebi quantizer,
+then the scorer from `@material/material-color-utilities`. `color` is `null`
+for a poster with no colour that a theme can use, such as a black and white
+one. The app then keeps its own theme.
+
+It needs no key, because the TMDB image host needs none. It fetches from that
+host only, and only a path of the form `/<letters and digits>.jpg`.
+
+| Status | Meaning                                                         |
+| ------ | --------------------------------------------------------------- |
+| 200    | The colour, or `null`. Cached for a year.                       |
+| 204    | A CORS preflight.                                               |
+| 400    | No `poster` parameter, or a value that is not a poster path.    |
+| 404    | The image host has no poster at that path. Not cached.          |
+| 405    | A method other than GET.                                        |
+| 429    | Over the rate limit. The same limit as the TMDB function.       |
+| 502    | The image host failed, or the file is not a JPEG. Not cached.   |
+
+A poster path names one image forever: TMDB gives a new poster a new path. So
+a colour is calculated once for each poster, and the Vercel cache serves it
+after that with no function run and no count against the rate limit.
+
+The app finds this function from `EXPO_PUBLIC_TMDB_PROXY_URL` by replacing the
+last path segment: `.../api/tmdb` becomes `.../api/poster-color`. Keep the two
+functions in the same deployment.
 
 ## Deploy it
 

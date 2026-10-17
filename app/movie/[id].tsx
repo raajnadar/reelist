@@ -2,6 +2,7 @@ import { Skeleton } from '@rootnative/components/skeleton'
 import { useBreakpointValue, useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import type { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CastRow } from '../../components/CastRow'
@@ -10,6 +11,7 @@ import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
 import { DetailHero } from '../../components/DetailHero'
 import { DetailIdentity, DetailIdentitySkeleton } from '../../components/DetailIdentity'
 import { DetailOverview } from '../../components/DetailOverview'
+import { FilmTheme } from '../../components/FilmTheme'
 import { GalleryRow } from '../../components/GalleryRow'
 import { GenreChips } from '../../components/GenreChips'
 import { MovieRow } from '../../components/MovieRow'
@@ -97,8 +99,26 @@ const REPORTS: Record<
   },
 }
 
-export default function MovieScreen() {
+/**
+ * The page under everything else, in the background colour of the film.
+ *
+ * It reads the theme here, inside `FilmTheme`, so the colour is the film's own
+ * and not the app's.
+ */
+function FilmPage({ children }: { children: ReactNode }) {
   const theme = useTheme()
+
+  return (
+    <View
+      testID="film-page"
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
+    >
+      {children}
+    </View>
+  )
+}
+
+export default function MovieScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -216,8 +236,12 @@ export default function MovieScreen() {
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      {/*
+    // The whole page takes its colours from the poster, the header and the
+    // skeleton too. The skeleton draws in the app colours, because the colour
+    // arrives with the film.
+    <FilmTheme seed={movie?.poster_color ?? null}>
+      <FilmPage>
+        {/*
         Outside the Presence block: the back button has to answer a tap while
         the film is still loading and while an error is on screen.
 
@@ -225,16 +249,16 @@ export default function MovieScreen() {
         drawn under the bar. The screen showed the title twice before — once
         here and once in the body — and the two sat on top of each other.
       */}
-      <DetailHeader
-        title={movie?.title ?? ''}
-        scrollY={scrollY}
-        revealAt={heroHeight - overlap}
-        // `router.back` alone dead-ends on a deep link, where this screen is the
-        // first entry in the history and there is nothing to go back to.
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-      />
+        <DetailHeader
+          title={movie?.title ?? ''}
+          scrollY={scrollY}
+          revealAt={heroHeight - overlap}
+          // `router.back` alone dead-ends on a deep link, where this screen is the
+          // first entry in the history and there is nothing to go back to.
+          onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        />
 
-      {/*
+        {/*
         The document head on the web: the tab title and the tags a share
         unfurls. Outside the Presence block, because it draws nothing on the
         screen and needs no exit.
@@ -244,99 +268,99 @@ export default function MovieScreen() {
         request does not: a crawler that the proxy turns away must not drop a
         page that exists.
       */}
-      {failure?.kind === 'missing' ? (
-        <PageHead title={REPORTS.missing.title} noindex />
-      ) : movie ? (
-        <PageHead {...movieMeta(movie)} />
-      ) : null}
+        {failure?.kind === 'missing' ? (
+          <PageHead title={REPORTS.missing.title} noindex />
+        ) : movie ? (
+          <PageHead {...movieMeta(movie)} />
+        ) : null}
 
-      <Presence>
-        {loading ? (
-          <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
-            {/*
+        <Presence>
+          {loading ? (
+            <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
+              {/*
               The placeholder holds the same box the content will — the same
               backdrop height, the same poster riding up over it, the same
               capped body. A different shape would reflow the whole screen the
               moment the request lands.
             */}
-            <Skeleton height={heroHeight} shape="rectangle" />
+              <Skeleton height={heroHeight} shape="rectangle" />
 
-            <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
-              <DetailIdentitySkeleton posterWidth={posterWidth} />
+              <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
+                <DetailIdentitySkeleton posterWidth={posterWidth} />
 
-              {/* The action row. */}
-              <Skeleton height={40} width={168} shape="rectangle" />
+                {/* The action row. */}
+                <Skeleton height={40} width={168} shape="rectangle" />
 
-              {/* The chip row. Two blocks at chip height, so the space the
+                {/* The chip row. Two blocks at chip height, so the space the
                   genres will take is already reserved. */}
-              <View style={styles.skeletonChips}>
-                <Skeleton height={32} width={84} shape="rectangle" />
-                <Skeleton height={32} width={72} shape="rectangle" />
+                <View style={styles.skeletonChips}>
+                  <Skeleton height={32} width={84} shape="rectangle" />
+                  <Skeleton height={32} width={72} shape="rectangle" />
+                </View>
+
+                <Skeleton height={76} />
               </View>
 
-              <Skeleton height={76} />
-            </View>
-
-            {/* One row placeholder for the two that follow the body. Two would
+              {/* One row placeholder for the two that follow the body. Two would
                 reserve more height than most films fill, and the screen scrolls
                 past the second before the request lands. */}
-            <SkeletonRow />
-          </Motion.View>
-        ) : failure ? (
-          /* The block centres in the room it is given, so the padding is what
+              <SkeletonRow />
+            </Motion.View>
+          ) : failure ? (
+            /* The block centres in the room it is given, so the padding is what
              keeps it clear of the floating header rather than a top margin
              that would push it off centre. */
-          <StateMessage
-            key="error"
-            testID="detail-error"
-            icon={REPORTS[failure.kind].icon}
-            tone={REPORTS[failure.kind].tone}
-            title={REPORTS[failure.kind].title}
-            // The floating header has no title in this state, so this is the h1.
-            titleLevel={1}
-            body={failure.message}
-            actionLabel={REPORTS[failure.kind].actionLabel}
-            actionIcon={REPORTS[failure.kind].actionIcon}
-            onAction={actions[failure.kind]}
-            style={{ paddingTop: headerSpace }}
-          />
-        ) : movie ? (
-          <Motion.ScrollView
-            key="content"
-            showsVerticalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            style={styles.fill}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
-          >
-            <DetailHero
-              uri={artwork}
-              size={artworkSize}
-              title={movie.title}
-              height={heroHeight}
-              headerSpace={headerSpace}
-              recyclingKey={String(movieId)}
+            <StateMessage
+              key="error"
+              testID="detail-error"
+              icon={REPORTS[failure.kind].icon}
+              tone={REPORTS[failure.kind].tone}
+              title={REPORTS[failure.kind].title}
+              // The floating header has no title in this state, so this is the h1.
+              titleLevel={1}
+              body={failure.message}
+              actionLabel={REPORTS[failure.kind].actionLabel}
+              actionIcon={REPORTS[failure.kind].actionIcon}
+              onAction={actions[failure.kind]}
+              style={{ paddingTop: headerSpace }}
             />
+          ) : movie ? (
+            <Motion.ScrollView
+              key="content"
+              showsVerticalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={styles.fill}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+            >
+              <DetailHero
+                uri={artwork}
+                size={artworkSize}
+                title={movie.title}
+                height={heroHeight}
+                headerSpace={headerSpace}
+                recyclingKey={String(movieId)}
+              />
 
-            {/*
+              {/*
               The body is capped and centred, so a wide window widens the
               margins rather than the text. The negative margin is the overlap:
               it lifts the whole block over the lower edge of the artwork.
             */}
-            <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
-              {/*
+              <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
+                {/*
                 `<Stagger>` owns the cascade, so no block below carries its own
                 delay. It assigns child `i` a delay of `i * interval` from render
                 order, re-derived every render — so adding or removing a section
                 cannot leave a stale offset behind, and each one is free to be a
                 component of its own.
               */}
-              <Stagger interval={STAGGER_INTERVAL}>
-                <DetailIdentity movie={movie} posterWidth={posterWidth} wide={wide} />
+                <Stagger interval={STAGGER_INTERVAL}>
+                  <DetailIdentity movie={movie} posterWidth={posterWidth} wide={wide} />
 
-                <DetailActions movie={movie} />
+                  <DetailActions movie={movie} />
 
-                {/*
+                  {/*
                   The genre row, which doubles as navigation: each chip opens the
                   genre screen. The film carries its own genres from the detail
                   endpoint, so this needs no second request.
@@ -346,20 +370,20 @@ export default function MovieScreen() {
                   GenreChips renders nothing for an empty list, so a film with no
                   genres leaves no gap.
                 */}
-                <GenreChips genres={movie.genres} inset={0} gutter={0} />
+                  <GenreChips genres={movie.genres} inset={0} gutter={0} />
 
-                <DetailOverview movie={movie} />
+                  <DetailOverview movie={movie} />
 
-                {/*
+                  {/*
                   The services that carry the film, after the synopsis and
                   before the rows. It renders nothing for a film nobody
                   carries, so it leaves no gap.
                 */}
-                <WatchProviders providers={movie.providers} />
-              </Stagger>
-            </View>
+                  <WatchProviders providers={movie.providers} />
+                </Stagger>
+              </View>
 
-            {/*
+              {/*
               Both rows sit outside the body box, not inside it: they span the
               full width and pad themselves, so `styles.body` would double the
               16. The cap is applied on its own, so on a wide window the rows
@@ -368,15 +392,20 @@ export default function MovieScreen() {
               Each returns nothing for an empty list, so a film with no cast, no
               stills, and no recommendation ends at the overview.
             */}
-            <View style={[styles.bodyCap, styles.rows]}>
-              <CastRow title="Cast" cast={movie.cast} />
-              <GalleryRow movieId={movie.id} title={movie.title} images={movie.images} />
-              <MovieRow title="More like this" movies={movie.recommendations} />
-            </View>
-          </Motion.ScrollView>
-        ) : null}
-      </Presence>
-    </View>
+              <View style={[styles.bodyCap, styles.rows]}>
+                <CastRow title="Cast" cast={movie.cast} />
+                <GalleryRow
+                  movieId={movie.id}
+                  title={movie.title}
+                  images={movie.images}
+                />
+                <MovieRow title="More like this" movies={movie.recommendations} />
+              </View>
+            </Motion.ScrollView>
+          ) : null}
+        </Presence>
+      </FilmPage>
+    </FilmTheme>
   )
 }
 

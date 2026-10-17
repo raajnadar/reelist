@@ -53,7 +53,8 @@ jobs:
       # must never appear here. The proxy holds it. See proxy/README.md.
       # The films the export writes a static page for: the three home lists,
       # fetched through the proxy. See lib/prerender.ts. The step takes about
-      # two minutes, because it stays under the proxy's rate limit.
+      # two minutes, because it stays under the proxy's rate limit. A film whose
+      # poster colour is not in the proxy cache yet adds about two seconds.
       - name: Fetch the prerender seed
         env:
           EXPO_PUBLIC_TMDB_PROXY_URL: ${{ vars.EXPO_PUBLIC_TMDB_PROXY_URL }}

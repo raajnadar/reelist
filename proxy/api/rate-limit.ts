@@ -24,7 +24,8 @@ import { Redis } from '@upstash/redis'
  * 30 requests each minute for each IP address.
  *
  * The app makes 3 requests to paint the home screen and 1 for each film opened.
- * A person browsing quickly stays near 10, so 30 leaves room for a shared
+ * A film also asks for its poster colour, which counts only when the cache
+ * does not hold it yet. A person browsing quickly stays near 10, so 30 leaves room for a shared
  * address — a household, an office, or a mobile carrier NAT, where many real
  * users appear as one IP — while it still cuts a scripted caller off early.
  *

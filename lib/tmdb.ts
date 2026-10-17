@@ -64,3 +64,46 @@ export const tmdbFetch = async <T>(
 
   return (await response.json()) as T
 }
+
+/**
+ * How long the film page waits for the poster colour.
+ *
+ * The colour arrives after the film, and the page keeps its skeleton until
+ * both are in. A colour that is later than this is dropped, and the page keeps
+ * the app colours. A late colour would repaint a page that the reader already
+ * reads.
+ */
+const POSTER_COLOR_TIMEOUT_MS = 1200
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i
+
+/**
+ * The main colour of a poster, from the proxy, or null.
+ *
+ * The proxy has a second route beside the TMDB one: `.../api/tmdb` becomes
+ * `.../api/poster-color`. The path is built as a string, because the React
+ * Native `URL` adds a relative path to the end of the base instead of
+ * replacing its last segment.
+ *
+ * It never throws. The colour is decoration: a film page in the app colours is
+ * correct, so a failure here must not fail the film.
+ */
+export const fetchPosterColor = async (posterPath: string): Promise<string | null> => {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), POSTER_COLOR_TIMEOUT_MS)
+
+  try {
+    const url = new URL(requireProxyUrl().replace(/\/[^/]*$/, '/poster-color'))
+    url.searchParams.set('poster', posterPath)
+
+    const response = await fetch(url.toString(), { signal: controller.signal })
+    if (!response.ok) return null
+
+    const { color } = (await response.json()) as { color?: unknown }
+    return typeof color === 'string' && HEX_COLOR.test(color) ? color : null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}

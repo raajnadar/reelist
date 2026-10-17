@@ -4,7 +4,7 @@ import type { Genre, Movie, MovieDetail } from './types'
  * One film as the prerender seed stores it.
  *
  * The seed carries only what the static HTML needs: the head tags, the title
- * block, the genres, and the overview. The lists a film owns — the cast, the
+ * block, the genres, the overview, and the poster colour that themes the page. The lists a film owns — the cast, the
  * trailer, the gallery, the recommendations, and the providers — arrive from
  * the proxy after the page hydrates, the same as for a film with no seed. They
  * are left out to keep each page small, because the page carries its part of
@@ -120,6 +120,8 @@ export const genreEntry = (seed: PrerenderSeed, id: string): Genre | null =>
  */
 export const fromSeed = (entry: PrerenderedMovie): MovieDetail => ({
   ...entry,
+  // A seed written before the poster colour existed has no such field.
+  poster_color: entry.poster_color ?? null,
   cast: [],
   trailer: null,
   recommendations: [],

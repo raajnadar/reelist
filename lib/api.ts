@@ -1,5 +1,5 @@
 import { EMPTY_FILTERS, toDiscoverParams, type DiscoverFilters } from './discover'
-import { tmdbFetch } from './tmdb'
+import { fetchPosterColor, tmdbFetch } from './tmdb'
 import type {
   CastMember,
   GalleryImage,
@@ -239,8 +239,14 @@ const toWatchProviders = (
  * `recommendations` arrives as a full paged envelope. It goes through `toPaged`
  * and keeps only the results, because the screen shows one row rather than a
  * grid it can page through.
+ *
+ * `posterColor` does not come from TMDB. The proxy calculates it from the
+ * poster, and `getMovie` passes it in.
  */
-const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
+const toMovieDetail = (
+  raw: Record<string, unknown>,
+  posterColor: string | null,
+): MovieDetail => {
   const credits = (raw.credits as { cast?: Record<string, unknown>[] }) ?? {}
   const videos = (raw.videos as { results?: Record<string, unknown>[] }) ?? {}
   const recommendations = (raw.recommendations as RawPaged) ?? {}
@@ -258,6 +264,7 @@ const toMovieDetail = (raw: Record<string, unknown>): MovieDetail => {
     runtime: (raw.runtime as number | null) ?? 0,
     tagline: (raw.tagline as string) ?? '',
     vote_count: (raw.vote_count as number) ?? 0,
+    poster_color: posterColor,
     cast: (credits.cast ?? []).map(toCastMember),
     trailer: pickTrailer(videos.results ?? []),
     recommendations: toPaged(recommendations).results,
@@ -383,19 +390,31 @@ export const getTopRated = async (): Promise<Paged> =>
  * Returns null for a film that does not exist, rather than throwing. The detail
  * screen already separates "no such film" from "the request failed", and it
  * prints a different message for each.
+ *
+ * The poster colour is a second request, after the first one names the
+ * poster. The film resolves with its colour, so the page draws in the film
+ * colours from its first frame and never repaints. The colour request cannot
+ * fail the film: it answers null instead.
  */
 export const getMovie = async (id: number): Promise<MovieDetail | null> => {
+  let raw: Record<string, unknown>
   try {
-    return toMovieDetail(
-      await tmdbFetch<Record<string, unknown>>(`/movie/${id}`, {
-        append_to_response: APPEND,
-        include_image_language: IMAGE_LANGUAGES,
-      }),
-    )
+    raw = await tmdbFetch<Record<string, unknown>>(`/movie/${id}`, {
+      append_to_response: APPEND,
+      include_image_language: IMAGE_LANGUAGES,
+    })
   } catch (e) {
     if (e instanceof Error && 'status' in e && e.status === 404) return null
     throw e
   }
+
+  const posterPath = raw.poster_path
+  const posterColor =
+    typeof posterPath === 'string' && posterPath
+      ? await fetchPosterColor(posterPath)
+      : null
+
+  return toMovieDetail(raw, posterColor)
 }
 
 /** Called by app/search.tsx, once the typing in the box stops. */

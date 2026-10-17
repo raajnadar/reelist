@@ -78,6 +78,7 @@ describe('useWatchlist', () => {
       runtime: 130,
       tagline: 'A tagline',
       vote_count: 10,
+      poster_color: '#1e3a8a',
       cast: [{ id: 1, name: 'A', character: 'B', profile_path: null }],
       trailer: null,
       recommendations: mockMovies,

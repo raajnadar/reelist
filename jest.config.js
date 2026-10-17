@@ -19,7 +19,11 @@ const proxyProject = {
   // imports nothing from the app, so it needs no other transform.
   transform: {
     '^.+\\.ts$': ['babel-jest', { presets: ['babel-preset-expo'] }],
+    '^.+\\.js$': ['babel-jest', { presets: ['babel-preset-expo'] }],
   },
+  // `@material/material-color-utilities` ships ESM only, so the poster colour
+  // route needs it transformed. Every other package stays as it is.
+  transformIgnorePatterns: ['node_modules/(?!@material/material-color-utilities/)'],
 }
 
 const appProject = {

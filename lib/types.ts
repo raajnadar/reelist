@@ -52,6 +52,12 @@ export type MovieDetail = Movie & {
   tagline: string
   /** How many TMDB votes `vote_average` averages. The structured data needs it. */
   vote_count: number
+  /**
+   * The main colour of the poster, as `#rrggbb`. The film page takes its theme
+   * from it. Null for a film with no poster, a poster with no colour, or a
+   * colour that did not arrive in time. See `fetchPosterColor` in lib/tmdb.ts.
+   */
+  poster_color: string | null
   cast: CastMember[]
   trailer: Video | null
   recommendations: Movie[]
