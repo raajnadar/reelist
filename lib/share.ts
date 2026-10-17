@@ -9,7 +9,7 @@ import type { Movie } from './types'
  * A web link opens for a reader who does not have the app, and the same page
  * carries the meta tags a crawler reads. The scheme link does neither.
  */
-export const SITE_URL = 'https://raajnadar.github.io/reelist'
+export const SITE_URL = 'https://reelist.raajnadar.in'
 
 /** The canonical web page for one film. */
 export const movieUrl = (id: number) => `${SITE_URL}/movie/${id}`

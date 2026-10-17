@@ -36,7 +36,7 @@ The app runs on Expo Go SDK 57. Update Expo Go if it reports a version mismatch.
 
 ### In a browser
 
-The web build is at **https://raajnadar.github.io/reelist/**. It updates on every
+The web build is at **https://reelist.raajnadar.in/**. It updates on every
 push to `main`.
 
 The export is static: one HTML file per route, plus one per film in the three

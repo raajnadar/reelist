@@ -106,13 +106,11 @@ jobs:
 
       # No proxy URL and the empty seed that git tracks, on purpose. Each screen
       # then shows its setup message and sends no request, so the result does
-      # not depend on the network or on the proxy's rate limit. The base path
-      # is the one the deploy gets from configure-pages. The browser pass
-      # serves the export under the path of the canonical link, and the two
-      # must agree, or every script request gets a 404.
+      # not depend on the network or on the proxy's rate limit. No base path,
+      # because the custom domain serves the site from its root. The browser
+      # pass serves the export under the path of the canonical link, and the
+      # two must agree, or every script request gets a 404.
       - name: Export the web build
-        env:
-          EXPO_BASE_URL: /reelist
         run: yarn export:web
 
       - name: Write the sitemap and robots.txt

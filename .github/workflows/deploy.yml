@@ -43,10 +43,11 @@ jobs:
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
         id: pages
 
-      # Pages serves a project site from a subpath, so the bundled asset URLs
-      # must carry that prefix. `base_path` comes from configure-pages and is
-      # '/reelist' here. app.config.js reads EXPO_BASE_URL and passes it to
-      # `experiments.baseUrl`. Without this the page loads and every asset 404s.
+      # Without a custom domain, Pages serves a project site from a subpath,
+      # and the bundled asset URLs must carry that prefix. `base_path` comes
+      # from configure-pages. It is empty while reelist.raajnadar.in is the
+      # custom domain. app.config.js reads EXPO_BASE_URL and passes it to
+      # `experiments.baseUrl`.
       # The proxy URL, not the TMDB key. Anything behind EXPO_PUBLIC_ is inlined
       # into the bundle and can be read out of the published site, so the key
       # must never appear here. The proxy holds it. See proxy/README.md.
@@ -95,9 +96,12 @@ jobs:
       - name: Disable Jekyll
         run: touch dist/.nojekyll
 
+      # The action leaves out each path that starts with a dot by default.
+      # Android reads the App Link file at /.well-known/assetlinks.json.
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
+          include-hidden-files: true
 
   deploy:
     name: Deploy to Pages

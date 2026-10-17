@@ -24,7 +24,7 @@
  *
  * No trailing slash and no path: this is an origin, and it is compared as one.
  */
-export const PLAYER_ORIGIN = 'https://raajnadar.github.io'
+export const PLAYER_ORIGIN = 'https://reelist.raajnadar.in'
 
 /**
  * The URL the in-app player loads.
