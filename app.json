@@ -21,6 +21,7 @@
       "package": "in.raajnadar.reelist",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#BE123C"
       },
       "intentFilters": [
