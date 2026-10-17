@@ -86,7 +86,7 @@ export const movieMeta = (movie: MovieDetail): PageMeta => {
           worstRating: 0,
         },
       }),
-      trail(...(genre ? [{ name: genre.name, url: genreUrl(genre) }] : []), {
+      trail(...(genre ? [{ name: genre.name, url: genreUrl(genre.id) }] : []), {
         name: movie.title,
         url: movieUrl(movie.id),
       }),
@@ -123,7 +123,7 @@ export const personMeta = (person: PersonDetail): PageMeta => {
 export const genreMeta = (id: number, name: string): PageMeta => ({
   title: `${name} films`,
   description: `Browse ${name.toLowerCase()} films on Reelist. Filter them by language, decade, rating, and length.`,
-  url: genreUrl({ id, name }),
+  url: genreUrl(id),
   type: 'website',
-  jsonLd: [trail({ name: `${name} films`, url: genreUrl({ id, name }) })],
+  jsonLd: [trail({ name: `${name} films`, url: genreUrl(id) })],
 })

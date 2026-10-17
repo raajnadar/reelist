@@ -18,11 +18,11 @@ export const movieUrl = (id: number) => `${SITE_URL}/movie/${id}`
 export const personUrl = (id: number) => `${SITE_URL}/person/${id}`
 
 /**
- * The canonical web page for one genre. It keeps the name in the query, the
- * same as the genre chips, so the two agree.
+ * The canonical web page for one genre, with no query. The export writes the
+ * name into each genre page. The genre chips still add `?name=`, so an in-app
+ * visit shows the name before any data loads.
  */
-export const genreUrl = (genre: { id: number; name: string }) =>
-  `${SITE_URL}/genre/${genre.id}?name=${encodeURIComponent(genre.name)}`
+export const genreUrl = (id: number) => `${SITE_URL}/genre/${id}`
 
 /**
  * The `hrefAttrs` of a link to another site, for a component inside

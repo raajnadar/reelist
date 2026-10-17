@@ -114,9 +114,9 @@ describe('personMeta', () => {
   })
 })
 
-it('names the genre and links the address the chips link to', () => {
+it('names the genre and links the page with no query', () => {
   const meta = genreMeta(878, 'Science Fiction')
   expect(meta.title).toBe('Science Fiction films')
-  expect(meta.url).toBe(genreUrl({ id: 878, name: 'Science Fiction' }))
-  expect(meta.url).toContain('?name=Science%20Fiction')
+  expect(meta.url).toBe(genreUrl(878))
+  expect(meta.url).toBe(`${SITE_URL}/genre/878`)
 })
