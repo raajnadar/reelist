@@ -11,6 +11,7 @@ import {
   type FilterOption,
 } from '../lib/discover'
 import { gridInset } from '../lib/grid'
+import { haptic } from '../lib/haptics'
 
 /**
  * One filter: a chip that names the pick, and the menu that changes it.
@@ -35,6 +36,11 @@ function FilterMenu<T extends string | number>({
 }) {
   const current = options.find((o) => o.value === value)
 
+  const select = (next: T | undefined) => {
+    if (next !== value) haptic('select')
+    onSelect(next)
+  }
+
   return (
     <Menu
       // The language list is the long one, and every item of it fits on a
@@ -44,7 +50,7 @@ function FilterMenu<T extends string | number>({
         <Chip
           variant="filter"
           selected={current !== undefined}
-          onClose={() => onSelect(undefined)}
+          onClose={() => select(undefined)}
           accessibilityLabel={current ? `${name}: ${current.label}` : name}
           testID={`filter-${id}`}
         >
@@ -55,14 +61,14 @@ function FilterMenu<T extends string | number>({
       <Menu.Item
         label={`Any ${name.toLowerCase()}`}
         trailingIcon={current === undefined ? 'check' : undefined}
-        onPress={() => onSelect(undefined)}
+        onPress={() => select(undefined)}
       />
       {options.map((o) => (
         <Menu.Item
           key={String(o.value)}
           label={o.label}
           trailingIcon={o.value === value ? 'check' : undefined}
-          onPress={() => onSelect(o.value)}
+          onPress={() => select(o.value)}
         />
       ))}
     </Menu>

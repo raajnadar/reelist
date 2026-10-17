@@ -7,6 +7,7 @@ import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
 import { BookmarkIcon } from './BookmarkIcon'
 import { ShareButton } from './ShareButton'
+import { haptic } from '../lib/haptics'
 import { restoreSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
 
 /**
@@ -27,6 +28,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
 
   const toggle = () => {
     toggleSaved(movie)
+    haptic(saved ? 'unsave' : 'save')
     if (!saved) {
       setPops((n) => n + 1)
       return
