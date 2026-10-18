@@ -1,15 +1,15 @@
-// Both projects write their transform cache here rather than to the system
+// All projects write their transform cache here rather than to the system
 // temporary directory. A repository path can be restored in CI, which turns a
 // cold run into a warm one. See .github/workflows/ci.yml.
 const cacheDirectory = '<rootDir>/.jest-cache'
 
-// `jest-expo` supplies the Expo SDK 57 preset: the React Native transform, the
+// `jest-expo` supplies the Expo SDK 58 preset: the React Native transform, the
 // module mocks, and the platform-aware resolver. Do not replace it with a plain
 // `babel-jest` setup — the app imports native modules that only this preset
 // stubs.
 // The proxy is server code, not app code. It uses the Web Request/Response API
 // that Node supplies and the React Native preset does not, so it runs as its
-// own project in a node environment. `yarn test` still runs both.
+// own project in a node environment. `yarn test` still runs every project.
 const proxyProject = {
   displayName: 'proxy',
   cacheDirectory,
@@ -57,8 +57,8 @@ const appProject = {
     '^.+\\.mjs$': 'babel-jest',
   },
 
-  // See jest.resolver.js: react-native-worklets needs its stub native module
-  // in Jest, and that only happens through a resolver.
+  // See jest.resolver.js: Reanimated and Worklets need their inert files in
+  // Jest, and that only happens through a resolver.
   resolver: '<rootDir>/jest.resolver.js',
 
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
@@ -69,13 +69,29 @@ const appProject = {
     '<rootDir>/node_modules/',
     '<rootDir>/dist/',
     '<rootDir>/.expo/',
-    // The proxy is the other project's job.
+    // The proxy and the DOM tests have their own projects.
     '<rootDir>/proxy/',
+    '\\.dom\\.test\\.',
   ],
 }
 
+// A test that hydrates the static web export needs a DOM. Since Jest 30,
+// jsdom makes `window` non-configurable, and the React Native setup of the
+// app project redefines `window` and throws. The `jest-expo` web preset has
+// a DOM and does not load that setup.
+const domProject = {
+  displayName: 'dom',
+  preset: 'jest-expo/web',
+  cacheDirectory,
+  testMatch: ['<rootDir>/{app,components,lib}/**/*.dom.test.ts?(x)'],
+  // `renderHook` renders through `react-test-renderer`, which logs a
+  // deprecation error unless this flag is set. The React Native setup sets it
+  // for the app project.
+  globals: { IS_REACT_NATIVE_TEST_ENVIRONMENT: true },
+}
+
 module.exports = {
-  projects: [appProject, proxyProject],
+  projects: [appProject, domProject, proxyProject],
 
   // Jest defaults to one worker for each core but one. That is the wrong shape
   // for this suite: every worker is a separate process, so each one transforms
@@ -88,7 +104,7 @@ module.exports = {
   //   4           |       56 s |      19 s
   //   2           |       51 s |      21 s
   //
-  // Two workers still hold both projects in flight, and a machine with more
+  // Two workers still hold two projects in flight, and a machine with more
   // cores gains nothing here.
   maxWorkers: 2,
   collectCoverageFrom: [
