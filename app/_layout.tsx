@@ -8,6 +8,7 @@ import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { UpdateSnackbar } from '../components/UpdateSnackbar'
 import { setMode, useAppearance } from '../lib/appearance'
 import { site } from '../lib/site'
 import { transitions } from '../lib/motion'
@@ -124,6 +125,7 @@ export default function RootLayout() {
           */}
           <PortalHost>
             <SnackbarProvider>
+              <UpdateSnackbar />
               <SeoProvider site={site}>
                 {/*
                   One `<main>` for each page of the web export. A crawler and a
