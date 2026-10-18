@@ -15,6 +15,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "in.raajnadar.reelist",
       "supportsTablet": true
     },
     "android": {
