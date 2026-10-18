@@ -1,4 +1,11 @@
-import type { TransitionConfig } from '@rootnative/inertia'
+import { cubicBezier, type TransitionConfig } from '@rootnative/inertia'
+
+/**
+ * How long the home carousel shows one film before it moves on by itself. The
+ * timer and the fill of the active dot both read it, so the dot is full at the
+ * moment the carousel moves.
+ */
+export const AUTOPLAY_MS = 5000
 
 /**
  * The motion vocabulary for the app.
@@ -94,6 +101,14 @@ export const transitions = {
    * than a stop, which is what a pinch would feel like.
    */
   zoom: { type: 'spring', tension: 180, friction: 22 },
+
+  /**
+   * The fill of the active carousel dot, across the time the carousel waits.
+   * Linear, because the fill shows the time left: an eased fill would say the
+   * wait speeds up or slows down. After a hold, the fill runs only the time
+   * that is left, with the same curve.
+   */
+  autoplay: { type: 'timing', duration: AUTOPLAY_MS, easing: cubicBezier('linear') },
 } satisfies Record<string, TransitionConfig>
 
 /**

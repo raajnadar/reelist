@@ -56,7 +56,8 @@ export function expoRouterMock<R extends { push: (href: string) => void }>(
     })
   }
 
-  return { useRouter: router, Link }
+  // A rendered screen is the screen on top, so the home carousel autoplays.
+  return { useRouter: router, Link, useIsFocused: () => true }
 }
 
 function Providers({ children }: { children: ReactElement }) {
