@@ -3,13 +3,14 @@ import { StyleSheet, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 
 /**
- * One stop of the gradient: how far down the box it sits (0 to 1) and how
- * opaque the colour is there.
+ * One stop of the gradient: how far along the box it sits (0 to 1), top to
+ * bottom or left to right, and how opaque the colour is there.
  */
 export type ScrimStop = readonly [offset: number, opacity: number]
 
 /**
- * A vertical gradient that fills its parent.
+ * A gradient that fills its parent, top to bottom by default, or left to
+ * right on the horizontal axis.
  *
  * This is how a photo dissolves into the page instead of ending at a hard
  * edge. The parent owns the position and the size; the scrim only paints, and
@@ -24,7 +25,16 @@ export type ScrimStop = readonly [offset: number, opacity: number]
  * Android: `transparent` is black at zero alpha there, so the middle of the
  * sweep turns grey.
  */
-export function Scrim({ color, stops }: { color: string; stops: readonly ScrimStop[] }) {
+export function Scrim({
+  color,
+  stops,
+  axis = 'vertical',
+}: {
+  color: string
+  stops: readonly ScrimStop[]
+  axis?: 'vertical' | 'horizontal'
+}) {
+  const across = axis === 'horizontal'
   // Two scrims render on the detail screen, and on web they become two real
   // `<svg>` elements in one document. A fixed id would make the second
   // definition win for both, so each instance names its own.
@@ -43,8 +53,15 @@ export function Scrim({ color, stops }: { color: string; stops: readonly ScrimSt
     <View style={styles.scrim}>
       <Svg width="100%" height="100%">
         <Defs>
-          {/* x1 = x2 and y1 -> y2 is the vertical sweep, top to bottom. */}
-          <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          {/* One end point moves along the axis: y for top to bottom, x for
+              left to right. */}
+          <LinearGradient
+            id={gradientId}
+            x1="0"
+            y1="0"
+            x2={across ? '1' : '0'}
+            y2={across ? '0' : '1'}
+          >
             {stops.map(([offset, opacity]) => (
               <Stop
                 key={offset}

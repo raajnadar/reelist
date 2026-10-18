@@ -1,9 +1,30 @@
 import { Chip } from '@rootnative/components/chip'
-import { Motion } from '@rootnative/inertia'
+import { Icon } from '@rootnative/components/icon'
+import { useTheme } from '@rootnative/core'
+import { Motion, useInterpolatedStyle, useScroll } from '@rootnative/inertia'
+import { Animated } from '@rootnative/inertia/reanimated'
 import { Link } from 'expo-router'
-import { FlatList, StyleSheet, View } from 'react-native'
+import { useState } from 'react'
+import { StyleSheet, View } from 'react-native'
+import { genreIcon } from '../lib/genreIcons'
 import { entranceTransition } from '../lib/motion'
 import type { Genre } from '../lib/types'
+import { Scrim, type ScrimStop } from './Scrim'
+
+/**
+ * The width of the fade at each end of the row, in points. It is also the
+ * scroll distance over which a fade comes in or goes out.
+ */
+const FADE = 32
+
+const FADE_IN: readonly ScrimStop[] = [
+  [0, 0],
+  [1, 1],
+]
+const FADE_OUT: readonly ScrimStop[] = [
+  [0, 1],
+  [1, 0],
+]
 
 /**
  * The genre shortcuts under the home header.
@@ -16,6 +37,12 @@ import type { Genre } from '../lib/types'
  * `suggestion` is the variant, not `filter`: these chips navigate to another
  * screen rather than narrow what is on this one, and a filter chip carries a
  * selected state that would never be set here.
+ *
+ * Each chip is a tonal pill with an icon for its genre in the primary colour,
+ * so the row reads at a glance and has no outlines to compete with the
+ * posters. The row fades out at an edge where more chips wait, and the fades
+ * follow the scroll: the left one comes in as the row leaves its start, and
+ * the right one goes as the row reaches its end.
  *
  * `inset` is the row's own horizontal padding, which the home screen needs and
  * the detail screen does not: there the chips sit inside a body that already
@@ -32,13 +59,40 @@ export function GenreChips({
   inset?: number
   gutter?: number
 }) {
+  const theme = useTheme()
+  const { scrollX, onScroll } = useScroll()
+
+  // How far the row can scroll. Zero until both sizes are known, which keeps
+  // the right fade away from a row that fits.
+  const [viewport, setViewport] = useState(0)
+  const [content, setContent] = useState(0)
+  const overflow = Math.max(content - viewport, 0)
+
+  // A fade runs over FADE points of scroll, or over the whole scroll when the
+  // row scrolls less than that. A short row is still fully faded at rest, so
+  // the chip it cuts has no hard edge. A row that fits gets no fade at all.
+  const reach = Math.max(Math.min(FADE, overflow), 1)
+  const startFade = useInterpolatedStyle(
+    scrollX,
+    { opacity: [0, overflow > 0 ? 1 : 0] },
+    { inputRange: [0, reach] },
+  )
+  const endFade = useInterpolatedStyle(
+    scrollX,
+    { opacity: [overflow > 0 ? 1 : 0, 0] },
+    { inputRange: [overflow - reach, overflow] },
+  )
+
   if (!genres.length) return null
 
   return (
     <View style={{ marginBottom: gutter }}>
-      <FlatList
+      <Motion.FlatList
         data={genres}
         horizontal
+        onScroll={onScroll}
+        onLayout={(event) => setViewport(event.nativeEvent.layout.width)}
+        onContentSizeChange={(width) => setContent(width)}
         showsHorizontalScrollIndicator={false}
         keyExtractor={(g) => String(g.id)}
         // Every chip on the first render, not the FlatList default of 10, so
@@ -60,15 +114,41 @@ export function GenreChips({
               href={`/genre/${item.id}?name=${encodeURIComponent(item.name)}`}
               asChild
             >
-              <Chip variant="suggestion">{item.name}</Chip>
+              <Chip
+                variant="suggestion"
+                leadingIcon={({ size }) => (
+                  <Icon
+                    source={genreIcon(item.id)}
+                    size={size}
+                    color={theme.colors.primary}
+                  />
+                )}
+                containerColor={theme.colors.surfaceContainerHigh}
+                contentColor={theme.colors.onSurface}
+                style={styles.chip}
+              >
+                {item.name}
+              </Chip>
             </Link>
           </Motion.View>
         )}
       />
+      <Animated.View style={[styles.fade, styles.start, startFade]}>
+        <Scrim color={theme.colors.background} stops={FADE_OUT} axis="horizontal" />
+      </Animated.View>
+      <Animated.View style={[styles.fade, styles.end, endFade]}>
+        <Scrim color={theme.colors.background} stops={FADE_IN} axis="horizontal" />
+      </Animated.View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   separator: { width: 8 },
+  // A pill, to match the dots and the rounded cards of the carousel. The
+  // tonal fill marks the edge, so the outline goes.
+  chip: { borderRadius: 999, borderWidth: 0 },
+  fade: { position: 'absolute', top: 0, bottom: 0, width: FADE, pointerEvents: 'none' },
+  start: { left: 0 },
+  end: { right: 0 },
 })
