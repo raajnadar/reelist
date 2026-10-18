@@ -7,6 +7,7 @@ import { ratingLabel, releaseLine } from '../lib/format'
 import { POSTER_W500, posterUrl } from '../lib/images'
 import { STAGGER_INTERVAL } from '../lib/motion'
 import type { MovieDetail } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { RemoteImage } from './RemoteImage'
 
 /**
@@ -30,10 +31,11 @@ export function DetailIdentity({ movie, posterWidth, wide }: Props) {
   const poster = posterUrl(movie.poster_path, 'w500')
   const rating = ratingLabel(movie.vote_average)
   const release = releaseLine(movie.release_date, movie.runtime)
+  const painted = useServerPainted()
 
   return (
     <Motion.View
-      initial={{ opacity: 0, translateY: 16 }}
+      initial={painted ? false : { opacity: 0, translateY: 16 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition="enter"
       style={styles.identity}

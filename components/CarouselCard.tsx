@@ -9,7 +9,7 @@ import {
 } from '@rootnative/inertia'
 import { Animated } from '@rootnative/inertia/reanimated'
 import { Link } from 'expo-router'
-import { StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, View, type DimensionValue } from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
 import { POSTER_W500, posterUrl } from '../lib/images'
@@ -209,22 +209,69 @@ export function CarouselCard({ movie, index, scrollX, width, snap, onHold }: Pro
                   />
                 </Animated.View>
               ) : (
-                <View
-                  style={[
-                    styles.fallback,
-                    { backgroundColor: theme.colors.surfaceVariant },
-                  ]}
-                >
-                  <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
-                    No poster
-                  </Typography>
-                </View>
+                <NoPoster />
               )}
               <Animated.View style={[styles.shade, shadeStyle]} />
             </View>
           </Motion.Pressable>
         </Link>
       </Motion.View>
+    </View>
+  )
+}
+
+/**
+ * The centred card as the static web page draws it, until hydration ends.
+ *
+ * The export server has no window, so the carousel has no slot width, and
+ * HTML holds no scroll position, so the list cannot centre a card there.
+ * `width` is CSS that the browser resolves to the width `carouselGeometry`
+ * gives the centred card. The list that replaces this card then draws the
+ * same poster in the same place.
+ */
+export function CarouselStill({ movie, width }: { movie: Movie; width: DimensionValue }) {
+  const theme = useTheme()
+  const uri = posterUrl(movie.poster_path, 'w500')
+
+  return (
+    <View style={{ width }}>
+      <Link href={`/movie/${movie.id}`} asChild>
+        <Pressable
+          accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
+          style={styles.press}
+        >
+          <View style={[styles.lift, LIFT_SHADOW]} />
+          <View
+            style={[styles.card, { backgroundColor: theme.colors.surfaceContainerHigh }]}
+          >
+            {uri ? (
+              <RemoteImage
+                testID="carousel-poster"
+                uri={uri}
+                alt={movie.title}
+                recyclingKey={String(movie.id)}
+                priority="high"
+                size={POSTER_W500}
+                style={styles.picture}
+              />
+            ) : (
+              <NoPoster />
+            )}
+          </View>
+        </Pressable>
+      </Link>
+    </View>
+  )
+}
+
+function NoPoster() {
+  const theme = useTheme()
+
+  return (
+    <View style={[styles.fallback, { backgroundColor: theme.colors.surfaceVariant }]}>
+      <Typography variant="labelMedium" color={theme.colors.onSurfaceVariant}>
+        No poster
+      </Typography>
     </View>
   )
 }

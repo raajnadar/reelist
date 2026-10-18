@@ -3,14 +3,16 @@ import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
 import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 
 /** The tagline and the synopsis, under a heading of their own. */
 export function DetailOverview({ movie }: { movie: MovieDetail }) {
   const theme = useTheme()
+  const painted = useServerPainted()
 
   return (
     <Motion.View
-      initial={{ opacity: 0, translateY: 16 }}
+      initial={painted ? false : { opacity: 0, translateY: 16 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition="enter"
       style={styles.section}

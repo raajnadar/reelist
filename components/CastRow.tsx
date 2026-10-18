@@ -1,9 +1,10 @@
 import { Typography } from '@rootnative/components/typography'
-import { useInView } from '@rootnative/inertia'
+import { useInView, useMotionValue } from '@rootnative/inertia'
 import { useRef } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
 import type { CastMember } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { CastCard } from './CastCard'
 
 /**
@@ -21,7 +22,11 @@ export function CastRow({ title, cast }: { title: string; cast: CastMember[] }) 
   // card's nearest scroll container is the horizontal list, which cannot say
   // whether the row has been reached. This row is always well below the fold on
   // the detail screen, so without the trigger its cascade always ran unseen.
-  const progress = useInView(ref, { amount: 0.1, transition: 'cascade' })
+  const inView = useInView(ref, { amount: 0.1, transition: 'cascade' })
+
+  // At rest on the static page, for the reason MovieRow gives.
+  const atRest = useMotionValue(1)
+  const progress = useServerPainted() ? atRest : inView
 
   // Absent, not empty. A film with no billed cast — an announced one — shows no
   // heading at all rather than a heading above nothing.

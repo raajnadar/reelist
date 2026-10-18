@@ -4,6 +4,7 @@ import {
   Motion,
   useInView,
   useInterpolatedStyle,
+  useMotionValue,
   type SharedValue,
 } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
@@ -12,6 +13,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native'
 import { backdropUrl } from '../lib/images'
 import { cascadeWindow, LIFT_SPACE } from '../lib/motion'
 import type { GalleryImage } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { RemoteImage } from './RemoteImage'
 
 /**
@@ -49,7 +51,11 @@ export function GalleryRow({ movieId, title, images }: Props) {
   // The row owns the in-view trigger, for the reason MovieRow explains: a
   // card's nearest scroll container is the horizontal list, which cannot say
   // whether the row has been reached.
-  const progress = useInView(ref, { amount: 0.1, transition: 'cascade' })
+  const inView = useInView(ref, { amount: 0.1, transition: 'cascade' })
+
+  // At rest on the static page, for the reason MovieRow gives.
+  const atRest = useMotionValue(1)
+  const progress = useServerPainted() ? atRest : inView
 
   // Absent, not empty. A film with no stills — an announced one — shows no
   // heading above nothing.

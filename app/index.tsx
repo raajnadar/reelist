@@ -27,6 +27,7 @@ import { homeEntry, loadSeed, type HomeSeed } from '../lib/prerender'
 import { usePrerendered } from '../lib/usePrerendered'
 import { useResource } from '../lib/useResource'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
+import { useServerPainted } from '../lib/useServerPainted'
 import type { Genre, Movie } from '../lib/types'
 
 type Row = { title: string; movies: Movie[] }
@@ -146,6 +147,9 @@ export default function HomeScreen() {
   const loading = rows.loading && rowData === null
   const failure = rowData === null ? rows.failure : null
   const genreData = genres.data ?? home?.genres ?? []
+  // The seeded rows are the rows the static page holds, so they show at rest.
+  // Rows from a request fade in. See lib/useServerPainted.ts.
+  const rowsPainted = useServerPainted() && rows.data === null
 
   return (
     <View
@@ -238,7 +242,7 @@ export default function HomeScreen() {
         ) : (
           <Motion.View
             key="content"
-            initial={{ opacity: 0 }}
+            initial={rowsPainted ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             // `flex: 1` is required, not decorative: this wrapper now sits
             // between the flexed screen and the ScrollView, and a wrapper with

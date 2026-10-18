@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { BookmarkIcon } from './BookmarkIcon'
 import { ShareButton } from './ShareButton'
 import { haptic } from '../lib/haptics'
@@ -25,6 +26,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
   const savedAt = movies.findIndex((m) => m.id === movie.id)
   const saved = savedAt !== -1
   const [pops, setPops] = useState(0)
+  const painted = useServerPainted()
 
   const toggle = () => {
     toggleSaved(movie)
@@ -53,7 +55,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
 
   return (
     <Motion.View
-      initial={{ opacity: 0, translateY: 16 }}
+      initial={painted ? false : { opacity: 0, translateY: 16 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition="enter"
       style={styles.actions}

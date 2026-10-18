@@ -12,16 +12,28 @@ import { scheduleOnRN } from 'react-native-worklets'
  *
  * The reaction sends the index across only when it changes, so a swipe
  * renders the parent once per slot, not once per frame.
+ *
+ * `initial` is the slot the list opens on. Until the first reaction, the
+ * layers mount for that slot, not for slot 0.
  */
-export function useActiveSlot(scrollX: SharedValue<number>, snap: number, count: number) {
-  const [active, setActive] = useState(0)
+export function useActiveSlot(
+  scrollX: SharedValue<number>,
+  snap: number,
+  count: number,
+  initial = 0,
+) {
+  const [active, setActive] = useState(initial)
 
   useAnimatedReaction(
-    () => Math.min(Math.max(Math.round(scrollX.value / snap), 0), Math.max(count - 1, 0)),
+    // No pitch is the static web page before hydration. See CarouselStill.
+    () =>
+      snap > 0
+        ? Math.min(Math.max(Math.round(scrollX.value / snap), 0), Math.max(count - 1, 0))
+        : initial,
     (next, previous) => {
       if (next !== previous) scheduleOnRN(setActive, next)
     },
-    [snap, count],
+    [snap, count, initial],
   )
 
   // A shorter list can arrive under a stale index, before the reaction runs.

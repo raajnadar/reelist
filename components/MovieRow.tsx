@@ -1,9 +1,10 @@
 import { Typography } from '@rootnative/components/typography'
-import { useInView } from '@rootnative/inertia'
+import { useInView, useMotionValue } from '@rootnative/inertia'
 import { useRef } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
 import type { Movie } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { MovieCard } from './MovieCard'
 
 export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) {
@@ -22,7 +23,12 @@ export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) 
     for a fixed fraction of it would start the cascade only once the posters
     were well onto the screen.
   */
-  const progress = useInView(ref, { amount: 0.1, transition: 'cascade' })
+  const inView = useInView(ref, { amount: 0.1, transition: 'cascade' })
+
+  // A row on the static page shows its cards at rest. The cascade would hide
+  // them until the bundle runs. See lib/useServerPainted.ts.
+  const atRest = useMotionValue(1)
+  const progress = useServerPainted() ? atRest : inView
 
   if (!movies.length) return null
 

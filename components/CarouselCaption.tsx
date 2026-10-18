@@ -46,7 +46,9 @@ export function CarouselCaption({ movies, scrollX, snap, active, total }: Props)
           {'M\nM'}
         </Typography>
       </View>
-      {nearSlots(active, total).map((slot) => (
+      {/* No pitch is the static web page before hydration: one caption, at
+          rest, under the still card. See CarouselStill. */}
+      {(snap > 0 ? nearSlots(active, total) : [active]).map((slot) => (
         <CaptionLayer
           key={slot}
           movie={movies[slot % movies.length]}
@@ -84,7 +86,10 @@ function CaptionLayer({
   )
 
   return (
-    <Animated.View aria-hidden={hidden} style={[styles.lines, styles.layer, style]}>
+    <Animated.View
+      aria-hidden={hidden}
+      style={[styles.lines, styles.layer, snap > 0 ? style : null]}
+    >
       <Typography variant="titleLarge" numberOfLines={1} style={styles.text}>
         {movie.title}
       </Typography>

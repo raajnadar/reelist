@@ -3,7 +3,13 @@ import { Typography } from '@rootnative/components/typography'
 import { useWindowDimensions } from '@rootnative/core'
 import { Motion, useScroll } from '@rootnative/inertia'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { Platform, StyleSheet, View, type FlatList } from 'react-native'
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type DimensionValue,
+  type FlatList,
+} from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
 import type { Movie } from '../lib/types'
 import { useActiveSlot } from '../lib/useActiveSlot'
@@ -18,6 +24,7 @@ import {
   CAROUSEL_POSTER_SHARE,
   CAROUSEL_SHADOW_ROOM,
   CAROUSEL_SPACING,
+  CarouselStill,
 } from './CarouselCard'
 import { CarouselDots } from './CarouselDots'
 
@@ -75,6 +82,14 @@ export function carouselGeometry(width: number, height: number) {
 }
 
 /**
+ * The `cardWidth` of `carouselGeometry` as CSS, for the still card of the
+ * static web page. The server has no window to measure, but the browser has.
+ * `dvh` because react-native-web measures the visual viewport.
+ */
+export const STILL_CARD_WIDTH =
+  `min(calc(100vw - ${2 * (CAROUSEL_PEEK + CAROUSEL_SPACING)}px), max(${CAROUSEL_MIN_CARD_WIDTH}px, min(${CAROUSEL_MAX_CARD_WIDTH}px, calc(100dvh * ${CAROUSEL_POSTER_SHARE} * 2 / 3))))` as DimensionValue
+
+/**
  * The slots of the loop for `count` films, and the slot the reader starts on:
  * the first film of the middle copy. One film has nothing to loop through.
  */
@@ -94,7 +109,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   const { cardWidth, snap, centerPadding } = carouselGeometry(width, height)
   const count = movies.length
   const { total, start } = loopLayout(count)
-  const active = useActiveSlot(scrollX, snap, total)
+  const active = useActiveSlot(scrollX, snap, total, start)
 
   const slots = useMemo(
     () => Array.from({ length: total }, (_, index) => movies[index % count]),
@@ -136,23 +151,28 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
     the center each time the pitch changes: when the real size arrives, and
     when the window is resized. A layout effect, so the wrong place is never
     painted.
+
+    It sets `scrollX` too, on the first mount as well. The list reports its
+    new offset one frame or more after it moves, and until then the caption,
+    the backdrop and the dots read the old offset and show no film.
   */
   const film = count ? active % count : 0
   const filmRef = useRef(film)
   useEffect(() => {
     filmRef.current = film
   })
-  const placed = useRef(`${snap}:${start}`)
+  const placed = useRef<string | null>(null)
   useLayoutEffect(() => {
     const key = `${snap}:${start}`
     if (key === placed.current) return
+    const mounting = placed.current === null
     placed.current = key
     if (snap <= 0) return
-    listRef.current?.scrollToOffset({
-      offset: (start + filmRef.current) * snap,
-      animated: false,
-    })
-  }, [snap, start])
+    const offset = (start + filmRef.current) * snap
+    scrollX.set(offset)
+    // On the first mount `initialScrollIndex` moves the list.
+    if (!mounting) listRef.current?.scrollToOffset({ offset, animated: false })
+  }, [snap, start, scrollX])
 
   const { onCardHold } = autoplay
   const renderItem = useCallback(
@@ -202,34 +222,41 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
       </Typography>
 
       <View style={styles.stage}>
-        <Motion.FlatList
-          ref={listRef}
-          data={slots}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          horizontal
-          onScroll={onScroll}
-          onScrollBeginDrag={onScrollBeginDrag}
-          onScrollEndDrag={autoplay.dragHandlers.onScrollEndDrag}
-          showsHorizontalScrollIndicator={false}
-          initialScrollIndex={start}
-          windowSize={WINDOW_SIZE}
-          // Snap to the slot pitch so a card always lands centered.
-          snapToInterval={snap}
-          decelerationRate="fast"
-          disableIntervalMomentum
-          // Every slot is one fixed pitch wide, so the list can place a card
-          // without measuring it. This is what keeps the peaks aligned while
-          // cards mount and unmount during a fling.
-          getItemLayout={getItemLayout}
-          contentContainerStyle={{
-            paddingLeft: centerPadding,
-            // The trailing marginRight on the last slot completes the inset.
-            paddingRight: centerPadding - CAROUSEL_SPACING,
-            paddingTop: LIFT_SPACE,
-            paddingBottom: CAROUSEL_SHADOW_ROOM,
-          }}
-        />
+        {/* No pitch is the static web page before hydration. See CarouselStill. */}
+        {snap > 0 ? (
+          <Motion.FlatList
+            ref={listRef}
+            data={slots}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            horizontal
+            onScroll={onScroll}
+            onScrollBeginDrag={onScrollBeginDrag}
+            onScrollEndDrag={autoplay.dragHandlers.onScrollEndDrag}
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={start}
+            windowSize={WINDOW_SIZE}
+            // Snap to the slot pitch so a card always lands centered.
+            snapToInterval={snap}
+            decelerationRate="fast"
+            disableIntervalMomentum
+            // Every slot is one fixed pitch wide, so the list can place a card
+            // without measuring it. This is what keeps the peaks aligned while
+            // cards mount and unmount during a fling.
+            getItemLayout={getItemLayout}
+            contentContainerStyle={{
+              paddingLeft: centerPadding,
+              // The trailing marginRight on the last slot completes the inset.
+              paddingRight: centerPadding - CAROUSEL_SPACING,
+              paddingTop: LIFT_SPACE,
+              paddingBottom: CAROUSEL_SHADOW_ROOM,
+            }}
+          />
+        ) : (
+          <View style={styles.still}>
+            <CarouselStill movie={movies[0]} width={STILL_CARD_WIDTH} />
+          </View>
+        )}
         {arrows ? (
           <View style={styles.arrows}>
             <IconButton
@@ -302,6 +329,13 @@ const styles = StyleSheet.create({
   // The caption moves up into the shadow room. It draws after the list, so the
   // shadow passes under it, and the room is only clear of the list's clip.
   stage: { marginBottom: LIFT_SPACE - CAROUSEL_SHADOW_ROOM },
+  // The same vertical padding as the list, so the caption does not move when
+  // the list replaces the still card.
+  still: {
+    alignItems: 'center',
+    paddingTop: LIFT_SPACE,
+    paddingBottom: CAROUSEL_SHADOW_ROOM,
+  },
   footer: { gap: 12 },
   // As tall as the pause button, so the row does not change height when the
   // button is absent.

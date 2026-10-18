@@ -3,7 +3,7 @@ import { useBreakpointValue, useTheme, useWindowDimensions } from '@rootnative/c
 import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, type DimensionValue } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CastRow } from '../../components/CastRow'
 import { DetailActions } from '../../components/DetailActions'
@@ -62,6 +62,30 @@ export async function loader(_request: unknown, params: { id: string }) {
  * the whole window.
  */
 const MAX_BODY_WIDTH = 1100
+
+/**
+ * The backdrop height, as a fraction of the window width.
+ *
+ * A phone gets a frame taller than the 16:9 source, cropped at the sides,
+ * because a 16:9 strip on a 390pt window is 219pt — a band rather than a
+ * masthead. A desktop window needs the opposite: the ratio alone would run
+ * the picture past the fold.
+ */
+const HERO_ASPECT = { compact: 0.78, medium: 0.6, expanded: 0.46 }
+
+// The window height caps the frame whatever the width asks for, so the title
+// is always on the first screen.
+const HERO_HEIGHT_SHARE = 0.55
+
+/**
+ * The compact hero height as CSS, for the static web page. The export server
+ * has no window, so the width is 0 there and while the page hydrates, and the
+ * hero would draw 0 high. The browser resolves this to the height a phone
+ * gets after hydration. `dvh` because react-native-web measures the visual
+ * viewport.
+ */
+const SERVER_HERO_HEIGHT =
+  `min(calc(100vw * ${HERO_ASPECT.compact}), calc(100dvh * ${HERO_HEIGHT_SHARE}))` as DimensionValue
 
 /**
  * How each kind of failure is presented, and what it offers.
@@ -186,19 +210,9 @@ export default function MovieScreen() {
    */
   const wide = useBreakpointValue({ compact: false, medium: false, expanded: true })
 
-  /**
-   * The backdrop height, as a fraction of the window width.
-   *
-   * A phone gets a frame taller than the 16:9 source, cropped at the sides,
-   * because a 16:9 strip on a 390pt window is 219pt — a band rather than a
-   * masthead. A desktop window needs the opposite: the ratio alone would run
-   * the picture past the fold.
-   */
-  const heroAspect = useBreakpointValue({ compact: 0.78, medium: 0.6, expanded: 0.46 })
-
-  // The window height caps the frame whatever the width asks for, so the title
-  // is always on the first screen.
-  const heroHeight = Math.min(width * heroAspect, height * 0.55)
+  const heroAspect = useBreakpointValue(HERO_ASPECT)
+  const heroHeight = Math.min(width * heroAspect, height * HERO_HEIGHT_SHARE)
+  const heroFrame = width > 0 ? heroHeight : SERVER_HERO_HEIGHT
 
   const posterWidth = wide ? 200 : 112
 
@@ -283,7 +297,7 @@ export default function MovieScreen() {
               capped body. A different shape would reflow the whole screen the
               moment the request lands.
             */}
-              <Skeleton height={heroHeight} shape="rectangle" />
+              <Skeleton height={heroFrame} shape="rectangle" />
 
               <View style={[styles.body, styles.bodyCap, { marginTop: -overlap }]}>
                 <DetailIdentitySkeleton posterWidth={posterWidth} />
@@ -337,7 +351,7 @@ export default function MovieScreen() {
                 uri={artwork}
                 size={artworkSize}
                 title={movie.title}
-                height={heroHeight}
+                height={heroFrame}
                 headerSpace={headerSpace}
                 recyclingKey={String(movieId)}
               />

@@ -9,6 +9,7 @@ import { StyleSheet, View } from 'react-native'
 import { genreIcon } from '../lib/genreIcons'
 import { entranceTransition } from '../lib/motion'
 import type { Genre } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { Scrim, type ScrimStop } from './Scrim'
 
 /**
@@ -61,6 +62,7 @@ export function GenreChips({
 }) {
   const theme = useTheme()
   const { scrollX, onScroll } = useScroll()
+  const painted = useServerPainted()
 
   // How far the row can scroll. Zero until both sizes are known, which keeps
   // the right fade away from a row that fits.
@@ -104,8 +106,9 @@ export function GenreChips({
         renderItem={({ item, index }) => (
           // The same staggered entrance the cards use, so the chips arrive as
           // part of the screen rather than as a separate element appearing over it.
+          // Chips on the static page show at rest. See lib/useServerPainted.ts.
           <Motion.View
-            initial={{ opacity: 0, translateY: 8 }}
+            initial={painted ? false : { opacity: 0, translateY: 8 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={entranceTransition(index)}
           >

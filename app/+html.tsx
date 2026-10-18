@@ -1,3 +1,7 @@
+import {
+  entranceGuardCss,
+  entranceGuardNoscriptCss,
+} from '@rootnative/inertia/static-export'
 import { shellTags } from '@rootnative/seo/expo-router'
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html'
 import type { PropsWithChildren } from 'react'
@@ -20,7 +24,8 @@ function proxyOrigin(): string | null {
 /**
  * The HTML shell of every page the static export writes. It is Expo Router's
  * default shell with two preconnect links, the theme colour, the touch icon,
- * and the manifest added, and the obsolete `X-UA-Compatible` tag removed.
+ * the manifest, and the inertia entrance guard added, and the obsolete
+ * `X-UA-Compatible` tag removed.
  *
  * The icon and the manifest live in public/, and their links carry the base
  * path the deploy sets, because GitHub Pages serves the site from a subpath.
@@ -59,6 +64,13 @@ export default function Root({ children }: PropsWithChildren) {
           ],
         })}
         <ScrollViewStyleReset />
+        {/* A server-painted element shows at rest (lib/useServerPainted.ts).
+            This reveals any entrance that still starts hidden when the bundle
+            never runs. */}
+        <style dangerouslySetInnerHTML={{ __html: entranceGuardCss() }} />
+        <noscript>
+          <style dangerouslySetInnerHTML={{ __html: entranceGuardNoscriptCss }} />
+        </noscript>
         {headNodes}
       </head>
       <body {...bodyAttributes}>

@@ -6,6 +6,7 @@ import { Linking, Pressable, StyleSheet, View } from 'react-native'
 import { logoUrl } from '../lib/images'
 import { regionName, useRegion } from '../lib/region'
 import type { WatchProvider, WatchProviders as Providers } from '../lib/types'
+import { useServerPainted } from '../lib/useServerPainted'
 import { RemoteImage } from './RemoteImage'
 
 /**
@@ -44,6 +45,7 @@ export function WatchProviders({ providers }: { providers: Record<string, Provid
   const router = useRouter()
   const { code } = useRegion()
   const name = regionName(code)
+  const painted = useServerPainted()
 
   // Absent, not empty. A film no service carries anywhere shows no heading
   // above nothing. A film carried elsewhere but not here is a different case:
@@ -57,7 +59,7 @@ export function WatchProviders({ providers }: { providers: Record<string, Provid
 
   return (
     <Motion.View
-      initial={{ opacity: 0, translateY: 16 }}
+      initial={painted ? false : { opacity: 0, translateY: 16 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition="enter"
       style={styles.section}

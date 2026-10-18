@@ -1,8 +1,9 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, type DimensionValue } from 'react-native'
 import type { ImageSize } from '../lib/images'
+import { useServerPainted } from '../lib/useServerPainted'
 import { RemoteImage } from './RemoteImage'
 import { Scrim, type ScrimStop } from './Scrim'
 
@@ -39,7 +40,8 @@ type Props = {
   size: ImageSize
   /** The film title, which names the artwork for a crawler and a screen reader. */
   title: string
-  height: number
+  /** CSS on the static web page, before the window has a size. */
+  height: DimensionValue
   /** The room the floating header takes, which the top wash matches. */
   headerSpace: number
   recyclingKey: string
@@ -61,6 +63,7 @@ export function DetailHero({
   recyclingKey,
 }: Props) {
   const theme = useTheme()
+  const painted = useServerPainted()
 
   return (
     <View style={[styles.frame, { height }]}>
@@ -79,7 +82,7 @@ export function DetailHero({
         */
         <Motion.View
           style={styles.fill}
-          initial={{ scale: 1.06 }}
+          initial={painted ? false : { scale: 1.06 }}
           animate={{ scale: 1 }}
           transition="enter"
         >
