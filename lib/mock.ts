@@ -1,4 +1,11 @@
-import type { CastMember, GalleryImage, Movie, MovieDetail, PersonDetail } from './types'
+import type {
+  CastMember,
+  GalleryImage,
+  Movie,
+  MovieDetail,
+  PersonDetail,
+  Video,
+} from './types'
 
 /**
  * Poster paths are real TMDB paths, so the images load without an API key.
@@ -149,6 +156,40 @@ export const mockImages: GalleryImage[] = [
   { file_path: '/zOp7dc2r0pOyUxCXZYJqWyGTaIF.jpg', aspect_ratio: 1.775 },
 ]
 
+/**
+ * Three videos, in the order `lib/api.ts` sorts them. The first one is the
+ * trailer.
+ *
+ * Only the trailer key is real. The other two are made up, because no test
+ * loads a video.
+ */
+export const mockVideos: Video[] = [
+  {
+    id: '65d1b1e1c0c1b40163a4b4a1',
+    key: 'Way9Dexny3w',
+    name: 'Official Trailer',
+    site: 'YouTube',
+    type: 'Trailer',
+    official: true,
+  },
+  {
+    id: '64d3a7e1db4ed610343f1a2b',
+    key: 'dune-teaser',
+    name: 'Official Teaser',
+    site: 'YouTube',
+    type: 'Teaser',
+    official: true,
+  },
+  {
+    id: '65e0c2a1a6a4c10164a2c3d4',
+    key: 'dune-clip',
+    name: 'Paul and Chani',
+    site: 'YouTube',
+    type: 'Clip',
+    official: true,
+  },
+]
+
 export const mockMovieDetail: MovieDetail = {
   ...mockMovies[0],
   genres: [
@@ -160,14 +201,8 @@ export const mockMovieDetail: MovieDetail = {
   vote_count: 5321,
   poster_color: '#c4823a',
   cast: mockCast,
-  trailer: {
-    id: '65d1b1e1c0c1b40163a4b4a1',
-    key: 'Way9Dexny3w',
-    name: 'Official Trailer',
-    site: 'YouTube',
-    type: 'Trailer',
-    official: true,
-  },
+  trailer: mockVideos[0],
+  videos: mockVideos,
   // The recommendation row reads plain `Movie` entries, so it reuses the list
   // fixtures rather than repeating them.
   recommendations: mockMovies.slice(1, 4),

@@ -18,6 +18,7 @@ import { MovieRow } from '../../components/MovieRow'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
+import { VideoRow } from '../../components/VideoRow'
 import { WatchProviders } from '../../components/WatchProviders'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
@@ -404,10 +405,15 @@ export default function MovieScreen() {
               start where the text above them does instead of at the window edge.
 
               Each returns nothing for an empty list, so a film with no cast, no
-              stills, and no recommendation ends at the overview.
+              videos, no stills, and no recommendation ends at the overview.
             */}
               <View style={[styles.bodyCap, styles.rows]}>
                 <CastRow title="Cast" cast={movie.cast} />
+                <VideoRow
+                  title={movie.title}
+                  videos={movie.videos}
+                  trailer={movie.trailer}
+                />
                 <GalleryRow
                   movieId={movie.id}
                   title={movie.title}

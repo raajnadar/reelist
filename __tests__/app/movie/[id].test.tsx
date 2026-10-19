@@ -332,6 +332,33 @@ describe('the trailer button', () => {
   })
 })
 
+describe('the videos row', () => {
+  // The row opens the same player as the button, for any video in the list.
+  it('opens the player for a video beside the trailer', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByLabelText('Play Paul and Chani. Clip'))
+
+    expect(mockPush).toHaveBeenCalledWith(
+      `/trailer/dune-clip?title=${encodeURIComponent(movie.title)}`,
+    )
+  })
+
+  it('is absent for a film with no videos', async () => {
+    const noVideos = { ...movie, trailer: null, videos: [] }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noVideos.id) })
+    getMovie.mockResolvedValue(noVideos)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(noVideos.overview)).toBeTruthy()
+    expect(screen.queryByText('Videos')).toBeNull()
+  })
+})
+
 describe('the share button', () => {
   const shareSpy = jest.spyOn(Share, 'share')
 

@@ -59,7 +59,13 @@ export type MovieDetail = Movie & {
    */
   poster_color: string | null
   cast: CastMember[]
+  /**
+   * The video the trailer button plays. It is in `videos` too, unless the cap
+   * on that list cut it. See `pickVideos` in lib/api.ts.
+   */
   trailer: Video | null
+  /** Every video the player can open, in the order the row draws them. */
+  videos: Video[]
   recommendations: Movie[]
   images: GalleryImage[]
   providers: Record<string, WatchProviders>
@@ -138,8 +144,9 @@ export type CastMember = {
  *
  * `site` and `type` stay as plain strings rather than a union. TMDB adds a
  * video type when it likes — `Featurette` and `Behind the Scenes` arrived after
- * the rest — and a union would turn a new value into a compile error in a file
- * that only ever filters on the two values it knows.
+ * the rest — and a union would turn a new value into a compile error. The
+ * code that sorts on the type puts a value it does not know last, and the row
+ * prints the type as TMDB sends it.
  */
 export type Video = {
   id: string

@@ -366,6 +366,129 @@ describe('the appended blocks', () => {
 
       await expect(getMovie(550)).resolves.toMatchObject({ trailer: null })
     })
+
+    // The route takes the key as its path, so an empty key opens nothing.
+    it('skips a trailer with no key', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: { results: [video({ key: '', official: true }), video({ key: 'k2' })] },
+      })
+
+      await expect(getMovie(550)).resolves.toMatchObject({
+        trailer: expect.objectContaining({ key: 'k2' }),
+      })
+    })
+  })
+
+  describe('the videos', () => {
+    const video = (over: Record<string, unknown>) => ({
+      id: 'abc',
+      key: 'k',
+      name: 'A video',
+      site: 'YouTube',
+      type: 'Trailer',
+      official: true,
+      ...over,
+    })
+
+    const keysOf = async () => (await getMovie(550))?.videos.map((v) => v.key)
+
+    it('keeps the YouTube videos only', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: {
+          results: [
+            video({ key: 'vimeo', site: 'Vimeo' }),
+            video({ key: '' }),
+            video({ key: 'clip', type: 'Clip' }),
+          ],
+        },
+      })
+
+      await expect(keysOf()).resolves.toEqual(['clip'])
+    })
+
+    // Studio uploads first, then the trailers before the extras. A type TMDB
+    // adds later goes after the types the app knows.
+    it('sorts by upload, then by type', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: {
+          results: [
+            video({ key: 'credits', type: 'Opening Credits' }),
+            video({ key: 'bloopers', type: 'Bloopers' }),
+            video({ key: 'fan-trailer', official: false }),
+            video({ key: 'clip', type: 'Clip' }),
+            video({ key: 'teaser', type: 'Teaser' }),
+            video({ key: 'trailer' }),
+          ],
+        },
+      })
+
+      await expect(keysOf()).resolves.toEqual([
+        'trailer',
+        'teaser',
+        'clip',
+        'bloopers',
+        'credits',
+        'fan-trailer',
+      ])
+    })
+
+    // TMDB lists the newest first, and the sort keeps that order in a group.
+    it('keeps the TMDB order inside one type', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: {
+          results: [
+            video({ key: 'clip-new', type: 'Clip' }),
+            video({ key: 'clip-old', type: 'Clip' }),
+          ],
+        },
+      })
+
+      await expect(keysOf()).resolves.toEqual(['clip-new', 'clip-old'])
+    })
+
+    it('shows at most twenty', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: {
+          results: Array.from({ length: 30 }, (_, i) =>
+            video({ key: `clip-${i}`, type: 'Clip' }),
+          ),
+        },
+      })
+
+      await expect(keysOf()).resolves.toHaveLength(20)
+    })
+
+    // The trailer comes from the whole list, before the cap. Twenty studio
+    // clips sort before a fan trailer, and the cap then drops it from the row.
+    it('picks the trailer before the cap', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        videos: {
+          results: [
+            ...Array.from({ length: 20 }, (_, i) =>
+              video({ key: `clip-${i}`, type: 'Clip' }),
+            ),
+            video({ key: 'fan-trailer', official: false }),
+          ],
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.trailer?.key).toBe('fan-trailer')
+      expect(movie?.videos.map((v) => v.key)).not.toContain('fan-trailer')
+    })
+
+    it('reports an absent videos block as an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ videos: [] })
+    })
   })
 
   describe('the images', () => {

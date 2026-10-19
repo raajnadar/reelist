@@ -37,6 +37,7 @@ it('widens a seed entry to a detail with every list empty', () => {
     ...entry,
     cast: [],
     trailer: null,
+    videos: [],
     recommendations: [],
     images: [],
     providers: {},

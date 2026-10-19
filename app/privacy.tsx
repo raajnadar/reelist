@@ -16,7 +16,7 @@ const MAX_WIDTH = 640
  * so a change to what the app sends must change the text and this date
  * together.
  */
-const UPDATED = '16 October 2026'
+const UPDATED = '20 October 2026'
 
 type Source = { label: string; url: Href }
 
@@ -80,7 +80,7 @@ const PARTS: Part[] = [
   {
     title: 'YouTube',
     body: [
-      'Reelist plays trailers in a YouTube player. Reelist loads YouTube only when you open a trailer. YouTube and Google can then collect data, as the Google privacy policy tells.',
+      'Reelist plays trailers and other film videos in a YouTube player. Reelist loads YouTube only when you open a video. YouTube and Google can then collect data, as the Google privacy policy tells.',
     ],
     sources: [
       { label: 'Google privacy policy', url: 'https://policies.google.com/privacy' },
@@ -110,7 +110,7 @@ const PARTS: Part[] = [
   {
     title: 'Links and sharing',
     body: [
-      'Some buttons open other sites: a streaming service page on TMDB, a trailer on YouTube, or the source code on GitHub. The privacy policy of that site applies.',
+      'Some buttons open other sites: a streaming service page on TMDB, a video on YouTube, or the source code on GitHub. The privacy policy of that site applies.',
       'When you share a film, your device shows its own share sheet. Reelist does not see where you send the link.',
     ],
   },

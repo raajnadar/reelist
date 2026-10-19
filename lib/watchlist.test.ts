@@ -81,6 +81,7 @@ describe('useWatchlist', () => {
       poster_color: '#1e3a8a',
       cast: [{ id: 1, name: 'A', character: 'B', profile_path: null }],
       trailer: null,
+      videos: [],
       recommendations: mockMovies,
       images: [{ file_path: '/still.jpg', aspect_ratio: 1.778 }],
       providers: {},
