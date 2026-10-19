@@ -72,7 +72,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       {trailer ? (
         <Button
           variant="filled"
-          size="medium"
+          size="small"
           leadingIcon="play"
           onPress={() =>
             router.push(
@@ -96,7 +96,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       */}
       <Button
         variant={saved ? 'filled' : 'tonal'}
-        size="medium"
+        size="small"
         leadingIcon={(props) => <BookmarkIcon saved={saved} pop={pops} {...props} />}
         onPress={toggle}
       >
