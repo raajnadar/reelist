@@ -10,6 +10,7 @@ import { BookmarkIcon } from './BookmarkIcon'
 import { ShareButton } from './ShareButton'
 import { haptic } from '../lib/haptics'
 import { restoreSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /**
  * What the reader can do with the film: watch the trailer, keep it, and send
@@ -72,7 +73,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       {trailer ? (
         <Button
           variant="filled"
-          size="small"
+          size={BUTTON_SIZE.inline}
           leadingIcon="play"
           onPress={() =>
             router.push(
@@ -96,7 +97,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       */}
       <Button
         variant={saved ? 'filled' : 'tonal'}
-        size="small"
+        size={BUTTON_SIZE.inline}
         leadingIcon={(props) => <BookmarkIcon saved={saved} pop={pops} {...props} />}
         onPress={toggle}
       >

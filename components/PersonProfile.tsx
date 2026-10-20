@@ -10,6 +10,7 @@ import { profileUrl } from '../lib/images'
 import { STAGGER_INTERVAL } from '../lib/motion'
 import type { PersonDetail } from '../lib/types'
 import { RemoteImage } from './RemoteImage'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /**
  * Who the person is: the photo, the name, the facts, and the biography.
@@ -148,7 +149,7 @@ export function PersonProfile({ person, photoWidth, wide }: Props) {
         {long ? (
           <Button
             variant="text"
-            size="small"
+            size={BUTTON_SIZE.inline}
             onPress={() => setExpanded((open) => !open)}
             style={styles.toggle}
           >

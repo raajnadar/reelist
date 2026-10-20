@@ -14,8 +14,8 @@ import globals from 'globals'
 //      `typescript-eslint` and reach the same two rules. This app follows the
 //      landing site, because both are Expo Router apps on yarn.
 //   3. This repository's own rules, which no other repository has: the Node
-//      globals for its CommonJS config files, the Jest globals, and the
-//      credential guard.
+//      globals for its CommonJS config files, the Jest globals, the
+//      credential guard, and the Button size guard.
 //   4. `eslint-config-prettier`, last, to turn off anything that fights
 //      `.prettierrc`.
 export default [
@@ -88,6 +88,15 @@ export default [
             "MemberExpression[object.object.name='process'][object.property.name='env'] > Identifier[name=/KEY|SECRET|TOKEN|PASSWORD/i]",
           message:
             'Never read a key or a token in app code. EXPO_PUBLIC_* is inlined into the bundle and can be extracted from the web build, the .apk, and the .ipa. Put the credential behind the proxy in proxy/ instead.',
+        },
+        // In this list, not in a block of its own: a second block that sets
+        // `no-restricted-syntax` replaces this one, and the credential guard
+        // above would stop.
+        {
+          selector:
+            "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='size'] Literal",
+          message:
+            'Take the Button size from BUTTON_SIZE in lib/buttonSize.ts. One size for each role keeps the buttons the same from screen to screen.',
         },
       ],
     },
