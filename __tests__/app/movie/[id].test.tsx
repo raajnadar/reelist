@@ -437,7 +437,8 @@ describe('the save button', () => {
     const screen = renderWithProviders(<MovieScreen />)
     fireEvent.press(await screen.findByText('Save'))
     // A save is not a removal, so it has nothing to undo.
-    expect(screen.queryByText('Removed from your watchlist')).toBeNull()
+    expect(await screen.findByText('Saved to your watchlist')).toBeTruthy()
+    expect(screen.queryByText('Undo')).toBeNull()
 
     fireEvent.press(await screen.findByText('Saved'))
     expect(await screen.findByText('Removed from your watchlist')).toBeTruthy()
@@ -445,6 +446,21 @@ describe('the save button', () => {
     fireEvent.press(screen.getByText('Undo'))
 
     expect(await screen.findByText('Saved')).toBeTruthy()
+  })
+
+  it('reports a save, and opens the watchlist from the report', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+    fireEvent.press(await screen.findByText('Save'))
+
+    expect(await screen.findByText('Saved to your watchlist')).toBeTruthy()
+    fireEvent.press(screen.getByText('View'))
+
+    // The literal path is the assertion. `yarn typecheck` proves the route
+    // exists; this proves the action is wired to it.
+    expect(mockPush).toHaveBeenCalledWith('/watchlist')
   })
 
   it('writes the saved film to the device', async () => {

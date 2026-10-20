@@ -32,21 +32,31 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
   const toggle = () => {
     toggleSaved(movie)
     haptic(saved ? 'unsave' : 'save')
-    if (!saved) {
-      setPops((n) => n + 1)
-      return
-    }
+    if (!saved) setPops((n) => n + 1)
 
+    // Both directions report, so a save and an unsave read the same. A save
+    // has nothing to undo, so its action opens the list it went into.
+    //
     // `long`, because the library makes a snackbar with an action wait
     // forever by default, and it would then stay on the screens the reader
     // opens next. `replace`, so a fast save and unsave does not queue two.
-    snackbar.show({
-      message: 'Removed from your watchlist',
-      actionLabel: 'Undo',
-      duration: 'long',
-      replace: true,
-      onAction: () => restoreSaved([movie], savedAt),
-    })
+    snackbar.show(
+      saved
+        ? {
+            message: 'Removed from your watchlist',
+            actionLabel: 'Undo',
+            duration: 'long',
+            replace: true,
+            onAction: () => restoreSaved([movie], savedAt),
+          }
+        : {
+            message: 'Saved to your watchlist',
+            actionLabel: 'View',
+            duration: 'long',
+            replace: true,
+            onAction: () => router.push('/watchlist'),
+          },
+    )
   }
 
   // Read into a const before the callback below reads it. `movie.trailer` is a

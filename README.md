@@ -457,6 +457,11 @@ over it, not a React context: the detail screen and the watchlist screen are
 often mounted together, and both have to see one press. The root layout gains no
 provider for it.
 
+A save and an unsave each show a snackbar. An unsave offers "Undo", which puts
+the film back at its old place in the list. A save has nothing to undo, so it
+offers "View", which opens the watchlist. Both stay for the long duration,
+because a snackbar with an action otherwise waits until the reader dismisses it.
+
 A saved film is stored whole, not as an id. A grid of ids would need one request
 per card before it could draw anything, and a watchlist that cannot open offline
 is not worth keeping. The store narrows a `MovieDetail` to the seven fields a
