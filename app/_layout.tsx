@@ -1,11 +1,18 @@
 import { mdiResolver } from '@rootnative/components/mdi'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider } from '@rootnative/components/snackbar'
-import { ThemeProvider, useThemeMode } from '@rootnative/core'
+import { ThemeProvider, useTheme, useThemeMode } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { SeoProvider } from '@rootnative/seo/react'
-import { Stack } from 'expo-router'
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider as NavigationThemeProvider,
+} from 'expo-router'
+import { useMemo } from 'react'
 import { StatusBar } from 'expo-status-bar'
+import type { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { UpdateSnackbar } from '../components/UpdateSnackbar'
@@ -23,6 +30,44 @@ function ThemedStatusBar() {
   const { scheme } = useThemeMode()
 
   return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+}
+
+/**
+ * Hands React Navigation the colours of the app theme.
+ *
+ * Expo Router leaves the navigator on React Navigation's DefaultTheme, and the
+ * stack paints every card in that theme's light grey before the screen inside
+ * it draws. On web, a route loads its chunk on the first open after a reload
+ * (asyncRoutes in app.json), and the production fallback for that wait is
+ * nothing. So a dark reader saw a light card until the chunk arrived. With
+ * the app colours on the navigator, the card is the right colour from the
+ * first frame.
+ */
+function NavigationTheme({ children }: { children: ReactNode }) {
+  const theme = useTheme()
+  const { scheme } = useThemeMode()
+
+  const navigationTheme = useMemo(() => {
+    const base = scheme === 'dark' ? DarkTheme : DefaultTheme
+
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: theme.colors.primary,
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        text: theme.colors.onSurface,
+        border: theme.colors.outlineVariant,
+      },
+    }
+  }, [scheme, theme])
+
+  return (
+    <NavigationThemeProvider value={navigationTheme}>
+      {children}
+    </NavigationThemeProvider>
+  )
 }
 
 /**
@@ -134,7 +179,9 @@ export default function RootLayout() {
                   and the snackbars stay outside it, in the portal layer.
                 */}
                 <View role="main" style={styles.main}>
-                  <Screens />
+                  <NavigationTheme>
+                    <Screens />
+                  </NavigationTheme>
                 </View>
               </SeoProvider>
             </SnackbarProvider>
