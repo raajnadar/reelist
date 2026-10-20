@@ -1,6 +1,7 @@
 import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
+import { PullToRefresh } from '../../components/PullToRefresh'
 import HomeScreen from '../../app/index'
 import { MissingProxyUrlError } from '../../lib/config'
 import { setLanguage } from '../../lib/language'
@@ -104,6 +105,35 @@ it('still shows the search button when the rows fail to load', async () => {
   await waitFor(() => expect(screen.getByText('TMDB is unavailable')).toBeTruthy())
   // Search does not depend on the rows, so a failed home load must not remove it.
   expect(screen.getByLabelText('Search movies')).toBeTruthy()
+})
+
+describe('the pull to refresh', () => {
+  it('asks for the rows and the chips again, and keeps the rows on screen', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+    await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+
+    act(() => screen.UNSAFE_getByType(PullToRefresh).props.onRefresh())
+
+    // The rows stay while the request runs: no skeleton and no blank frame.
+    expect(screen.getByText('Trending this week')).toBeTruthy()
+    await waitFor(() => expect(api.getTrending).toHaveBeenCalledTimes(2))
+    expect(api.getGenres).toHaveBeenCalledTimes(2)
+    await act(async () => {})
+    expect(screen.getByText('Trending this week')).toBeTruthy()
+  })
+
+  it('keeps the rows and says so when the refresh fails', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+    await waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+
+    api.getTrending.mockRejectedValueOnce(new Error('TMDB is unavailable'))
+    act(() => screen.UNSAFE_getByType(PullToRefresh).props.onRefresh())
+
+    await waitFor(() => expect(screen.getByText('Could not refresh')).toBeTruthy())
+    // The rows the reader had are not replaced by the error state.
+    expect(screen.getByText('Trending this week')).toBeTruthy()
+    expect(screen.queryByText('Could not load movies')).toBeNull()
+  })
 })
 
 describe('the failure state', () => {

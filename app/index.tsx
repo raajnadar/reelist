@@ -1,4 +1,5 @@
 import { IconButton } from '@rootnative/components/icon-button'
+import { useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
@@ -9,6 +10,7 @@ import { BrandMark } from '../components/BrandMark'
 import { GenreChips } from '../components/GenreChips'
 import { MovieCarousel } from '../components/MovieCarousel'
 import { MovieRow } from '../components/MovieRow'
+import { PullToRefresh } from '../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../components/Skeleton'
 import { SpinningCog } from '../components/SpinningCog'
@@ -121,6 +123,19 @@ export default function HomeScreen() {
     // Reloaded as well, so a reader who presses the button after a network drop
     // does not get the rows back and keep an empty chip row for the session.
     genres.reload()
+  }
+
+  const snackbar = useSnackbar()
+
+  /**
+   * The pull to refresh. The rows stay on screen while the new ones load, so
+   * a failure leaves the reader with the list they had and one short notice.
+   */
+  const refresh = async () => {
+    const [rowsOk] = await Promise.all([rows.refresh(), genres.refresh()])
+    if (!rowsOk) {
+      snackbar.show({ message: 'Could not refresh', duration: 'short', replace: true })
+    }
   }
 
   /**
@@ -259,6 +274,12 @@ export default function HomeScreen() {
             <Motion.ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+              refreshControl={
+                <PullToRefresh
+                  refreshing={rows.refreshing}
+                  onRefresh={() => void refresh()}
+                />
+              }
             >
               {/*
                 The first row gets the lightbox carousel as a featured treatment.

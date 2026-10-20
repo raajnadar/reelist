@@ -1,4 +1,5 @@
 import { AppBar } from '@rootnative/components/appbar'
+import { useSnackbar } from '@rootnative/components/snackbar'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -8,6 +9,7 @@ import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DiscoverFilterRow } from '../../components/DiscoverFilterRow'
 import { MovieCard } from '../../components/MovieCard'
+import { PullToRefresh } from '../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
@@ -97,6 +99,7 @@ export function mergePages(seen: Movie[], incoming: Movie[]): Movie[] {
 
 export default function GenreScreen() {
   const theme = useTheme()
+  const snackbar = useSnackbar()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
@@ -191,6 +194,20 @@ export default function GenreScreen() {
   const retry = () => {
     setAppended(null)
     first.reload()
+  }
+
+  /**
+   * The pull to refresh. The grid stays on screen while the first page loads
+   * again. The pages after it go when the new first page lands: the reader
+   * pulled at the top, and the list starts from there again.
+   */
+  const refresh = async () => {
+    const ok = await first.refresh()
+    if (ok) {
+      setAppended(null)
+    } else {
+      snackbar.show({ message: 'Could not refresh', duration: 'short', replace: true })
+    }
   }
 
   /**
@@ -318,6 +335,12 @@ export default function GenreScreen() {
                   paddingBottom: insets.bottom + 16,
                 },
               ]}
+              refreshControl={
+                <PullToRefresh
+                  refreshing={first.refreshing}
+                  onRefresh={() => void refresh()}
+                />
+              }
               onEndReached={loadMore}
               // Half a screen of runway. Lower and the user reaches the end
               // before the next page lands; higher and the screen fetches
