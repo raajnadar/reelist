@@ -65,7 +65,7 @@ const THEME_COLOR = '#4C0519'
  * the core script runs with no key, and a second script applies the stored
  * choice over the OS scheme, as the provider does after hydration.
  */
-const schemeGuard = `${schemeGuardScript({ storageKey: null })}
+const schemeGuard = `${schemeGuardScript({ storageKey: null })};
 (function () {
   try {
     var mode = JSON.parse(window.localStorage.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEY)})).mode
