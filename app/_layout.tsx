@@ -64,9 +64,7 @@ function NavigationTheme({ children }: { children: ReactNode }) {
   }, [scheme, theme])
 
   return (
-    <NavigationThemeProvider value={navigationTheme}>
-      {children}
-    </NavigationThemeProvider>
+    <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
   )
 }
 
