@@ -6,11 +6,14 @@ import { StyleSheet, View } from 'react-native'
 import { GalleryViewer } from '../../components/GalleryViewer'
 import { StateMessage } from '../../components/StateMessage'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor, noindexMeta } from '../../lib/head'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure } from '../../lib/errors'
 import { ON_STAGE, STAGE } from '../../lib/stage'
 import type { MovieDetail } from '../../lib/types'
 import { useResource } from '../../lib/useResource'
+
+export const generateMetadata = () => metadataFor(noindexMeta('Gallery'))
 
 /**
  * The gallery screen: the film's stills, one at a time.

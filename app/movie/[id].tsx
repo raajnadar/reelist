@@ -22,7 +22,7 @@ import { VideoRow } from '../../components/VideoRow'
 import { WatchProviders } from '../../components/WatchProviders'
 import { getMovie } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
-import { movieMeta } from '../../lib/head'
+import { metadataFor, movieMeta, noindexMeta } from '../../lib/head'
 import { BACKDROP_W780, POSTER_W500, backdropUrl, posterUrl } from '../../lib/images'
 import { STAGGER_INTERVAL } from '../../lib/motion'
 import {
@@ -52,6 +52,14 @@ export async function generateStaticParams(): Promise<{ id: string }[]> {
  */
 export async function loader(_request: unknown, params: { id: string }) {
   return movieEntry(await loadSeed(), params.id)
+}
+
+/** The head the static export writes. The seed film, or the missing-film head. */
+export async function generateMetadata(_request: unknown, params: { id: string }) {
+  const entry = movieEntry(await loadSeed(), params.id)
+  return metadataFor(
+    entry ? movieMeta(fromSeed(entry)) : noindexMeta(REPORTS.missing.title),
+  )
 }
 
 /**

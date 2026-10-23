@@ -23,7 +23,7 @@ import {
   getTrending,
 } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
-import { homeMeta } from '../lib/head'
+import { homeMeta, metadataFor } from '../lib/head'
 import { languageName, useLanguage } from '../lib/language'
 import { homeEntry, loadSeed, type HomeSeed } from '../lib/prerender'
 import { usePrerendered } from '../lib/usePrerendered'
@@ -31,6 +31,8 @@ import { useResource } from '../lib/useResource'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import { useServerPainted } from '../lib/useServerPainted'
 import type { Genre, Movie } from '../lib/types'
+
+export const generateMetadata = () => metadataFor(homeMeta)
 
 type Row = { title: string; movies: Movie[] }
 

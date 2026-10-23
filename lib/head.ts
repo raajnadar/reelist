@@ -1,4 +1,4 @@
-import type { PageMeta } from '@rootnative/seo'
+import { toMetadata, type PageMeta, type PageMetadata } from '@rootnative/seo'
 import {
   breadcrumbList,
   movie as movieSchema,
@@ -13,12 +13,23 @@ import {
   posterUrl,
   profileUrl,
 } from './images'
-import { SITE_URL, genreUrl, movieUrl, personUrl, shareTitle } from './share'
-import { site } from './site'
+import { genreUrl, movieUrl, personUrl, shareTitle } from './share'
+import { SITE_URL, site } from './site'
 import type { MovieDetail, PersonDetail } from './types'
 
 /** The most performers the film's structured data names. */
 const ACTOR_LIMIT = 10
+
+/**
+ * The value of the `generateMetadata` export of a route. From Expo SDK 58 the
+ * static export writes the head from it, not from `PageHead`. Each route
+ * exports it with the same meta its `PageHead` renders, and keeps the
+ * `PageHead` for the JSON-LD and for the head after a client navigation.
+ */
+export const metadataFor = (meta: PageMeta): PageMetadata => toMetadata(site, meta)
+
+/** The head of a screen that a crawler must not index. */
+export const noindexMeta = (title: string): PageMeta => ({ title, noindex: true })
 
 const HOME_URL = `${SITE_URL}/`
 const PRIVACY_URL = `${SITE_URL}/privacy`

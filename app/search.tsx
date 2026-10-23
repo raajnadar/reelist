@@ -12,6 +12,7 @@ import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor, noindexMeta } from '../lib/head'
 import { searchMovies } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
 import { GRID_GAP, GRID_PADDING, gridInset, posterColumns } from '../lib/grid'
@@ -20,6 +21,8 @@ import { useDebounced } from '../lib/useDebounced'
 import { useKeyboardHeight } from '../lib/useKeyboardHeight'
 import { useResource } from '../lib/useResource'
 import type { Paged } from '../lib/types'
+
+export const generateMetadata = () => metadataFor(noindexMeta('Search'))
 
 /**
  * Where the field's top edge sits, measured from the top of the window.

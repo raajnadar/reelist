@@ -1,7 +1,7 @@
 import { genreMeta, homeMeta, movieMeta, personMeta } from './head'
 import { mockMovieDetail, mockPerson } from './mock'
-import { genreUrl, movieUrl, personUrl, SITE_URL } from './share'
-import { site } from './site'
+import { genreUrl, movieUrl, personUrl } from './share'
+import { SITE_URL, site } from './site'
 
 it('adds the site name to the tab title only', () => {
   expect(site.titleTemplate('Search')).toBe('Search · Reelist')

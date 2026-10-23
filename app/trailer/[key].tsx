@@ -9,8 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StateMessage } from '../../components/StateMessage'
 import { TrailerPlayer } from '../../components/TrailerPlayer'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor, noindexMeta } from '../../lib/head'
 import { ON_STAGE, STAGE } from '../../lib/stage'
 import { watchUrl } from '../../lib/youtube'
+
+export const generateMetadata = () => metadataFor(noindexMeta('Trailer'))
 
 /**
  * The player screen.

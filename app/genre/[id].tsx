@@ -22,7 +22,7 @@ import {
 } from '../../lib/discover'
 import { missingFailure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
-import { genreMeta } from '../../lib/head'
+import { genreMeta, metadataFor, noindexMeta } from '../../lib/head'
 import { genreEntry, loadSeed } from '../../lib/prerender'
 import { usePrerendered } from '../../lib/usePrerendered'
 import { useResource } from '../../lib/useResource'
@@ -47,6 +47,14 @@ export async function generateStaticParams(): Promise<{ id: string }[]> {
  */
 export async function loader(_request: unknown, params: { id: string }) {
   return genreEntry(await loadSeed(), params.id)
+}
+
+/** The head the static export writes. The seed genre, or the missing-genre head. */
+export async function generateMetadata(_request: unknown, params: { id: string }) {
+  const genre = genreEntry(await loadSeed(), params.id)
+  return metadataFor(
+    genre ? genreMeta(genre.id, genre.name) : noindexMeta(REPORTS.missing.title),
+  )
 }
 
 /**

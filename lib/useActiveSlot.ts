@@ -24,6 +24,9 @@ export function useActiveSlot(
 ) {
   const [active, setActive] = useState(initial)
 
+  // No dependency list: the Babel plugin captures `snap`, `count` and
+  // `initial` on both platforms, and Reanimated 4.7 warns on native when a
+  // list is passed.
   useAnimatedReaction(
     // No pitch is the static web page before hydration. See CarouselStill.
     () =>
@@ -33,7 +36,6 @@ export function useActiveSlot(
     (next, previous) => {
       if (next !== previous) scheduleOnRN(setActive, next)
     },
-    [snap, count, initial],
   )
 
   // A shorter list can arrive under a stale index, before the reaction runs.

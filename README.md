@@ -32,7 +32,7 @@ If the code does not scan, open this link on the phone:
 exp://u.expo.dev/7fe1b9fe-fa75-406c-aaf9-ae330957fc46?channel-name=main
 ```
 
-The app runs on Expo Go SDK 57. Update Expo Go if it reports a version mismatch.
+The app runs on Expo Go SDK 58. Update Expo Go if it reports a version mismatch.
 
 ### In a browser
 
@@ -596,8 +596,8 @@ touch.
 
 ## Technology
 
-- Expo SDK 57 and Expo Router 57
-- React Native 0.86 and React 19
+- Expo SDK 58 and Expo Router 58
+- React Native 0.88 and React 19
 - `@rootnative/core` — the theme system with Material Design 3 tokens
 - `@rootnative/components` — the UI components
 - `@rootnative/inertia` — the animation primitives, over Reanimated

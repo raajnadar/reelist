@@ -5,8 +5,10 @@ import { PageHead } from '@rootnative/seo/expo-router'
 import { Link, useRouter, type Href } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { privacyMeta } from '../lib/head'
+import { metadataFor, privacyMeta } from '../lib/head'
 import { NEW_TAB } from '../lib/share'
+
+export const generateMetadata = () => metadataFor(privacyMeta)
 
 /** The widest the text runs, the same measure as the about card. */
 const MAX_WIDTH = 640

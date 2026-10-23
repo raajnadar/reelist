@@ -6,6 +6,7 @@ import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor, noindexMeta } from '../lib/head'
 import {
   useBreakpoint,
   useTheme,
@@ -25,6 +26,8 @@ import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib
 import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
 import { NEW_TAB } from '../lib/share'
 import { BUTTON_SIZE } from '../lib/buttonSize'
+
+export const generateMetadata = () => metadataFor(noindexMeta('About'))
 
 const DOCS_URL = 'https://rootnative.github.io/ui/'
 const SOURCE_URL = 'https://github.com/raajnadar/reelist'

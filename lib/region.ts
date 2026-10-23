@@ -162,6 +162,18 @@ const subscribe = (listener: () => void) => {
 
 const getState = () => state
 
+/**
+ * The snapshot of the static export and of the first client render.
+ *
+ * `deviceRegion()` reads the locale of the machine it runs on: Node at export
+ * time, the browser at hydration. The two differ for every reader outside the
+ * region of the build machine, and React then reports a hydration error on
+ * the about screen, where the region name is text. So both sides render the
+ * fallback, and the device region replaces it right after hydration.
+ */
+const SERVER_STATE: Region = { code: FALLBACK_REGION, chosen: false, loaded: false }
+const getServerState = () => SERVER_STATE
+
 /** Picks a country. `null` goes back to following the device. */
 export function setRegion(code: string | null): void {
   touched = true
@@ -171,7 +183,8 @@ export function setRegion(code: string | null): void {
 }
 
 /** The country in use, whether the reader chose it, and whether the copy was read. */
-export const useRegion = (): Region => useSyncExternalStore(subscribe, getState, getState)
+export const useRegion = (): Region =>
+  useSyncExternalStore(subscribe, getState, getServerState)
 
 /**
  * Puts the store back to its start state, for a test. jest.setup.js calls this

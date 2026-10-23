@@ -7,7 +7,13 @@
     // global type package the project needs must be named here, or `describe`,
     // `expect` and `global` resolve to nothing and every test file fails to
     // typecheck.
-    "types": ["jest", "node", "react"]
+    "types": ["jest", "node", "react"],
+    // React Native 0.88 types are strict by default, and the strict `ViewStyle`
+    // has no top-level `translateX` or `translateY`. `@rootnative/inertia`
+    // 0.0.19 builds the `Motion` style type from `ViewStyle`, so each entrance
+    // offset fails to typecheck. Keep the legacy types until an `inertia`
+    // release adds those keys. React Native removes this condition after 0.89.
+    "customConditions": ["react-native-legacy-deep-imports"]
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

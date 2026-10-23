@@ -7,8 +7,8 @@ import {
   shareMovie,
   shareTargets,
   shareTitle,
-  SITE_URL,
 } from './share'
+import { SITE_URL } from './site'
 
 const [dune] = mockMovies
 

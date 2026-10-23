@@ -13,7 +13,7 @@ import { StateMessage } from '../../components/StateMessage'
 import { getPerson } from '../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
 import { GRID_GAP, GRID_PADDING, posterColumns } from '../../lib/grid'
-import { personMeta } from '../../lib/head'
+import { metadataFor, noindexMeta, personMeta } from '../../lib/head'
 import type { PersonDetail } from '../../lib/types'
 import { useResource } from '../../lib/useResource'
 
@@ -50,6 +50,8 @@ const REPORTS: Record<
     actionIcon: 'home-outline',
   },
 }
+
+export const generateMetadata = () => metadataFor(noindexMeta(REPORTS.missing.title))
 
 export default function PersonScreen() {
   const theme = useTheme()
