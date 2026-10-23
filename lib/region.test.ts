@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
+import { createElement } from 'react'
+import { renderToString } from 'react-dom/server'
 import {
   STORAGE_KEY,
   deviceRegion,
@@ -51,6 +53,17 @@ describe('the store', () => {
     const { result } = renderHook(() => useRegion())
 
     expect(result.current).toMatchObject({ code: 'US', chosen: false })
+  })
+
+  // The export runs on one machine and hydrates on another. A server render
+  // that followed the device would differ from the browser for every reader
+  // outside that region, and React would report a hydration error.
+  it('renders the fallback on the server, whatever the device reports', () => {
+    getLocales.mockReturnValueOnce([{ languageTag: 'en-GB', regionCode: 'GB' }])
+    resetRegion()
+    const Probe = () => createElement('span', null, useRegion().code)
+
+    expect(renderToString(createElement(Probe))).toContain('US')
   })
 
   it('keeps a chosen country on the device', async () => {
