@@ -5,6 +5,7 @@ import { useSnackbar } from '@rootnative/components/snackbar'
 import { Linking } from 'react-native'
 import { copyMovieLink, hasShareSheet, shareMovie, shareTargets } from '../lib/share'
 import type { MovieDetail } from '../lib/types'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /**
  * The share action in a browser: a menu, because the browser's own sheet is
@@ -38,7 +39,7 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
       anchor={
         <Button
           variant="outlined"
-          size="medium"
+          size={BUTTON_SIZE.inline}
           leadingIcon="share-variant"
           accessibilityLabel="Share this movie"
           testID="share-button"

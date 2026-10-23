@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { ThemeMode } from '@rootnative/core'
 import { useSyncExternalStore } from 'react'
+import { Platform } from 'react-native'
 
 /**
  * What the reader chose the app should look like: light, dark, or the system
@@ -88,6 +89,8 @@ const persist = () => {
  * one: it is newer, and `persist` already wrote it.
  */
 const hydrate = async () => {
+  if (readStoredSync()) return
+
   let raw: string | null = null
   try {
     raw = await AsyncStorage.getItem(STORAGE_KEY)
@@ -96,6 +99,26 @@ const hydrate = async () => {
   }
 
   set({ ...(touched ? {} : parseStored(raw)), loaded: true })
+}
+
+/**
+ * On web, AsyncStorage is localStorage, so the copy can be read in the same
+ * tick as the first subscriber. The scheme guard in app/+html.tsx hides the
+ * page from a dark reader until ThemeProvider marks the theme ready, and the
+ * provider does that in the effect right before this read. A synchronous read
+ * puts the stored mode on screen in that same flush, before the first paint.
+ * An asynchronous read would show the system mode for a frame first.
+ */
+const readStoredSync = (): boolean => {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    set({ ...(touched ? {} : parseStored(raw)), loaded: true })
+    return true
+  } catch {
+    return false
+  }
 }
 
 const subscribe = (listener: () => void) => {

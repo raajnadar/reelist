@@ -2,6 +2,7 @@ import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { FlatList } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovies } from '../../../lib/mock'
+import { PullToRefresh } from '../../../components/PullToRefresh'
 import GenreScreen, { mergePages } from '../../../app/genre/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
 import { setLanguage } from '../../../lib/language'
@@ -329,6 +330,38 @@ describe('the filters', () => {
     expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, { rating: 7 })
     expect(screen.queryByText('Film 1')).toBeNull()
     expect(screen.queryByText('Film 21')).toBeNull()
+  })
+
+  it('starts again from the first page on a pull to refresh', async () => {
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 20))
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(21, 20))
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached')
+    await waitFor(() => expect(screen.getByText('Film 21')).toBeTruthy())
+
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
+    act(() => screen.UNSAFE_getByType(PullToRefresh).props.onRefresh())
+
+    // The grid stays up while the new first page loads.
+    expect(screen.getByText('Film 1')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
+    expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, {})
+    // The pages after the first go with the old first page.
+    expect(screen.queryByText('Film 21')).toBeNull()
+  })
+
+  it('keeps the grid and says so when the refresh fails', async () => {
+    getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 20))
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
+
+    getMoviesByGenre.mockRejectedValueOnce(new Error('offline'))
+    act(() => screen.UNSAFE_getByType(PullToRefresh).props.onRefresh())
+
+    await waitFor(() => expect(screen.getByText('Could not refresh')).toBeTruthy())
+    expect(screen.getByText('Film 1')).toBeTruthy()
   })
 
   // The preference from the about screen is the start value for this visit.

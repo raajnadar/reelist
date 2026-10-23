@@ -10,6 +10,7 @@ import { BookmarkIcon } from './BookmarkIcon'
 import { ShareButton } from './ShareButton'
 import { haptic } from '../lib/haptics'
 import { restoreSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /**
  * What the reader can do with the film: watch the trailer, keep it, and send
@@ -31,21 +32,31 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
   const toggle = () => {
     toggleSaved(movie)
     haptic(saved ? 'unsave' : 'save')
-    if (!saved) {
-      setPops((n) => n + 1)
-      return
-    }
+    if (!saved) setPops((n) => n + 1)
 
+    // Both directions report, so a save and an unsave read the same. A save
+    // has nothing to undo, so its action opens the list it went into.
+    //
     // `long`, because the library makes a snackbar with an action wait
     // forever by default, and it would then stay on the screens the reader
     // opens next. `replace`, so a fast save and unsave does not queue two.
-    snackbar.show({
-      message: 'Removed from your watchlist',
-      actionLabel: 'Undo',
-      duration: 'long',
-      replace: true,
-      onAction: () => restoreSaved([movie], savedAt),
-    })
+    snackbar.show(
+      saved
+        ? {
+            message: 'Removed from your watchlist',
+            actionLabel: 'Undo',
+            duration: 'long',
+            replace: true,
+            onAction: () => restoreSaved([movie], savedAt),
+          }
+        : {
+            message: 'Saved to your watchlist',
+            actionLabel: 'View',
+            duration: 'long',
+            replace: true,
+            onAction: () => router.push('/watchlist'),
+          },
+    )
   }
 
   // Read into a const before the callback below reads it. `movie.trailer` is a
@@ -72,7 +83,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       {trailer ? (
         <Button
           variant="filled"
-          size="medium"
+          size={BUTTON_SIZE.inline}
           leadingIcon="play"
           onPress={() =>
             router.push(
@@ -96,7 +107,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
       */}
       <Button
         variant={saved ? 'filled' : 'tonal'}
-        size="medium"
+        size={BUTTON_SIZE.inline}
         leadingIcon={(props) => <BookmarkIcon saved={saved} pop={pops} {...props} />}
         onPress={toggle}
       >

@@ -1,8 +1,17 @@
 import { useTheme } from '@rootnative/core'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor } from '../lib/head'
+import { notFoundMeta } from '../lib/site'
 import { useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { StateMessage } from '../components/StateMessage'
+
+/**
+ * Expo calls this for no route on a static export of SDK 58, so the head of
+ * the page comes from scripts/not-found-head.js. The export keeps it for the
+ * day Expo does, and for a server export.
+ */
+export const generateMetadata = () => metadataFor(notFoundMeta)
 
 /**
  * The screen for a path that names no route: a mistyped link, or a link to a
@@ -18,7 +27,7 @@ export default function NotFoundScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <PageHead title="Page not found" noindex />
+      <PageHead {...notFoundMeta} />
       <StateMessage
         testID="not-found"
         icon="link-off"

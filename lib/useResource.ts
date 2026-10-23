@@ -14,6 +14,13 @@ export type Resource<T> = {
   failure: Failure | null
   loading: boolean
   reload: () => void
+  /**
+   * Asks again and keeps the answer on screen until the new one lands. For a
+   * pull to refresh, where the reader holds the list they want replaced.
+   * Resolves `false` when the request fails; the data then stays as it was.
+   */
+  refresh: () => Promise<boolean>
+  refreshing: boolean
 }
 
 /**
@@ -99,6 +106,45 @@ export function useResource<T>(
     }
   }, [key, attempt, fallbackMessage])
 
+  const [refreshing, setRefreshing] = useState(false)
+
+  /**
+   * The key on screen right now, readable from inside a promise. A refresh
+   * that lands after the reader moved to another key must not replace the
+   * answer for that key.
+   */
+  const keyRef = useRef(key)
+  useEffect(() => {
+    keyRef.current = key
+  }, [key])
+
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const refresh = useCallback(async () => {
+    if (key === null) return true
+    setRefreshing(true)
+    try {
+      const value = await fetcherRef.current()
+      writeCache(key, value)
+      if (mountedRef.current && keyRef.current === key) {
+        setOutcome({ key, data: value, failure: null })
+      }
+      return true
+    } catch {
+      // The reader has the list in front of them. The caller says that the
+      // refresh failed; the data is not replaced by an error.
+      return false
+    } finally {
+      if (mountedRef.current) setRefreshing(false)
+    }
+  }, [key])
+
   const reload = useCallback(() => {
     // The stored answer goes first. Without this the effect below would find a
     // current copy and return, and the retry button would do nothing.
@@ -122,5 +168,7 @@ export function useResource<T>(
     // request that replaces it runs.
     loading: key !== null && !current && !cached,
     reload,
+    refresh,
+    refreshing,
   }
 }

@@ -1,15 +1,7 @@
 import { Platform, Share } from 'react-native'
 import { releaseYear } from './format'
+import { SITE_URL } from './site'
 import type { Movie } from './types'
-
-/**
- * The public address of the web build, with no trailing slash.
- *
- * A shared link points here on every platform, not at the `reelist://` scheme.
- * A web link opens for a reader who does not have the app, and the same page
- * carries the meta tags a crawler reads. The scheme link does neither.
- */
-export const SITE_URL = 'https://reelist.raajnadar.in'
 
 /** The canonical web page for one film. */
 export const movieUrl = (id: number) => `${SITE_URL}/movie/${id}`

@@ -6,6 +6,7 @@ import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor, noindexMeta } from '../lib/head'
 import {
   useBreakpoint,
   useTheme,
@@ -24,6 +25,9 @@ import { setMode, useAppearance } from '../lib/appearance'
 import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib/language'
 import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
 import { NEW_TAB } from '../lib/share'
+import { BUTTON_SIZE } from '../lib/buttonSize'
+
+export const generateMetadata = () => metadataFor(noindexMeta('About'))
 
 const DOCS_URL = 'https://rootnative.github.io/ui/'
 const SOURCE_URL = 'https://github.com/raajnadar/reelist'
@@ -453,7 +457,7 @@ export default function AboutScreen() {
                   <Link href={DOCS_URL} asChild>
                     <Button
                       variant="tonal"
-                      size="medium"
+                      size={BUTTON_SIZE.inline}
                       leadingIcon="book-open-variant"
                       hrefAttrs={NEW_TAB}
                     >
@@ -468,7 +472,7 @@ export default function AboutScreen() {
                   <Link href={SOURCE_URL} asChild>
                     <Button
                       variant="outlined"
-                      size="medium"
+                      size={BUTTON_SIZE.inline}
                       leadingIcon="github"
                       hrefAttrs={NEW_TAB}
                     >
@@ -478,7 +482,7 @@ export default function AboutScreen() {
                   <Link href="/privacy" asChild>
                     <Button
                       variant="outlined"
-                      size="medium"
+                      size={BUTTON_SIZE.inline}
                       leadingIcon="shield-lock-outline"
                     >
                       Privacy policy

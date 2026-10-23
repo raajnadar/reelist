@@ -209,3 +209,87 @@ it('calls the fetcher the render supplied, not the one from the previous key', a
 
   expect(seen).toEqual(['a', 'b'])
 })
+
+describe('refresh', () => {
+  it('keeps the answer on screen while it asks again, then replaces it', async () => {
+    const fetcher = jest.fn().mockResolvedValueOnce('old').mockResolvedValueOnce('new')
+
+    const { result } = renderHook(() => useResource('a', fetcher, 'failed'))
+    await waitFor(() => expect(result.current.data).toBe('old'))
+
+    let done: Promise<boolean> = Promise.resolve(false)
+    act(() => {
+      done = result.current.refresh()
+    })
+
+    // No placeholders: a pull to refresh holds the list the reader has.
+    expect(result.current).toMatchObject({
+      refreshing: true,
+      loading: false,
+      data: 'old',
+    })
+    await expect(done).resolves.toBe(true)
+    await waitFor(() => expect(result.current.data).toBe('new'))
+    expect(result.current.refreshing).toBe(false)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the answer and reports false when the new request fails', async () => {
+    const fetcher = jest
+      .fn()
+      .mockResolvedValueOnce('old')
+      .mockRejectedValueOnce(new Error('offline'))
+
+    const { result } = renderHook(() => useResource('a', fetcher, 'failed'))
+    await waitFor(() => expect(result.current.data).toBe('old'))
+
+    let done: Promise<boolean> = Promise.resolve(true)
+    act(() => {
+      done = result.current.refresh()
+    })
+
+    await expect(done).resolves.toBe(false)
+    await waitFor(() => expect(result.current.refreshing).toBe(false))
+    expect(result.current).toMatchObject({ data: 'old', failure: null })
+  })
+
+  it('sends nothing for a null key', async () => {
+    const fetcher = jest.fn(() => Promise.resolve('film'))
+    const { result } = renderHook(() => useResource(null, fetcher, 'failed'))
+
+    await expect(result.current.refresh()).resolves.toBe(true)
+    expect(fetcher).not.toHaveBeenCalled()
+  })
+
+  it('ignores a refresh that lands after the key changed', async () => {
+    let resolveRefresh: (v: string) => void = () => {}
+    let calls = 0
+    const fetcher = jest.fn((key: string | null): Promise<string> => {
+      calls += 1
+      // The second request for 'a' is the refresh. It is held open so that
+      // the key can change under it.
+      return key === 'a' && calls > 1
+        ? new Promise<string>((resolve) => {
+            resolveRefresh = resolve
+          })
+        : Promise.resolve(key ?? '')
+    })
+
+    const { result, rerender } = renderHook(
+      ({ key }: Props) => useResource(key, () => fetcher(key), 'failed'),
+      { initialProps: { key: 'a' } },
+    )
+    await waitFor(() => expect(result.current.data).toBe('a'))
+
+    act(() => {
+      void result.current.refresh()
+    })
+    rerender({ key: 'b' })
+    await waitFor(() => expect(result.current.data).toBe('b'))
+
+    await act(async () => {
+      resolveRefresh('a again')
+    })
+    expect(result.current.data).toBe('b')
+  })
+})

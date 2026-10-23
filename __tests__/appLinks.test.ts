@@ -1,5 +1,5 @@
 import app from '../app.json'
-import { SITE_URL } from '../lib/share'
+import { SITE_URL } from '../lib/site'
 import assetLinks from '../public/.well-known/assetlinks.json'
 
 // Android checks the App Link when the app is installed. A wrong value fails

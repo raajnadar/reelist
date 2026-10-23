@@ -1,10 +1,17 @@
 import {
+  SCHEME_ATTRIBUTE,
+  schemeGuardCss,
+  schemeGuardScript,
+} from '@rootnative/core/static-export'
+import {
   entranceGuardCss,
   entranceGuardNoscriptCss,
 } from '@rootnative/inertia/static-export'
 import { shellTags } from '@rootnative/seo/expo-router'
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html'
 import type { PropsWithChildren } from 'react'
+import { STORAGE_KEY as APPEARANCE_STORAGE_KEY } from '../lib/appearance'
+import { darkTheme } from '../theme'
 
 /**
  * The origin of the TMDB proxy, or null when the build has no proxy URL.
@@ -45,6 +52,30 @@ function proxyOrigin(): string | null {
 /** The splash colour from app.json, which the browser paints around the page. */
 const THEME_COLOR = '#4C0519'
 
+/**
+ * The scheme guard of core alpha.28, with the stored choice of this app.
+ *
+ * The export holds the light theme as inline styles, so a reader with a dark
+ * scheme saw a light page until the bundle hydrated. The core script reads the
+ * OS scheme and writes it to `<html>`; the CSS then hides the page for a dark
+ * reader until ThemeProvider marks the theme ready.
+ *
+ * The core script reads a bare 'dark' or 'light' from localStorage, but this
+ * app stores `{ "mode": "dark" }` under its own key (lib/appearance.ts). So
+ * the core script runs with no key, and a second script applies the stored
+ * choice over the OS scheme, as the provider does after hydration.
+ */
+const schemeGuard = `${schemeGuardScript({ storageKey: null })};
+(function () {
+  try {
+    var mode = JSON.parse(window.localStorage.getItem(${JSON.stringify(APPEARANCE_STORAGE_KEY)})).mode
+    if (mode === 'dark' || mode === 'light') {
+      document.documentElement.setAttribute(${JSON.stringify(SCHEME_ATTRIBUTE)}, mode)
+    }
+  } catch (e) {}
+})()
+`
+
 export default function Root({ children }: PropsWithChildren) {
   const { bodyAttributes, bodyNodes, htmlAttributes, headNodes } =
     useServerDocumentContext()
@@ -64,6 +95,12 @@ export default function Root({ children }: PropsWithChildren) {
           ],
         })}
         <ScrollViewStyleReset />
+        <script dangerouslySetInnerHTML={{ __html: schemeGuard }} />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: schemeGuardCss({ background: darkTheme.colors.background }),
+          }}
+        />
         {/* A server-painted element shows at rest (lib/useServerPainted.ts).
             This reveals any entrance that still starts hidden when the bundle
             never runs. */}

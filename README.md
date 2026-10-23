@@ -253,6 +253,7 @@ components/
 ├── TmdbLogo.tsx         # The TMDB logo that the TMDB API terms require
 ├── SpinningCog.tsx      # The settings icon, which turns once every few seconds
 ├── StateMessage.tsx     # The shared failure, empty, and prompt block
+├── PullToRefresh.tsx    # The pull to refresh spinner, in the theme colours
 ├── RemoteImage.tsx      # Every TMDB picture, cached and cross-dissolved
 └── Skeleton.tsx         # The loading placeholders
 lib/
@@ -267,6 +268,7 @@ lib/
 ├── youtube.ts           # The embed URL, the watch URL, and the player page
 ├── errors.ts            # Sorts a failure into transient, setup, or missing
 ├── motion.ts            # The shared transition tokens and the stagger
+├── buttonSize.ts        # One Button size for each role
 ├── useDebounced.ts      # Delays a value until it stops changing
 ├── useResource.ts       # Loads one key, and keeps the answer
 ├── resourceCache.ts     # The store behind useResource
@@ -287,7 +289,7 @@ app.json                 # Expo configuration
 app.config.js            # Adds `baseUrl` for the GitHub Pages build
 eas.json                 # EAS build profiles, each with its own update channel
 jest.config.js           # Two projects: app and proxy
-eslint.config.js         # Includes the rule that bans a key in app code
+eslint.config.js         # The rules that ban a key in app code and a literal Button size
 CLAUDE.md                # Instructions for AI agents
 ```
 
@@ -338,10 +340,10 @@ because either can change while a request is in flight.
 const detail = useResource(validId ? `movie:${movieId}` : null, () => getMovie(movieId), 'Could not load the movie')
 ```
 
-The hook returns `data`, `failure`, `loading`, and `reload`. A `null` key is an
-idle resource: it sends no request and reports no failure, which is what makes
-an empty search box not a search, and a link that names no film not a loading
-screen.
+The hook returns `data`, `failure`, `loading`, `reload`, `refresh`, and
+`refreshing`. A `null` key is an idle resource: it sends no request and reports
+no failure, which is what makes an empty search box not a search, and a link
+that names no film not a loading screen.
 
 `lib/resourceCache.ts` keeps each answer for five minutes, under the ten minutes
 the proxy caches at its edge. A return to the home screen therefore draws the
@@ -349,10 +351,26 @@ rows on the first frame instead of loading them again. After five minutes the
 old copy stays on screen while the new request runs, and a failed refresh leaves
 it there rather than replacing films the reader can see with an error.
 
+`reload` and `refresh` both ask again. They differ in what the reader sees:
+
+- `reload` is the retry button on a failed screen. It clears the answer, so the
+  placeholders come back while the request runs.
+- `refresh` is the pull to refresh on the home and the genre lists. The list
+  stays on screen while the request runs, and `refreshing` drives the spinner.
+  It resolves `false` when the request fails. The list then stays, and the
+  screen shows a short "Could not refresh" snackbar.
+
+`components/PullToRefresh.tsx` gives the native `RefreshControl` the theme
+colours, because it sits outside the theme. The browser shows no pull to
+refresh. The watchlist has none: it reads the device, and it has no request to
+repeat.
+
 One thing stayed in a screen. `app/genre/[id].tsx` appends page after page as
 the reader scrolls, and that is a growing list rather than the answer to one
 request. The hook holds its first page, which is why a return to the same genre
-is immediate.
+is immediate. A pull to refresh on the grid loads the first page again. The
+later pages go when the new first page lands, because the reader pulled at the
+top and the list starts there again.
 
 ### The person screen
 
@@ -438,6 +456,11 @@ AsyncStorage under one key. It is a module with a `useSyncExternalStore` hook
 over it, not a React context: the detail screen and the watchlist screen are
 often mounted together, and both have to see one press. The root layout gains no
 provider for it.
+
+A save and an unsave each show a snackbar. An unsave offers "Undo", which puts
+the film back at its old place in the list. A save has nothing to undo, so it
+offers "View", which opens the watchlist. Both stay for the long duration,
+because a snackbar with an action otherwise waits until the reader dismisses it.
 
 A saved film is stored whole, not as an id. A grid of ids would need one request
 per card before it could draw anything, and a watchlist that cannot open offline
@@ -555,6 +578,21 @@ silent fallback to the default spring.
 Reduced motion is handled once, in the same place: `<MotionConfig>` defaults to
 `reducedMotion="user"`, and every animation below it downgrades to no animation
 when the OS asks.
+
+### One button size for each role
+
+[lib/buttonSize.ts](lib/buttonSize.ts) gives each kind of button one size, the
+same way `lib/motion.ts` names each transition:
+
+| Role     | Size     | Height | Where                                                    |
+| -------- | -------- | ------ | -------------------------------------------------------- |
+| `inline` | `small`  | 40 dp  | Film actions, share, "Show more", the about screen links |
+| `state`  | `medium` | 56 dp  | The one action of an empty or failed screen              |
+
+A screen writes `size={BUTTON_SIZE.inline}`. ESLint rejects a literal size on a
+`Button`, so a new button cannot drift from the table. The Button pads its touch
+area to 48 dp on iOS and Android, so a 40 dp button is still large enough to
+touch.
 
 ## Technology
 

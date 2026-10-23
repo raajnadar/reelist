@@ -137,26 +137,73 @@ const toVideo = (raw: Record<string, unknown>): Video => ({
 })
 
 /**
- * The one video the screen can play, out of everything TMDB lists.
+ * Whether the player can open the video.
+ *
+ * The player is a YouTube embed, and TMDB also lists Vimeo entries. A record
+ * with no key would open the player on an empty route.
+ */
+const isPlayable = (video: Video): boolean => video.site === 'YouTube' && video.key !== ''
+
+/**
+ * The one video the trailer button plays, out of the playable ones.
  *
  * The choice belongs here rather than in the screen, for the reason `MAX_PAGE`
  * below does: the rule comes from the shape of the response. A film carries
- * teasers, clips, featurettes, and behind-the-scenes reels beside its trailer,
- * and TMDB lists Vimeo entries the app cannot open. Filtering in the screen
- * would repeat that knowledge in the UI.
+ * teasers, clips, featurettes, and behind-the-scenes reels beside its trailer.
+ * Filtering in the screen would repeat that knowledge in the UI.
  *
  * An official trailer wins over an unofficial one. TMDB marks a studio upload
  * `official: true`, and the rest are fan cuts and reaction videos of varying
  * quality. The first match is the fallback, because TMDB lists videos newest
  * first and a re-release trailer is a better answer than nothing.
  */
-const pickTrailer = (raws: Record<string, unknown>[]): Video | null => {
-  const trailers = raws
-    .map(toVideo)
-    .filter((v) => v.site === 'YouTube' && v.type === 'Trailer')
+const pickTrailer = (videos: Video[]): Video | null => {
+  const trailers = videos.filter((v) => v.type === 'Trailer')
 
   return trailers.find((v) => v.official) ?? trailers[0] ?? null
 }
+
+/**
+ * The most videos the row shows.
+ *
+ * A large franchise film lists more than fifty: each TV spot, each clip, and
+ * each interview. Nobody scrolls past twenty. The cap drops the fan uploads
+ * and the late types first, because the sort puts them last.
+ */
+const MAX_VIDEOS = 20
+
+/**
+ * The order of the video types in the row. A type TMDB adds later goes after
+ * these. TMDB sends `Opening Credits` too, which falls into that group.
+ */
+const VIDEO_TYPES = [
+  'Trailer',
+  'Teaser',
+  'Clip',
+  'Featurette',
+  'Behind the Scenes',
+  'Bloopers',
+]
+
+const typeRank = (type: string): number => {
+  const rank = VIDEO_TYPES.indexOf(type)
+  return rank === -1 ? VIDEO_TYPES.length : rank
+}
+
+/**
+ * The videos the row shows: studio uploads first, then by type.
+ *
+ * The sort is stable, so the videos in one group keep the TMDB order, which
+ * is newest first. The trailer the button plays is in the list too. The row
+ * decides whether a list of one repeats the button.
+ */
+const pickVideos = (videos: Video[]): Video[] =>
+  [...videos]
+    .sort(
+      (a, b) =>
+        Number(b.official) - Number(a.official) || typeRank(a.type) - typeRank(b.type),
+    )
+    .slice(0, MAX_VIDEOS)
 
 const toWatchProvider = (raw: Record<string, unknown>): WatchProvider => ({
   id: raw.provider_id as number,
@@ -252,6 +299,8 @@ const toMovieDetail = (
   const recommendations = (raw.recommendations as RawPaged) ?? {}
   const images = (raw.images as { backdrops?: Record<string, unknown>[] }) ?? {}
   const providers = (raw['watch/providers'] as Record<string, unknown>) ?? {}
+  // Before the cap, so a long list of clips cannot push the trailer out.
+  const playable = (videos.results ?? []).map(toVideo).filter(isPlayable)
 
   return {
     ...toMovie(raw),
@@ -266,7 +315,8 @@ const toMovieDetail = (
     vote_count: (raw.vote_count as number) ?? 0,
     poster_color: posterColor,
     cast: (credits.cast ?? []).map(toCastMember),
-    trailer: pickTrailer(videos.results ?? []),
+    trailer: pickTrailer(playable),
+    videos: pickVideos(playable),
     recommendations: toPaged(recommendations).results,
     images: pickImages(images.backdrops ?? []),
     providers: toWatchProviders(providers),

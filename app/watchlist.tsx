@@ -13,6 +13,7 @@ import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { metadataFor, noindexMeta } from '../lib/head'
 import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import {
@@ -22,6 +23,8 @@ import {
   useWatchlist,
   type WatchlistOrder,
 } from '../lib/watchlist'
+
+export const generateMetadata = () => metadataFor(noindexMeta('Watchlist'))
 
 const ORDERS: { value: WatchlistOrder; label: string; icon: string }[] = [
   { value: 'added', label: 'Date added', icon: 'calendar-clock-outline' },

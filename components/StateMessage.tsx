@@ -5,6 +5,7 @@ import { useTheme, type IconSource } from '@rootnative/core'
 import { Motion, Stagger } from '@rootnative/inertia'
 import type { RefObject } from 'react'
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /** Milliseconds between the badge, the text, and the action. */
 const STAGGER_INTERVAL = 60
@@ -171,7 +172,7 @@ export function StateMessage({
             <View ref={actionRef} collapsable={false}>
               <Button
                 variant="tonal"
-                size="medium"
+                size={BUTTON_SIZE.state}
                 leadingIcon={actionIcon}
                 onPress={action.onAction}
               >

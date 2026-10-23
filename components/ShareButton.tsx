@@ -2,6 +2,7 @@ import { Button } from '@rootnative/components/button'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { shareMovie } from '../lib/share'
 import type { MovieDetail } from '../lib/types'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /**
  * The share action on a phone: one press, one system sheet.
@@ -24,7 +25,12 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
   }
 
   return (
-    <Button variant="outlined" size="medium" leadingIcon="share-variant" onPress={share}>
+    <Button
+      variant="outlined"
+      size={BUTTON_SIZE.inline}
+      leadingIcon="share-variant"
+      onPress={share}
+    >
       Share
     </Button>
   )
