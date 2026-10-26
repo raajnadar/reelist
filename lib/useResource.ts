@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toFailure, type Failure } from './errors'
+import { subscribeOnline } from './network'
 import { evictCache, readCache, writeCache } from './resourceCache'
 
 /**
@@ -159,6 +160,30 @@ export function useResource<T>(
   // a previous key is ignored rather than cleared.
   const current = outcome && outcome.key === key ? outcome : null
   const cached = key === null ? null : readCache<T>(key)
+
+  /**
+   * A request that failed for want of a connection is sent again when the
+   * connection returns, so the reader does not have to find the retry
+   * button. Only a transient failure: a setup or a missing one would fail
+   * the same way. A failure while the device was online all along is left
+   * to the button, because the network was not what broke it.
+   */
+  const transientFailure = useRef(false)
+  useEffect(() => {
+    transientFailure.current = current?.failure?.kind === 'transient'
+  })
+  useEffect(() => {
+    let wasOffline = false
+    return subscribeOnline((online) => {
+      if (!online) {
+        wasOffline = true
+        return
+      }
+      if (!wasOffline) return
+      wasOffline = false
+      if (transientFailure.current) reload()
+    })
+  }, [reload])
 
   return {
     data: current?.data ?? cached?.value ?? null,

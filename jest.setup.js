@@ -39,3 +39,11 @@ beforeEach(async () => {
   // have to be emptied together.
   await AsyncStorage.clear()
 })
+
+// expo-network's native module is a stub here, and its stub listener has no
+// `remove`. A connected device with no events is what every screen test
+// expects; lib/network.test.ts drives the real store with its own mock.
+jest.mock('expo-network', () => ({
+  addNetworkStateListener: () => ({ remove: () => {} }),
+  getNetworkStateAsync: () => Promise.resolve({}),
+}))

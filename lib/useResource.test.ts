@@ -3,8 +3,22 @@ import { MissingProxyUrlError } from './config'
 import { CACHE_TTL_MS, clearCache } from './resourceCache'
 import { useResource } from './useResource'
 
+// The network store is driven by hand: each test reports the connection
+// going and coming back through the subscribers useResource registers.
+const mockNetworkListeners = new Set<(online: boolean) => void>()
+jest.mock('./network', () => ({
+  subscribeOnline: (listener: (online: boolean) => void) => {
+    mockNetworkListeners.add(listener)
+    return () => mockNetworkListeners.delete(listener)
+  },
+}))
+const reportOnline = (online: boolean) => {
+  act(() => mockNetworkListeners.forEach((listener) => listener(online)))
+}
+
 beforeEach(() => {
   clearCache()
+  mockNetworkListeners.clear()
 })
 
 // This version of `renderHook` types the callback as `(props: unknown) => any`
@@ -291,5 +305,62 @@ describe('refresh', () => {
       resolveRefresh('a again')
     })
     expect(result.current.data).toBe('b')
+  })
+})
+
+describe('reconnect', () => {
+  it('asks again when the connection returns after a transient failure', async () => {
+    const fetcher = jest
+      .fn<Promise<string>, []>()
+      .mockRejectedValueOnce(new Error('Could not reach the server.'))
+      .mockResolvedValueOnce('film')
+    const { result } = renderHook(() => useResource('a', fetcher, 'failed'))
+
+    await waitFor(() => expect(result.current.failure?.kind).toBe('transient'))
+
+    reportOnline(false)
+    reportOnline(true)
+
+    await waitFor(() => expect(result.current.data).toBe('film'))
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(result.current.failure).toBeNull()
+  })
+
+  it('leaves a setup failure alone: the connection was not what broke it', async () => {
+    const fetcher = jest.fn(() => Promise.reject(new MissingProxyUrlError()))
+    const { result } = renderHook(() => useResource('a', fetcher, 'failed'))
+
+    await waitFor(() => expect(result.current.failure?.kind).toBe('setup'))
+
+    reportOnline(false)
+    reportOnline(true)
+    await act(async () => {})
+
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends nothing on a reconnect when the answer is already in', async () => {
+    const fetcher = jest.fn(() => Promise.resolve('film'))
+    const { result } = renderHook(() => useResource('a', fetcher, 'failed'))
+
+    await waitFor(() => expect(result.current.data).toBe('film'))
+
+    reportOnline(false)
+    reportOnline(true)
+    await act(async () => {})
+
+    expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not ask again on a reconnect the device never lost', async () => {
+    const fetcher = jest.fn(() => Promise.reject(new Error('500')))
+    const { result } = renderHook(() => useResource('a', fetcher, 'failed'))
+
+    await waitFor(() => expect(result.current.failure?.kind).toBe('transient'))
+
+    reportOnline(true)
+    await act(async () => {})
+
+    expect(fetcher).toHaveBeenCalledTimes(1)
   })
 })
