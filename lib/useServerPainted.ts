@@ -1,6 +1,5 @@
-import { useState, useSyncExternalStore } from 'react'
-
-const subscribe = () => () => {}
+import { useState } from 'react'
+import { useHydrating } from './useHydrating'
 
 /**
  * Whether this component first rendered as part of the HTML of a static web
@@ -19,11 +18,7 @@ const subscribe = () => () => {}
  * single-page web build do not hydrate, so the answer there is false.
  */
 export function useServerPainted(): boolean {
-  const hydrating = useSyncExternalStore(
-    subscribe,
-    () => false,
-    () => true,
-  )
+  const hydrating = useHydrating()
   const [painted] = useState(hydrating)
 
   return painted

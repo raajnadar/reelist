@@ -26,6 +26,7 @@ import {
   type Destination,
 } from '../lib/navigation'
 import { ContentWidthContext } from '../lib/useContentWidth'
+import { useHydrating } from '../lib/useHydrating'
 import { useKeyboardShrinksWindow } from '../lib/useKeyboardShrinksWindow'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import { useWatchlist } from '../lib/watchlist'
@@ -84,6 +85,7 @@ export function AppNavigation({ children }: { children: ReactNode }) {
    */
   const keyboardUp = useKeyboardShrinksWindow()
   const bar = kind === 'bar' && !hidden && !keyboardUp
+  const hydrating = useHydrating()
   const saved = useWatchlist().movies.length
 
   /**
@@ -271,7 +273,15 @@ export function AppNavigation({ children }: { children: ReactNode }) {
         </ContentWidthContext.Provider>
       </SafeAreaInsetsContext.Provider>
       {bar ? (
+        // The static site serves the home page as the fallback for a page
+        // that is not prerendered, so a cold open of a film on a phone
+        // hydrates a bar with "Home" lit, and hydration keeps that attribute
+        // over the client's value. The key changes once hydration ends, so
+        // React mounts the bar again with the right item lit. See
+        // lib/useHydrating.ts. The rail and the drawer mount fresh after the
+        // server's bar and need none of this.
         <NavigationBar
+          key={hydrating ? 'hydrating' : 'client'}
           items={items}
           value={value}
           onValueChange={go}
