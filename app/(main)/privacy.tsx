@@ -5,8 +5,8 @@ import { PageHead } from '@rootnative/seo/expo-router'
 import { Link, useRouter, type Href } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { metadataFor, privacyMeta } from '../lib/head'
-import { NEW_TAB } from '../lib/share'
+import { metadataFor, privacyMeta } from '../../lib/head'
+import { NEW_TAB } from '../../lib/share'
 
 export const generateMetadata = () => metadataFor(privacyMeta)
 

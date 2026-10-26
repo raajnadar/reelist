@@ -5,36 +5,39 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type DimensionValue } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CastRow } from '../../components/CastRow'
-import { DetailActions } from '../../components/DetailActions'
-import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
-import { DetailHero } from '../../components/DetailHero'
-import { DetailIdentity, DetailIdentitySkeleton } from '../../components/DetailIdentity'
-import { DetailOverview } from '../../components/DetailOverview'
-import { FilmTheme } from '../../components/FilmTheme'
-import { GalleryRow } from '../../components/GalleryRow'
-import { GenreChips } from '../../components/GenreChips'
-import { MovieRow } from '../../components/MovieRow'
+import { CastRow } from '../../../components/CastRow'
+import { DetailActions } from '../../../components/DetailActions'
+import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
+import { DetailHero } from '../../../components/DetailHero'
+import {
+  DetailIdentity,
+  DetailIdentitySkeleton,
+} from '../../../components/DetailIdentity'
+import { DetailOverview } from '../../../components/DetailOverview'
+import { FilmTheme } from '../../../components/FilmTheme'
+import { GalleryRow } from '../../../components/GalleryRow'
+import { GenreChips } from '../../../components/GenreChips'
+import { MovieRow } from '../../../components/MovieRow'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { SkeletonRow } from '../../components/Skeleton'
-import { StateMessage } from '../../components/StateMessage'
-import { VideoRow } from '../../components/VideoRow'
-import { WatchProviders } from '../../components/WatchProviders'
-import { getMovie } from '../../lib/api'
-import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
-import { metadataFor, movieMeta, noindexMeta } from '../../lib/head'
-import { BACKDROP_W780, POSTER_W500, backdropUrl, posterUrl } from '../../lib/images'
-import { STAGGER_INTERVAL } from '../../lib/motion'
+import { SkeletonRow } from '../../../components/Skeleton'
+import { StateMessage } from '../../../components/StateMessage'
+import { VideoRow } from '../../../components/VideoRow'
+import { WatchProviders } from '../../../components/WatchProviders'
+import { getMovie } from '../../../lib/api'
+import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
+import { metadataFor, movieMeta, noindexMeta } from '../../../lib/head'
+import { BACKDROP_W780, POSTER_W500, backdropUrl, posterUrl } from '../../../lib/images'
+import { STAGGER_INTERVAL } from '../../../lib/motion'
 import {
   fromSeed,
   loadSeed,
   movieEntry,
   movieIds,
   type PrerenderedMovie,
-} from '../../lib/prerender'
-import type { MovieDetail } from '../../lib/types'
-import { usePrerendered } from '../../lib/usePrerendered'
-import { useResource } from '../../lib/useResource'
+} from '../../../lib/prerender'
+import type { MovieDetail } from '../../../lib/types'
+import { usePrerendered } from '../../../lib/usePrerendered'
+import { useResource } from '../../../lib/useResource'
 
 /**
  * The films the static web export writes a page for. See lib/prerender.ts.
@@ -186,7 +189,7 @@ export default function MovieScreen() {
    * after an in-app link, because only the page the browser opened carries
    * its data. See lib/usePrerendered.web.ts.
    */
-  const entry = usePrerendered<PrerenderedMovie>(`/movie/${id}`)
+  const entry = usePrerendered<PrerenderedMovie>(`/(main)/movie/${id}`)
   const seed = validId && entry ? fromSeed(entry) : null
   const gone =
     validId && !detail.loading && detail.failure === null && detail.data === null

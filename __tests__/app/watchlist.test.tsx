@@ -1,23 +1,29 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, fireEvent, waitFor } from '@testing-library/react-native'
-import WatchlistScreen from '../../app/watchlist'
+import WatchlistScreen from '../../app/(main)/watchlist'
 import { mockMovies } from '../../lib/mock'
 import { renderWithProviders } from '../../lib/test-utils'
 import { STORAGE_KEY, toggleSaved } from '../../lib/watchlist'
 import { readSearchOrigin } from '../../lib/searchOrigin'
+import { haptic } from '../../lib/haptics'
+
+jest.mock('../../lib/haptics', () => ({ haptic: jest.fn() }))
+const mockHaptic = haptic as jest.Mock
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
 
 const mockPush = jest.fn()
+const mockBack = jest.fn()
 const mockReplace = jest.fn()
+const mockCanGoBack = jest.fn(() => true)
 
 jest.mock('expo-router', () =>
   jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
-    back: jest.fn(),
+    back: mockBack,
     replace: mockReplace,
-    canGoBack: () => true,
+    canGoBack: mockCanGoBack,
   })),
 )
 
@@ -33,6 +39,25 @@ const [first, second] = mockMovies
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockCanGoBack.mockReturnValue(true)
+})
+
+it('goes back', () => {
+  const screen = renderWithProviders(<WatchlistScreen />)
+
+  fireEvent.press(screen.getByLabelText('Go back'))
+  expect(mockBack).toHaveBeenCalled()
+})
+
+it('returns to the home screen when there is nowhere to go back to', () => {
+  // A deep link makes this the first entry in the history.
+  mockCanGoBack.mockReturnValue(false)
+
+  const screen = renderWithProviders(<WatchlistScreen />)
+
+  fireEvent.press(screen.getByLabelText('Go back'))
+  expect(mockBack).not.toHaveBeenCalled()
+  expect(mockReplace).toHaveBeenCalledWith('/')
 })
 
 it('draws the films saved on the device', async () => {
@@ -122,11 +147,13 @@ it('clears the watchlist, and the undo puts every film back', async () => {
 
   expect(await screen.findByTestId('watchlist-empty')).toBeTruthy()
   expect(screen.getByText('Watchlist cleared')).toBeTruthy()
+  expect(mockHaptic).toHaveBeenLastCalledWith('unsave')
 
   fireEvent.press(screen.getByText('Undo'))
 
   expect(await screen.findByText(first.title)).toBeTruthy()
   expect(screen.getByText(second.title)).toBeTruthy()
+  expect(mockHaptic).toHaveBeenLastCalledWith('save')
 })
 
 it('shows no options menu on an empty watchlist', async () => {

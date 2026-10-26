@@ -1,7 +1,7 @@
 import { fireEvent } from '@testing-library/react-native'
 import { Dimensions, StyleSheet } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
-import TrailerScreen from '../../../app/trailer/[key]'
+import TrailerScreen from '../../../app/(main)/trailer/[key]'
 import { PLAYER_ORIGIN } from '../../../lib/youtube'
 
 // Like the other screen tests, this one stays outside `app/`. A test file in

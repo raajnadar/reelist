@@ -1,21 +1,24 @@
 import { Typography } from '@rootnative/components/typography'
-import { useBreakpointValue, useTheme, useWindowDimensions } from '@rootnative/core'
+import { useBreakpointValue, useTheme } from '@rootnative/core'
 import { Motion, Presence, useScroll } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { DetailHeader, HEADER_HEIGHT } from '../../components/DetailHeader'
-import { MovieCard } from '../../components/MovieCard'
+import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
+import { MovieCard } from '../../../components/MovieCard'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { PersonProfile, PersonProfileSkeleton } from '../../components/PersonProfile'
-import { SkeletonGrid } from '../../components/Skeleton'
-import { StateMessage } from '../../components/StateMessage'
-import { getPerson } from '../../lib/api'
-import { missingFailure, type Failure, type FailureKind } from '../../lib/errors'
-import { GRID_GAP, GRID_PADDING, posterColumns } from '../../lib/grid'
-import { metadataFor, noindexMeta, personMeta } from '../../lib/head'
-import type { PersonDetail } from '../../lib/types'
-import { useResource } from '../../lib/useResource'
+import { PersonProfile, PersonProfileSkeleton } from '../../../components/PersonProfile'
+import { SkeletonGrid } from '../../../components/Skeleton'
+import { StateMessage } from '../../../components/StateMessage'
+import { getPerson } from '../../../lib/api'
+import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
+import { GRID_GAP, GRID_PADDING, posterColumns } from '../../../lib/grid'
+import { metadataFor, noindexMeta, personMeta } from '../../../lib/head'
+import type { PersonDetail } from '../../../lib/types'
+import { useContentWidth } from '../../../lib/useContentWidth'
+import { useResource } from '../../../lib/useResource'
+
+export const generateMetadata = () => metadataFor(noindexMeta(REPORTS.missing.title))
 
 /**
  * How each kind of failure is presented, and what it offers.
@@ -51,13 +54,11 @@ const REPORTS: Record<
   },
 }
 
-export const generateMetadata = () => metadataFor(noindexMeta(REPORTS.missing.title))
-
 export default function PersonScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
+  const width = useContentWidth()
   const columns = posterColumns(width)
 
   const { id } = useLocalSearchParams<{ id: string }>()

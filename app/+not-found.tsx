@@ -5,6 +5,7 @@ import { notFoundMeta } from '../lib/site'
 import { useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { StateMessage } from '../components/StateMessage'
+import { useRootScreenRole } from '../lib/useRootScreenRole'
 
 /**
  * Expo calls this for no route on a static export of SDK 58, so the head of
@@ -24,9 +25,13 @@ export const generateMetadata = () => metadataFor(notFoundMeta)
 export default function NotFoundScreen() {
   const theme = useTheme()
   const router = useRouter()
+  const landmark = useRootScreenRole()
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
+      role={landmark}
+    >
       <PageHead {...notFoundMeta} />
       <StateMessage
         testID="not-found"
@@ -37,7 +42,10 @@ export default function NotFoundScreen() {
         body="That link does not point at a page."
         actionLabel="Go home"
         actionIcon="home-outline"
-        onAction={() => router.replace('/')}
+        // `dismissTo` takes the dead link out of the history. With the group
+        // under it, the home opens in that group; on a deep link, the home
+        // takes the dead link's place, as a `replace` would.
+        onAction={() => router.dismissTo('/')}
       />
     </View>
   )

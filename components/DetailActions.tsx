@@ -47,7 +47,10 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
             actionLabel: 'Undo',
             duration: 'long',
             replace: true,
-            onAction: () => restoreSaved([movie], savedAt),
+            onAction: () => {
+              restoreSaved([movie], savedAt)
+              haptic('save')
+            },
           }
         : {
             message: 'Saved to your watchlist',

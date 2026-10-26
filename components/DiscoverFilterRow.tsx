@@ -1,6 +1,6 @@
 import { Chip } from '@rootnative/components/chip'
 import { Menu } from '@rootnative/components/menu'
-import { useWindowDimensions } from '@rootnative/core'
+import { useContentWidth } from '../lib/useContentWidth'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import {
   DECADES,
@@ -90,7 +90,7 @@ export function DiscoverFilterRow({
   filters: DiscoverFilters
   onChange: (filters: DiscoverFilters) => void
 }) {
-  const { width } = useWindowDimensions()
+  const width = useContentWidth()
 
   return (
     <View>

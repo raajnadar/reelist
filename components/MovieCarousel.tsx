@@ -11,6 +11,7 @@ import {
   type FlatList,
 } from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
+import { haptic } from '../lib/haptics'
 import type { Movie } from '../lib/types'
 import { useActiveSlot } from '../lib/useActiveSlot'
 import { useAutoplay } from '../lib/useAutoplay'
@@ -139,8 +140,26 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   }
 
   const autoplay = useAutoplay(count > 1, active, () => step(1))
+
+  /*
+    A swipe that lands on another film ticks once, when `active` crosses
+    over. The arrows and the autoplay move the list too, so the tick waits
+    for a drag, and a drag that settles back on the same film clears the
+    flag when its momentum ends, or the next autoplay step would tick.
+  */
+  const dragged = useRef(false)
+  useEffect(() => {
+    if (!dragged.current) return
+    dragged.current = false
+    haptic('select')
+  }, [active])
+  const onMomentumScrollEnd = () => {
+    dragged.current = false
+  }
+
   const onScrollBeginDrag = () => {
     target.current = null
+    dragged.current = true
     autoplay.dragHandlers.onScrollBeginDrag()
   }
 
@@ -233,6 +252,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
             onScroll={onScroll}
             onScrollBeginDrag={onScrollBeginDrag}
             onScrollEndDrag={autoplay.dragHandlers.onScrollEndDrag}
+            onMomentumScrollEnd={onMomentumScrollEnd}
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={start}
             windowSize={WINDOW_SIZE}

@@ -7,7 +7,11 @@ import {
 } from 'expo-haptics'
 import { Platform } from 'react-native'
 
-/** A film saved, a film removed, and a filter picked. */
+/**
+ * A film saved (also an undo that puts films back), a film removed (also a
+ * cleared watchlist), and a pick: a filter, a theme, a carousel slot landed
+ * on by a swipe, a cleared search box, a closed gallery.
+ */
 export type Haptic = 'save' | 'unsave' | 'select'
 
 // Android 14 is the first level with TOGGLE_ON, TOGGLE_OFF, and SEGMENT_TICK.

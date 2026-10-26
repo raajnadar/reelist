@@ -25,6 +25,7 @@ const metrics = {
 type LinkMockProps = {
   href: string
   asChild?: boolean
+  dismissTo?: boolean
   children: ReactElement<{ onPress?: (event?: unknown) => void }>
 }
 
@@ -34,8 +35,9 @@ type LinkMockProps = {
  * The cards and the chips are links, and the real `Link` needs a navigation
  * container that no test mounts. This one puts a press handler on its child
  * that calls `router.push` with the href, so a test that presses a card can
- * assert the same call it asserted when the card was a press handler. An href
- * with a scheme goes to `Linking.openURL`, as the real `Link` sends it.
+ * assert the same call it asserted when the card was a press handler. A link
+ * with `dismissTo` calls `router.dismissTo` instead, as the real one does. An
+ * href with a scheme goes to `Linking.openURL`, as the real `Link` sends it.
  *
  * `router` is a function, because a mock factory runs when the module is
  * first required, which is before the `mockPush` at the top of a test file is
@@ -43,14 +45,15 @@ type LinkMockProps = {
  *
  * A test that needs more from the module spreads this and adds to it.
  */
-export function expoRouterMock<R extends { push: (href: string) => void }>(
-  router: () => R,
-) {
-  function Link({ href, children }: LinkMockProps) {
+export function expoRouterMock<
+  R extends { push: (href: string) => void; dismissTo?: (href: string) => void },
+>(router: () => R) {
+  function Link({ href, dismissTo, children }: LinkMockProps) {
     return cloneElement(children, {
       onPress: (event?: unknown) => {
         children.props.onPress?.(event)
         if (/^[a-z][a-z\d+.-]*:/i.test(href)) void Linking.openURL(href)
+        else if (dismissTo) router().dismissTo?.(href)
         else router().push(href)
       },
     })
@@ -60,7 +63,8 @@ export function expoRouterMock<R extends { push: (href: string) => void }>(
   return { useRouter: router, Link, useIsFocused: () => true }
 }
 
-function Providers({ children }: { children: ReactElement }) {
+/** The providers alone, for a `renderRouter` test to pass as its `wrapper`. */
+export function Providers({ children }: { children: ReactElement }) {
   return (
     <SafeAreaProvider initialMetrics={metrics}>
       <ThemeProvider

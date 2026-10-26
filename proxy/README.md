@@ -192,8 +192,8 @@ allowlist.
 
 `/discover/movie` is the one path whose filter travels as a parameter rather
 than in the path. TMDB ignores a `with_genres` value it cannot parse and answers
-with an unfiltered list, so `app/genre/[id].tsx` checks the id before it asks —
-an unchecked bad id would render as a working screen showing every film.
+with an unfiltered list, so `app/(main)/genre/[id].tsx` checks the id before it
+asks — an unchecked bad id would render as a working screen showing every film.
 
 | Status | Meaning                                                       |
 | ------ | ------------------------------------------------------------- |

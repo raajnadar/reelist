@@ -2,7 +2,11 @@ import { act, fireEvent } from '@testing-library/react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import { writeCache } from '../../../lib/resourceCache'
-import GalleryScreen from '../../../app/gallery/[id]'
+import GalleryScreen from '../../../app/(main)/gallery/[id]'
+import { haptic } from '../../../lib/haptics'
+
+jest.mock('../../../lib/haptics', () => ({ haptic: jest.fn() }))
+const mockHaptic = haptic as jest.Mock
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file in
 // that folder becomes a route.
@@ -90,6 +94,7 @@ it('goes back on close when there is a screen to go back to', async () => {
   const screen = renderWithProviders(<GalleryScreen />)
 
   fireEvent.press(await screen.findByLabelText('Close the gallery'))
+  expect(mockHaptic).toHaveBeenCalledWith('select')
 
   expect(mockBack).toHaveBeenCalled()
   expect(mockReplace).not.toHaveBeenCalled()

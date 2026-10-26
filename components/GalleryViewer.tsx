@@ -26,6 +26,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { backdropUrl } from '../lib/images'
+import { haptic } from '../lib/haptics'
 import { ON_STAGE, STAGE } from '../lib/stage'
 import type { GalleryImage } from '../lib/types'
 import { RemoteImage } from './RemoteImage'
@@ -175,7 +176,10 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
     [count, index],
   )
 
-  const close = useCallback(() => onClose(), [onClose])
+  const close = useCallback(() => {
+    haptic('select')
+    onClose()
+  }, [onClose])
 
   /**
    * Where the still was when the finger landed, so a move is added to it.

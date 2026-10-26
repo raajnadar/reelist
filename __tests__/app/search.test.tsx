@@ -4,23 +4,33 @@ import { mockMovies } from '../../lib/mock'
 import SearchScreen from '../../app/search'
 import { SEARCH_DEBOUNCE_MS } from '../../lib/useDebounced'
 import { MissingProxyUrlError } from '../../lib/config'
+import { haptic } from '../../lib/haptics'
+
+jest.mock('../../lib/haptics', () => ({ haptic: jest.fn() }))
+const mockHaptic = haptic as jest.Mock
 
 // Outside `app/` for the reason movie/[id].test.tsx records: Expo Router builds
 // its route table from `require.context('./app')`, so a test file in there
 // becomes a route and Metro then bundles the testing library into the app.
 
 const mockPush = jest.fn()
+const mockDismissTo = jest.fn()
 let mockParams: { q?: string } = {}
 
 jest.mock('expo-router', () => ({
   ...jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
+    dismissTo: mockDismissTo,
     back: jest.fn(),
     replace: jest.fn(),
     canGoBack: () => true,
   })),
   useLocalSearchParams: () => mockParams,
 }))
+
+// The role reads the root stack, which this render has none of.
+// lib/useRootScreenRole.test.tsx checks it in a real router.
+jest.mock('../../lib/useRootScreenRole', () => ({ useRootScreenRole: () => undefined }))
 
 jest.mock('../../lib/api', () => ({
   searchMovies: jest.fn(),
@@ -95,6 +105,21 @@ it('renders a card per result', async () => {
   for (const movie of mockMovies.slice(0, 3)) {
     expect(await screen.findByText(movie.title)).toBeTruthy()
   }
+})
+
+// Closes the sheet first: a push from the sheet adds a second copy of the
+// `(main)` group above it. See app/_layout.tsx.
+it('closes the sheet and opens the film under it', async () => {
+  const [movie] = mockMovies
+  searchMovies.mockResolvedValue({ results: [movie] })
+
+  const screen = renderWithProviders(<SearchScreen />)
+  fireEvent.changeText(screen.getByLabelText(FIELD), 'dune')
+  await settle()
+  fireEvent.press(await screen.findByText(movie.title))
+
+  expect(mockDismissTo).toHaveBeenCalledWith(`/movie/${movie.id}`)
+  expect(mockPush).not.toHaveBeenCalled()
 })
 
 it('reports a search that matched nothing, distinctly from the first prompt', async () => {
@@ -268,6 +293,7 @@ it('clears the box with the trailing icon', async () => {
   await settle()
 
   await waitFor(() => expect(screen.getByText('Search for a movie')).toBeTruthy())
+  expect(mockHaptic).toHaveBeenCalledWith('select')
 })
 
 it('offers no clear icon while the box is empty', () => {

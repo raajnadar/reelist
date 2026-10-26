@@ -3,6 +3,7 @@ import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { Linking, Pressable, StyleSheet, View } from 'react-native'
+import { centredLines } from '../lib/centredLines'
 import { logoUrl } from '../lib/images'
 import { regionName, useRegion } from '../lib/region'
 import type { WatchProvider, WatchProviders as Providers } from '../lib/types'
@@ -176,5 +177,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: { width: TILE, height: TILE },
-  fallback: { textAlign: 'center', paddingHorizontal: 2 },
+  fallback: { ...centredLines, paddingHorizontal: 2 },
 })

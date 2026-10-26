@@ -1,36 +1,36 @@
 import { IconButton } from '@rootnative/components/icon-button'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
-import { useTheme } from '@rootnative/core'
+import { useBreakpoint, useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { BrandMark } from '../components/BrandMark'
-import { GenreChips } from '../components/GenreChips'
-import { MovieCarousel } from '../components/MovieCarousel'
-import { MovieRow } from '../components/MovieRow'
-import { PullToRefresh } from '../components/PullToRefresh'
+import { BrandMark } from '../../components/BrandMark'
+import { GenreChips } from '../../components/GenreChips'
+import { MovieCarousel } from '../../components/MovieCarousel'
+import { MovieRow } from '../../components/MovieRow'
+import { PullToRefresh } from '../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { SkeletonRow } from '../components/Skeleton'
-import { SpinningCog } from '../components/SpinningCog'
-import { StateMessage } from '../components/StateMessage'
+import { SkeletonRow } from '../../components/Skeleton'
+import { SpinningCog } from '../../components/SpinningCog'
+import { StateMessage } from '../../components/StateMessage'
 import {
   getGenres,
   getPopular,
   getPopularByLanguage,
   getTopRated,
   getTrending,
-} from '../lib/api'
-import { type FailureKind } from '../lib/errors'
-import { homeMeta, metadataFor } from '../lib/head'
-import { languageName, useLanguage } from '../lib/language'
-import { homeEntry, loadSeed, type HomeSeed } from '../lib/prerender'
-import { usePrerendered } from '../lib/usePrerendered'
-import { useResource } from '../lib/useResource'
-import { useSearchLaunch } from '../lib/useSearchLaunch'
-import { useServerPainted } from '../lib/useServerPainted'
-import type { Genre, Movie } from '../lib/types'
+} from '../../lib/api'
+import { type FailureKind } from '../../lib/errors'
+import { homeMeta, metadataFor } from '../../lib/head'
+import { languageName, useLanguage } from '../../lib/language'
+import { navigationKind } from '../../lib/navigation'
+import { homeEntry, loadSeed, type HomeSeed } from '../../lib/prerender'
+import { usePrerendered } from '../../lib/usePrerendered'
+import { useResource } from '../../lib/useResource'
+import { useServerPainted } from '../../lib/useServerPainted'
+import type { Genre, Movie } from '../../lib/types'
 
 export const generateMetadata = () => metadataFor(homeMeta)
 
@@ -67,7 +67,7 @@ export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { ref: searchRef, open: openSearch } = useSearchLaunch()
+  const navigation = navigationKind(useBreakpoint())
   const { code: language } = useLanguage()
 
   /**
@@ -150,7 +150,7 @@ export default function HomeScreen() {
    * have no seed, and the browser has it only when the site opened on this
    * page. See lib/usePrerendered.web.ts.
    */
-  const home = usePrerendered<HomeSeed>('/index')
+  const home = usePrerendered<HomeSeed>('/(main)/index')
   const seeded = language ? null : (home?.lists ?? null)
   const rowData: Row[] | null =
     rows.data ??
@@ -176,45 +176,38 @@ export default function HomeScreen() {
       ]}
     >
       <PageHead {...homeMeta} />
-      <View style={styles.header}>
-        <View style={styles.brand}>
-          <BrandMark size={26} />
+      {/*
+        The header leaves out what the navigation beside it shows: the rail
+        has the mark, and the drawer has the mark, the name, and the settings.
+        Beside the drawer the name stays the page's h1 for a screen reader.
+      */}
+      <View style={[styles.header, navigation === 'drawer' && styles.headerBesideDrawer]}>
+        <View style={navigation === 'drawer' ? styles.hiddenHeading : styles.brand}>
+          {navigation === 'bar' ? <BrandMark size={26} /> : null}
           <Typography variant="headlineMedium" level={1} style={styles.title}>
             Reelist
           </Typography>
         </View>
-        {/* IconButtons rather than AppBar `actions`: this screen draws its own
+        {/* An IconButton rather than AppBar `actions`: this screen draws its own
             title with the top inset above it, and swapping in an AppBar would
-            change the home layout to add three buttons. */}
-        <View style={styles.actions}>
-          <IconButton
-            icon={(props) => <SpinningCog {...props} />}
-            variant="standard"
-            accessibilityLabel="Settings"
-            onPress={() => router.push('/about')}
-          />
-          <IconButton
-            icon="bookmark-outline"
-            variant="standard"
-            accessibilityLabel="Open the watchlist"
-            onPress={() => router.push('/watchlist')}
-          />
-          {/* The wrapper is what the search sheet measures: its field starts
-              as a pill over this button. See lib/useSearchLaunch.ts. */}
-          <View ref={searchRef} collapsable={false}>
+            change the home layout to add one button. The search and the
+            watchlist are in the navigation around every screen; see
+            components/AppNavigation.tsx. */}
+        {navigation === 'drawer' ? null : (
+          <View style={styles.actions}>
             <IconButton
-              icon="magnify"
+              icon={(props) => <SpinningCog {...props} />}
               variant="standard"
-              accessibilityLabel="Search movies"
-              onPress={() => void openSearch()}
+              accessibilityLabel="Settings"
+              onPress={() => router.push('/about')}
             />
           </View>
-        </View>
+        )}
       </View>
 
-      {/* Outside the Presence block below, for the reason the search button is:
-          the chips do not depend on the film rows, so they must not wait for
-          them, disappear while they load, or vanish when they fail. */}
+      {/* Outside the Presence block below: the chips do not depend on the film
+          rows, so they must not wait for them, disappear while they load, or
+          vanish when they fail. */}
       <GenreChips genres={genreData} />
 
       {/*
@@ -320,4 +313,17 @@ const styles = StyleSheet.create({
   },
   title: { paddingVertical: 12 },
   actions: { flexDirection: 'row', alignItems: 'center' },
+  // Only the hidden heading is left in the header, so this gap is all that
+  // keeps the chips off the top edge.
+  headerBesideDrawer: { paddingTop: 16 },
+  // The same as the heading of the search sheet: out of the layout and out
+  // of sight, but in the accessibility tree.
+  hiddenHeading: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    overflow: 'hidden',
+    opacity: 0,
+    pointerEvents: 'none',
+  },
 })

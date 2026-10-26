@@ -109,7 +109,7 @@ describe('metaLine', () => {
 
 /**
  * The detail screen's line. It is `metaLine` without the rating, because that
- * screen sets the rating apart as a badge — see app/movie/[id].tsx.
+ * screen sets the rating apart as a badge — see app/(main)/movie/[id].tsx.
  */
 describe('releaseLine', () => {
   it('joins the year and the runtime', () => {

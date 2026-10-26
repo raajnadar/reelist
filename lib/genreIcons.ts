@@ -17,7 +17,7 @@ const ICONS: Record<number, string> = {
   36: 'bank-outline', // History
   27: 'ghost-outline', // Horror
   10402: 'music-note', // Music
-  9648: 'magnify', // Mystery
+  9648: 'incognito', // Mystery
   10749: 'heart-outline', // Romance
   878: 'rocket-launch-outline', // Science Fiction
   10770: 'television-classic', // TV Movie

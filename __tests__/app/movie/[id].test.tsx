@@ -4,11 +4,15 @@ import { fireEvent, waitFor } from '@testing-library/react-native'
 import { Dimensions, Share, StyleSheet } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
-import MovieScreen from '../../../app/movie/[id]'
+import MovieScreen from '../../../app/(main)/movie/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
 import { movieUrl } from '../../../lib/share'
 import { parseStored, STORAGE_KEY } from '../../../lib/watchlist'
 import { lightTheme } from '../../../theme'
+import { haptic } from '../../../lib/haptics'
+
+jest.mock('../../../lib/haptics', () => ({ haptic: jest.fn() }))
+const mockHaptic = haptic as jest.Mock
 
 // This test mirrors the path of the screen it covers, but it stays outside
 // `app/`. Expo Router builds the route table with `require.context('./app')`,
@@ -446,6 +450,8 @@ describe('the save button', () => {
     fireEvent.press(screen.getByText('Undo'))
 
     expect(await screen.findByText('Saved')).toBeTruthy()
+    // The undo puts the film back, so it reads as a save.
+    expect(mockHaptic).toHaveBeenLastCalledWith('save')
   })
 
   it('reports a save, and opens the watchlist from the report', async () => {

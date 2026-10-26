@@ -1,5 +1,5 @@
 import { fireEvent, waitFor } from '@testing-library/react-native'
-import PersonScreen from '../../../app/person/[id]'
+import PersonScreen from '../../../app/(main)/person/[id]'
 import { MissingProxyUrlError } from '../../../lib/config'
 import { mockPerson } from '../../../lib/mock'
 import { renderWithProviders } from '../../../lib/test-utils'

@@ -29,9 +29,16 @@ type Props = {
    * screen, so the mount stagger fires at the right moment on its own.
    */
   progress?: SharedValue<number>
+  /**
+   * Closes the sheet the card is on before the film opens, for a card in the
+   * search sheet. A plain link from a sheet in the root stack puts the film
+   * above the sheet, in a second copy of the `(main)` group with a second
+   * navigation. See app/_layout.tsx.
+   */
+  dismissTo?: boolean
 }
 
-export function MovieCard({ movie, index = 0, progress }: Props) {
+export function MovieCard({ movie, index = 0, progress, dismissTo }: Props) {
   const theme = useTheme()
   const uri = posterUrl(movie.poster_path)
 
@@ -85,7 +92,7 @@ export function MovieCard({ movie, index = 0, progress }: Props) {
           can follow it, and a reader can open it in a new tab. `asChild` puts
           the href and the handler on the Card, which forwards both.
         */}
-        <Link href={`/movie/${movie.id}`} asChild>
+        <Link href={`/movie/${movie.id}`} dismissTo={dismissTo} asChild>
           <Card
             variant="filled"
             style={styles.card}

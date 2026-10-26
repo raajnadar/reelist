@@ -3,6 +3,7 @@ import { useTheme } from '@rootnative/core'
 import { useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { Animated } from '@rootnative/inertia/reanimated'
 import { StyleSheet, View } from 'react-native'
+import { centredLines } from '../lib/centredLines'
 import { metaLine } from '../lib/format'
 import type { Movie } from '../lib/types'
 import { nearSlots } from '../lib/useActiveSlot'
@@ -104,7 +105,7 @@ function CaptionLayer({
         variant="bodyMedium"
         numberOfLines={2}
         color={theme.colors.onSurfaceVariant}
-        style={styles.text}
+        style={centredLines}
       >
         {movie.overview}
       </Typography>

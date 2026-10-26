@@ -1,32 +1,33 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { useSnackbar } from '@rootnative/components/snackbar'
-import { useTheme, useWindowDimensions } from '@rootnative/core'
+import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useLanguage } from '../../lib/language'
+import { useLanguage } from '../../../lib/language'
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { DiscoverFilterRow } from '../../components/DiscoverFilterRow'
-import { MovieCard } from '../../components/MovieCard'
-import { PullToRefresh } from '../../components/PullToRefresh'
+import { DiscoverFilterRow } from '../../../components/DiscoverFilterRow'
+import { MovieCard } from '../../../components/MovieCard'
+import { PullToRefresh } from '../../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { SkeletonGrid } from '../../components/Skeleton'
-import { StateMessage } from '../../components/StateMessage'
-import { getMoviesByGenre } from '../../lib/api'
+import { SkeletonGrid } from '../../../components/Skeleton'
+import { StateMessage } from '../../../components/StateMessage'
+import { getMoviesByGenre } from '../../../lib/api'
 import {
   EMPTY_FILTERS,
   filterKey,
   hasFilters,
   type DiscoverFilters,
-} from '../../lib/discover'
-import { missingFailure, type FailureKind } from '../../lib/errors'
-import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
-import { genreMeta, metadataFor, noindexMeta } from '../../lib/head'
-import { genreEntry, loadSeed } from '../../lib/prerender'
-import { usePrerendered } from '../../lib/usePrerendered'
-import { useResource } from '../../lib/useResource'
-import type { Genre, Movie, Paged } from '../../lib/types'
+} from '../../../lib/discover'
+import { missingFailure, type FailureKind } from '../../../lib/errors'
+import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { genreMeta, metadataFor, noindexMeta } from '../../../lib/head'
+import { genreEntry, loadSeed } from '../../../lib/prerender'
+import { useContentWidth } from '../../../lib/useContentWidth'
+import { usePrerendered } from '../../../lib/usePrerendered'
+import { useResource } from '../../../lib/useResource'
+import type { Genre, Movie, Paged } from '../../../lib/types'
 
 /**
  * The genres the static web export writes a page for: the chip row of the
@@ -110,7 +111,7 @@ export default function GenreScreen() {
   const snackbar = useSnackbar()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
+  const width = useContentWidth()
   const columns = posterColumns(width)
 
   const params = useLocalSearchParams<{ id: string; name?: string }>()
@@ -256,7 +257,7 @@ export default function GenreScreen() {
       .finally(() => setLoadingMore(false))
   }, [key, genreId, filters, page, totalPages, loading, loadingMore, failure])
 
-  const seeded = usePrerendered<Genre>(`/genre/${params.id}`)
+  const seeded = usePrerendered<Genre>(`/(main)/genre/${params.id}`)
   const name = params.name ?? seeded?.name
   const title = name ?? 'Genre'
 
@@ -403,7 +404,7 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  // The horizontal inset comes from the window; see gridInset.
+  // The horizontal inset comes from the content width; see gridInset.
   list: { paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
   footer: { paddingVertical: 20 },

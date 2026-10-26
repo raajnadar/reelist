@@ -13,7 +13,6 @@ import {
 import { useMemo } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import type { ReactNode } from 'react'
-import { StyleSheet, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { UpdateSnackbar } from '../components/UpdateSnackbar'
 import { setMode, useAppearance } from '../lib/appearance'
@@ -84,6 +83,16 @@ const themes = { light: lightTheme, dark: darkTheme }
 function Screens() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      {/*
+        Every page with the navigation around it, in a stack of its own. See
+        app/(main)/_layout.tsx. The two sheets below sit above the group, so
+        their scrim covers the navigation as well as the page.
+
+        A link from a sheet to a page in the group must close the sheet first,
+        with `dismissTo`. A plain push from a sheet adds a second copy of the
+        group above it, with a second navigation and a history of its own.
+      */}
+      <Stack.Screen name="(main)" />
       {/*
         The about screen is a detour, not a place: the reader opens it, changes
         the look, and returns to the film they were on. It has to keep the
@@ -163,24 +172,22 @@ export default function RootLayout() {
         <MotionConfig transitions={transitions}>
           {/*
             Inside MotionConfig, so a menu or a snackbar drawn in the portal
-            layer resolves the app's named transitions too. No screen has a FAB
-            or a bottom bar, so the snackbar needs no `bottomOffset`.
+            layer resolves the app's named transitions too. No `bottomOffset`
+            here: only a phone has a bottom bar, and the navigation raises the
+            snackbar above it with `useSnackbarOffset` while the bar is up.
           */}
           <PortalHost>
             <SnackbarProvider>
               <UpdateSnackbar />
               <SeoProvider site={site}>
                 {/*
-                  One `<main>` for each page of the web export. A crawler and a
-                  screen reader find the page content by this landmark, and
-                  `rootnative-seo audit` fails a page that has none. The menus
-                  and the snackbars stay outside it, in the portal layer.
+                  No `<main>` here: app/(main)/_layout.tsx draws it inside the
+                  navigation, and lib/useRootScreenRole.ts gives it to a root
+                  screen that has no page below it.
                 */}
-                <View role="main" style={styles.main}>
-                  <NavigationTheme>
-                    <Screens />
-                  </NavigationTheme>
-                </View>
+                <NavigationTheme>
+                  <Screens />
+                </NavigationTheme>
               </SeoProvider>
             </SnackbarProvider>
           </PortalHost>
@@ -190,7 +197,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   )
 }
-
-const styles = StyleSheet.create({
-  main: { flex: 1 },
-})

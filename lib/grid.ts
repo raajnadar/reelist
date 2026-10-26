@@ -24,8 +24,11 @@ export const GRID_PADDING = 16
 /**
  * How many poster columns fit in `width`.
  *
- * Derived from the window so one layout serves a phone and a desktop browser;
- * a fixed count would leave a wide window mostly empty.
+ * Derived from the width the page has, so one layout serves a phone and a
+ * desktop browser; a fixed count would leave a wide window mostly empty. The
+ * width is the content width from lib/useContentWidth.ts, not the window: a
+ * rail or a drawer beside the page takes its share, and a count from the
+ * window drew the last column under the edge.
  *
  * Two is the floor. One column on a narrow window would give each poster the
  * full width, which reads as a list of billboards instead of a grid, so a very

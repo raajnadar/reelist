@@ -27,10 +27,10 @@ function useHtmlData<T>(key: string): T | null {
 /**
  * The data the web export wrote into this page, or null.
  *
- * `key` is the route file path with its parameters filled in: `/index` for
- * app/index.tsx and `/movie/550` for app/movie/[id].tsx. The export stores the
- * loader result of a page under that key. See `getContextKey` in
- * expo-router/build/matchers.js.
+ * `key` is the route file path with its parameters filled in, and with its
+ * group: `/(main)/index` for app/(main)/index.tsx and `/(main)/movie/550` for
+ * app/(main)/movie/[id].tsx. The export stores the loader result of a page
+ * under that key. See `getContextKey` in expo-router/build/matchers.js.
  *
  * The first render in the browser reads the same data the export rendered
  * with, so the page hydrates with no mismatch.

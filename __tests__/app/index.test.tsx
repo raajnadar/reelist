@@ -2,16 +2,16 @@ import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
 import { PullToRefresh } from '../../components/PullToRefresh'
-import HomeScreen from '../../app/index'
+import HomeScreen from '../../app/(main)/index'
 import { MissingProxyUrlError } from '../../lib/config'
 import { setLanguage } from '../../lib/language'
-import { readSearchOrigin } from '../../lib/searchOrigin'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
 //
-// This suite covers the search entry point the home screen owns. The rows
-// themselves are covered by the component tests.
+// This suite covers the refresh and the language row the home screen owns.
+// The rows themselves are covered by the component tests, and the search and
+// the watchlist entry points by components/AppNavigation.test.tsx.
 
 const mockPush = jest.fn()
 
@@ -22,17 +22,6 @@ jest.mock('expo-router', () =>
     canGoBack: () => true,
   })),
 )
-
-// The wrapper's `measureInWindow` is a `jest.fn` in this renderer and never
-// answers, so the real helper would wait for ever and the push would never
-// come. The mock answers with a box, which also lets a test check the box
-// reached the store the search sheet reads.
-const BUTTON_RECT = { x: 320, y: 52, width: 40, height: 40 }
-
-jest.mock('../../lib/searchOrigin', () => ({
-  ...jest.requireActual('../../lib/searchOrigin'),
-  measureWindowRect: jest.fn(() => Promise.resolve(BUTTON_RECT)),
-}))
 
 jest.mock('../../lib/api', () => ({
   getTrending: jest.fn(),
@@ -56,55 +45,38 @@ beforeEach(() => {
   ])
 })
 
-it('opens the search screen from the header button, after measuring it', async () => {
+it('opens the settings from the header button', async () => {
   const screen = renderWithProviders(<HomeScreen />)
 
-  fireEvent.press(screen.getByLabelText('Search movies'))
-
-  // The literal path is the assertion. `yarn typecheck` proves the route exists;
-  // this proves the button is wired to it. The wait is the measurement: the
-  // push comes after the button's box is in, not before.
-  await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/search'))
-  // And the box is where the search sheet will read it from.
-  expect(readSearchOrigin()).toEqual(BUTTON_RECT)
-
-  await act(async () => {})
-})
-
-it('opens the watchlist from the header button', async () => {
-  const screen = renderWithProviders(<HomeScreen />)
-
-  fireEvent.press(screen.getByLabelText('Open the watchlist'))
+  fireEvent.press(screen.getByLabelText('Settings'))
 
   // The literal path is the assertion. `yarn typecheck` proves the route
   // exists; this proves the button is wired to it.
-  expect(mockPush).toHaveBeenCalledWith('/watchlist')
+  expect(mockPush).toHaveBeenCalledWith('/about')
 
   await act(async () => {})
 })
 
-it('keeps the search button reachable while the rows are still loading', async () => {
+it('keeps the settings button while the rows are still loading', async () => {
   const screen = renderWithProviders(<HomeScreen />)
 
-  // Asserted before any await, which is the point: the button has to be there
-  // while the requests are still in flight. The button sits outside the
-  // Presence block, so it must not wait for data — inside it, a slow network
-  // would leave the user with no way to search.
-  expect(screen.getByLabelText('Search movies')).toBeTruthy()
+  // Asserted before any await, which is the point: the button sits outside
+  // the Presence block, so it must not wait for data.
+  expect(screen.getByLabelText('Settings')).toBeTruthy()
 
   // Then let the mocked requests settle. Without this they resolve after the
   // test ends and React reports the state updates as outside act().
   await act(async () => {})
 })
 
-it('still shows the search button when the rows fail to load', async () => {
+it('still shows the header when the rows fail to load', async () => {
   api.getTrending.mockRejectedValue(new Error('TMDB is unavailable'))
 
   const screen = renderWithProviders(<HomeScreen />)
 
   await waitFor(() => expect(screen.getByText('TMDB is unavailable')).toBeTruthy())
-  // Search does not depend on the rows, so a failed home load must not remove it.
-  expect(screen.getByLabelText('Search movies')).toBeTruthy()
+  // The header does not depend on the rows, so a failed load must not remove it.
+  expect(screen.getByLabelText('Settings')).toBeTruthy()
 })
 
 describe('the pull to refresh', () => {

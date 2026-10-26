@@ -13,6 +13,7 @@ import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../lib/head'
+import { haptic } from '../lib/haptics'
 import { searchMovies } from '../lib/api'
 import { type FailureKind } from '../lib/errors'
 import { GRID_GAP, GRID_PADDING, gridInset, posterColumns } from '../lib/grid'
@@ -20,6 +21,7 @@ import { clearSearchOrigin, readSearchOrigin } from '../lib/searchOrigin'
 import { useDebounced } from '../lib/useDebounced'
 import { useKeyboardHeight } from '../lib/useKeyboardHeight'
 import { useResource } from '../lib/useResource'
+import { useRootScreenRole } from '../lib/useRootScreenRole'
 import type { Paged } from '../lib/types'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Search'))
@@ -136,6 +138,10 @@ export default function SearchScreen() {
   // with no query.
   const params = useLocalSearchParams<{ q?: string }>()
   const [query, setQuery] = useState(params.q ?? '')
+  const clear = () => {
+    setQuery('')
+    haptic('select')
+  }
   // The field reads `query` so it answers every keystroke. The fetch reads this,
   // so it fires once the typing stops. See lib/useDebounced.ts.
   const debouncedQuery = useDebounced(query)
@@ -169,9 +175,10 @@ export default function SearchScreen() {
   // Matches the about screen: `router.back` alone dead-ends when this screen is
   // the first entry in the history, as it is on a deep link.
   const dismiss = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  const landmark = useRootScreenRole()
 
   return (
-    <View style={styles.layer}>
+    <View style={styles.layer} role={landmark}>
       <PageHead title="Search" noindex />
       {/*
         The field is the sheet's title, and a field is not a heading. A screen
@@ -293,7 +300,7 @@ export default function SearchScreen() {
                   icon="close-circle"
                   variant="standard"
                   accessibilityLabel="Clear the search box"
-                  onPress={() => setQuery('')}
+                  onPress={clear}
                 />
               ) : null}
               <IconButton
@@ -358,7 +365,7 @@ export default function SearchScreen() {
                   numColumns={columns}
                   keyExtractor={(m) => String(m.id)}
                   renderItem={({ item, index }) => (
-                    <MovieCard movie={item} index={index} />
+                    <MovieCard movie={item} index={index} dismissTo />
                   )}
                   columnWrapperStyle={columns > 1 ? styles.gridRow : undefined}
                   contentContainerStyle={[
@@ -389,7 +396,7 @@ export default function SearchScreen() {
                 body={`Nothing here matches "${trimmed}". Check the spelling, or try a shorter title.`}
                 actionLabel="Clear search"
                 actionIcon="close"
-                onAction={() => setQuery('')}
+                onAction={clear}
               />
             ) : (
               <StateMessage

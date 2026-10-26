@@ -43,7 +43,7 @@ type Props = {
  *
  * It is hand-built rather than an `<AppBar>` for one reason — the title and the
  * background have to fade against the scroll position, and AppBar paints both
- * itself. app/index.tsx builds its own header for a similar reason.
+ * itself. app/(main)/index.tsx builds its own header for a similar reason.
  */
 export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
   const theme = useTheme()

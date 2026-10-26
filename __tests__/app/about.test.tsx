@@ -8,6 +8,10 @@ import { useAppearance } from '../../lib/appearance'
 import { useLanguage } from '../../lib/language'
 import { useRegion } from '../../lib/region'
 import { renderWithProviders } from '../../lib/test-utils'
+import { haptic } from '../../lib/haptics'
+
+jest.mock('../../lib/haptics', () => ({ haptic: jest.fn() }))
+const mockHaptic = haptic as jest.Mock
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
@@ -16,15 +20,21 @@ const mockPush = jest.fn()
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
 const mockCanGoBack = jest.fn(() => true)
+const mockDismissTo = jest.fn()
 
 jest.mock('expo-router', () =>
   jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
+    dismissTo: mockDismissTo,
     back: mockBack,
     replace: mockReplace,
     canGoBack: mockCanGoBack,
   })),
 )
+
+// The role reads the root stack, which this render has none of.
+// lib/useRootScreenRole.test.tsx checks it in a real router.
+jest.mock('../../lib/useRootScreenRole', () => ({ useRootScreenRole: () => undefined }))
 
 // Spied rather than replaced with a module mock. `Linking` is one export of
 // the react-native module the whole render tree imports, and a factory mock of
@@ -171,12 +181,15 @@ it('credits TMDB with its logo and the notice its terms require', async () => {
   await waitFor(() => expect(openURL).toHaveBeenCalledWith('https://www.themoviedb.org/'))
 })
 
-it('opens the privacy policy in the app', () => {
+// Closes the sheet first: a push from the sheet adds a second copy of the
+// `(main)` group above it. See app/_layout.tsx.
+it('opens the privacy policy in the app, under the sheet', () => {
   const screen = renderWithProviders(<AboutScreen />)
 
   fireEvent.press(screen.getByText('Privacy policy'))
 
-  expect(mockPush).toHaveBeenCalledWith('/privacy')
+  expect(mockDismissTo).toHaveBeenCalledWith('/privacy')
+  expect(mockPush).not.toHaveBeenCalled()
   expect(openURL).not.toHaveBeenCalled()
 })
 
@@ -277,3 +290,18 @@ function renderLanguageOnStore() {
   renderWithProviders(<Probe />)
   return result
 }
+
+it('ticks on a new theme, and not on the one already picked', () => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  act(() => {
+    fireEvent.press(screen.getByTestId('mode-dark'))
+  })
+  expect(mockHaptic).toHaveBeenCalledTimes(1)
+  expect(mockHaptic).toHaveBeenCalledWith('select')
+
+  act(() => {
+    fireEvent.press(screen.getByTestId('mode-dark'))
+  })
+  expect(mockHaptic).toHaveBeenCalledTimes(1)
+})

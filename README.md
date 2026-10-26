@@ -187,6 +187,10 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/resourceCache.test.ts`          | The life of an entry, and the eviction at the ceiling  |
 | `lib/watchlist.test.ts`              | The store, the device copy, and a corrupt one          |
 | `lib/grid.test.ts`                   | The column count, at 7 screen widths                   |
+| `lib/useContentWidth.test.tsx`       | The page width: measured beside the navigation, else the window |
+| `lib/useHydrating.dom.test.tsx`      | Hydration in React DOM: true, then false, and a key that drops a server attribute |
+| `lib/network.test.ts`                | Online until the device says no; one native subscription for every hook |
+| `components/OfflineBanner.test.tsx`  | The strip while offline, and not on the trailer or the gallery |
 | `lib/errors.test.ts`                 | Which failures may offer a retry, and which may not    |
 | `lib/youtube.test.ts`                | The player parameters, the page, and an encoded key    |
 | `lib/appearance.test.ts`             | The chosen mode, the device copy, and a corrupt one    |
@@ -201,7 +205,8 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `components/PersonProfile.test.tsx`  | The photo, the facts line, and the folded biography    |
 | `__tests__/app/movie/[id].test.tsx`  | The detail screen: every state and every error         |
 | `__tests__/app/search.test.tsx`      | Search: the debounce, both empty states, staleness     |
-| `__tests__/app/index.test.tsx`       | The home screen's search entry point and the chips     |
+| `__tests__/app/index.test.tsx`       | The home screen's settings button, the refresh, the language row |
+| `components/AppNavigation.test.tsx`  | The bar, the rail, the drawer, the count, and no remount |
 | `__tests__/app/genre/[id].test.tsx`  | The genre grid: paging, filters, a bad id, a stale page |
 | `__tests__/app/watchlist.test.tsx`   | The saved grid, both empty states, and a live change   |
 | `__tests__/app/person/[id].test.tsx` | The person screen: every state, and no films           |
@@ -221,16 +226,20 @@ deployed. It is not part of `yarn test`, because it needs a real key and network
 ```
 app/                     # Expo Router: one file is one screen
 ├── _layout.tsx          # Root layout with the ThemeProvider
-├── index.tsx            # Home screen
-├── search.tsx           # Search screen, debounced as you type
-├── watchlist.tsx        # The films saved on this device
-├── genre/[id].tsx       # One genre, as an endless grid, with filters
-├── movie/[id].tsx       # Film detail screen
-├── person/[id].tsx      # One person, and the films they appear in
-├── trailer/[key].tsx    # The trailer, played in the app
-├── privacy.tsx          # The privacy policy that Google Play links to
+├── (main)/              # Every page with the navigation around it
+│   ├── _layout.tsx      # The navigation, and the page's <main>
+│   ├── index.tsx        # Home screen
+│   ├── watchlist.tsx    # The films saved on this device
+│   ├── genre/[id].tsx   # One genre, as an endless grid, with filters
+│   ├── movie/[id].tsx   # Film detail screen
+│   ├── person/[id].tsx  # One person, and the films they appear in
+│   ├── trailer/[key].tsx # The trailer, played in the app
+│   └── privacy.tsx      # The privacy policy that Google Play links to
+├── search.tsx           # Search sheet, debounced as you type
 └── about.tsx            # Light or dark, and what the app is built with
 components/
+├── AppNavigation.tsx    # The bar, the rail, or the drawer, by window size
+├── OfflineBanner.tsx    # A strip under the page while the device is offline
 ├── MovieCarousel.tsx    # The featured row, with the scale effect
 ├── CarouselCard.tsx     # One card in the carousel
 ├── MovieRow.tsx         # A compact horizontal row
@@ -269,6 +278,10 @@ lib/
 ├── errors.ts            # Sorts a failure into transient, setup, or missing
 ├── motion.ts            # The shared transition tokens and the stagger
 ├── buttonSize.ts        # One Button size for each role
+├── navigation.ts        # The destinations, and which component carries them
+├── useRootScreenRole.ts # The <main> for a sheet with no page below it
+├── useHydrating.ts      # True on the export server and while the page hydrates
+├── network.ts           # Online or offline, from expo-network
 ├── useDebounced.ts      # Delays a value until it stops changing
 ├── useResource.ts       # Loads one key, and keeps the answer
 ├── resourceCache.ts     # The store behind useResource
@@ -365,17 +378,17 @@ colours, because it sits outside the theme. The browser shows no pull to
 refresh. The watchlist has none: it reads the device, and it has no request to
 repeat.
 
-One thing stayed in a screen. `app/genre/[id].tsx` appends page after page as
-the reader scrolls, and that is a growing list rather than the answer to one
-request. The hook holds its first page, which is why a return to the same genre
+One thing stayed in a screen. `app/(main)/genre/[id].tsx` appends page after
+page as the reader scrolls, and that is a growing list rather than the answer to
+one request. The hook holds its first page, which is why a return to the same genre
 is immediate. A pull to refresh on the grid loads the first page again. The
 later pages go when the new first page lands, because the reader pulled at the
 top and the list starts there again.
 
 ### The person screen
 
-A cast card opens `app/person/[id].tsx`, which shows who the person is and every
-film TMDB credits them with. It is one request, for the same reason the film
+A cast card opens `app/(main)/person/[id].tsx`, which shows who the person is
+and every film TMDB credits them with. It is one request, for the same reason the film
 screen is: `/person/{id}` carries the filmography when the request appends
 `movie_credits`. That is a second allowed value in the proxy, beside the film
 one — see [proxy/README.md](proxy/README.md).
@@ -395,8 +408,8 @@ only after the profile has scrolled away, which is the arrangement
 
 ### The trailer player
 
-The "Watch trailer" button opens `app/trailer/[key].tsx` rather than handing the
-video to YouTube. The app used to call `openURL` and leave, which lost the
+The "Watch trailer" button opens `app/(main)/trailer/[key].tsx` rather than
+handing the video to YouTube. The app used to call `openURL` and leave, which lost the
 reader to another app and lost the scroll position on the way back. A route of
 its own keeps the detail screen mounted underneath, and it earns the system back
 gesture and the Android hardware back button without any code.
@@ -578,6 +591,60 @@ silent fallback to the default spring.
 Reduced motion is handled once, in the same place: `<MotionConfig>` defaults to
 `reducedMotion="user"`, and every animation below it downgrades to no animation
 when the OS asks.
+
+### Navigation that fits the window
+
+[components/AppNavigation.tsx](components/AppNavigation.tsx) wraps every
+page in the `(main)` route group. One `useBreakpoint()` call picks the
+component, and all three take the same three destinations from
+[lib/navigation.ts](lib/navigation.ts):
+
+| Window class                  | Width         | Component                    |
+| ----------------------------- | ------------- | ---------------------------- |
+| `compact`                     | under 600 dp  | `NavigationBar`, below       |
+| `medium`, `expanded`, `large` | 600 to 1599   | `NavigationRail`, beside     |
+| `extraLarge`                  | 1600 and over | `NavigationDrawer`, standard |
+
+MD3 allows the drawer from `large` (1200 dp). The rail stays until `extraLarge`
+here: a 13 inch laptop is 1440 dp wide, and a 360 dp panel takes a quarter of
+it from the film rows for three destinations.
+
+The drawer has room for more than the three destinations. At its end it has the
+settings and the privacy policy. The home header leaves out what the navigation
+beside it shows: next to the rail it has no mark, and next to the drawer it has
+no mark, no name, and no settings button. The name stays the page's `<h1>` for
+a screen reader.
+
+The watchlist shows the count of saved films in all three components. The bar
+and the rail draw a badge on the icon, and the drawer puts the number at the end
+of the row. The label holds the count too, for a screen reader.
+
+The navigation lights the destination the reader is on. A film, a person, or a
+genre page lights none: it can be reached from the home and from the watchlist
+alike. The trailer and the gallery fill the window, so the navigation steps out
+of their way on those two routes.
+
+The search and the settings sheets are not in the group. They live in the root
+stack, above it, so their scrim covers the navigation as well as the page, and
+they centre on the window. The root layout draws no `<main>`: the group's layout
+draws it inside the navigation, and
+[lib/useRootScreenRole.ts](lib/useRootScreenRole.ts) gives a sheet that has no
+page below it, on a deep link, its own. A group name is part of the route key,
+so the prerendered data of the home is under `/(main)/index`.
+
+The navigation keeps one tree for every layout, with the screens in the same
+place. A change from the bar to the rail swaps the navigation only. It does not
+remount the screens, and on a wide window the static site makes that change on
+every load.
+
+A press on Search measures the icon and opens the sheet from it, the same way
+the home header button did before. The bar on a phone also takes the bottom
+inset, and raises the snackbar above itself with `useSnackbarOffset`, so a
+"Saved" notice never lands under it.
+
+On the static web export the first paint is always the bar: the server renders
+each page for a 0 wide window, and the breakpoint hook keeps that reading until
+the page has hydrated. The rail or the drawer arrives one frame later.
 
 ### One button size for each role
 

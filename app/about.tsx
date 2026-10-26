@@ -22,10 +22,12 @@ import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TmdbLogo } from '../components/TmdbLogo'
 import { setMode, useAppearance } from '../lib/appearance'
+import { haptic } from '../lib/haptics'
 import { LANGUAGE_OPTIONS, languageName, setLanguage, useLanguage } from '../lib/language'
 import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/region'
 import { NEW_TAB } from '../lib/share'
 import { BUTTON_SIZE } from '../lib/buttonSize'
+import { useRootScreenRole } from '../lib/useRootScreenRole'
 
 export const generateMetadata = () => metadataFor(noindexMeta('About'))
 
@@ -142,6 +144,7 @@ export default function AboutScreen() {
   const cardRadius = roomy ? theme.shape.cornerExtraLarge : theme.shape.cornerNone
 
   const dismiss = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  const landmark = useRootScreenRole()
 
   return (
     /*
@@ -150,7 +153,7 @@ export default function AboutScreen() {
       scrim, the card, its corner — is drawn below, which is why the corner can
       come from the theme the card is about to change.
     */
-    <View style={styles.layer}>
+    <View style={styles.layer} role={landmark}>
       <PageHead title="About" noindex />
       {/*
         The scrim. A press on it dismisses, which is what a reader expects of
@@ -240,7 +243,10 @@ export default function AboutScreen() {
                       key={item.value}
                       variant="filter"
                       selected={item.value === mode}
-                      onPress={() => setMode(item.value)}
+                      onPress={() => {
+                        if (item.value !== mode) haptic('select')
+                        setMode(item.value)
+                      }}
                       testID={`mode-${item.value}`}
                     >
                       {item.label}
@@ -479,7 +485,10 @@ export default function AboutScreen() {
                       Reelist on GitHub
                     </Button>
                   </Link>
-                  <Link href="/privacy" asChild>
+                  {/* `dismissTo` closes this sheet first, so the policy opens in
+                      the group under it, not in a second copy of the group
+                      above the sheet. See app/_layout.tsx. */}
+                  <Link href="/privacy" dismissTo asChild>
                     <Button
                       variant="outlined"
                       size={BUTTON_SIZE.inline}

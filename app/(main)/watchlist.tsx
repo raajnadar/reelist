@@ -3,26 +3,28 @@ import { Divider } from '@rootnative/components/divider'
 import { IconButton } from '@rootnative/components/icon-button'
 import { Menu } from '@rootnative/components/menu'
 import { useSnackbar } from '@rootnative/components/snackbar'
-import { useTheme, useWindowDimensions } from '@rootnative/core'
+import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { MovieCard } from '../components/MovieCard'
-import { SkeletonGrid } from '../components/Skeleton'
-import { StateMessage } from '../components/StateMessage'
+import { MovieCard } from '../../components/MovieCard'
+import { SkeletonGrid } from '../../components/Skeleton'
+import { StateMessage } from '../../components/StateMessage'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { metadataFor, noindexMeta } from '../lib/head'
-import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
-import { useSearchLaunch } from '../lib/useSearchLaunch'
+import { metadataFor, noindexMeta } from '../../lib/head'
+import { haptic } from '../../lib/haptics'
+import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
+import { useContentWidth } from '../../lib/useContentWidth'
+import { useSearchLaunch } from '../../lib/useSearchLaunch'
 import {
   clearWatchlist,
   restoreSaved,
   sortWatchlist,
   useWatchlist,
   type WatchlistOrder,
-} from '../lib/watchlist'
+} from '../../lib/watchlist'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Watchlist'))
 
@@ -36,7 +38,7 @@ export default function WatchlistScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
+  const width = useContentWidth()
   const columns = posterColumns(width)
 
   /**
@@ -60,12 +62,16 @@ export default function WatchlistScreen() {
   */
   const clear = () => {
     const removed = clearWatchlist()
+    haptic('unsave')
     snackbar.show({
       message: 'Watchlist cleared',
       actionLabel: 'Undo',
       duration: 'long',
       replace: true,
-      onAction: () => restoreSaved(removed),
+      onAction: () => {
+        restoreSaved(removed)
+        haptic('save')
+      },
     })
   }
 
@@ -184,7 +190,7 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  // The horizontal inset comes from the window; see gridInset.
+  // The horizontal inset comes from the content width; see gridInset.
   list: { paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
 })

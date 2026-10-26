@@ -1,6 +1,6 @@
 import { fireEvent, waitFor } from '@testing-library/react-native'
 import { Linking } from 'react-native'
-import PrivacyScreen from '../../app/privacy'
+import PrivacyScreen from '../../app/(main)/privacy'
 import { renderWithProviders } from '../../lib/test-utils'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
