@@ -1,11 +1,11 @@
 import { LoadingIndicator } from '@rootnative/components/loading-indicator'
-import { Presence } from '@rootnative/inertia'
+import { Motion, Presence } from '@rootnative/inertia'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, View } from 'react-native'
 import { GalleryViewer } from '../../../components/GalleryViewer'
 import { StateMessage } from '../../../components/StateMessage'
-import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../../../components/NoindexHead'
 import { metadataFor, noindexMeta } from '../../../lib/head'
 import { getMovie } from '../../../lib/api'
 import { missingFailure, type Failure } from '../../../lib/errors'
@@ -66,7 +66,7 @@ export default function GalleryScreen() {
 
   return (
     <View style={styles.screen}>
-      <PageHead title={movie ? `${movie.title} gallery` : 'Gallery'} noindex />
+      <NoindexHead title={movie ? `${movie.title} gallery` : 'Gallery'} />
       {/*
         `fullScreenModal` and a fade, the same as the trailer: a sheet would
         round the corners over the picture and show the film behind its top
@@ -79,9 +79,21 @@ export default function GalleryScreen() {
 
       <Presence>
         {loading ? (
-          <View key="loading" style={styles.centre}>
+          /*
+            A `Motion.View` with an `exit`, not a plain View. `Presence` keeps
+            a departing child until every motion element inside it releases,
+            and a child with none is never released: on a cold open of the
+            address, the spinner stayed for good and took half the window
+            from the viewer under it.
+          */
+          <Motion.View
+            key="loading"
+            exit={{ opacity: 0 }}
+            transition="exit"
+            style={styles.centre}
+          >
             <LoadingIndicator contentColor={ON_STAGE} accessibilityLabel="Loading" />
-          </View>
+          </Motion.View>
         ) : failure ? (
           <StateMessage
             key="error"
@@ -124,6 +136,8 @@ export default function GalleryScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: STAGE },
+  // Clipped, for the reason the trailer screen gives: the focus ring of the
+  // close button draws past the bar.
+  screen: { flex: 1, backgroundColor: STAGE, overflow: 'hidden' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 })

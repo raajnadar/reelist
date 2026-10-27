@@ -1,8 +1,7 @@
-import { Grid } from '@rootnative/components/layout'
-import { useBreakpointValue, useWindowDimensions } from '@rootnative/core'
+import { useWindowDimensions } from '@rootnative/core'
 import { Skeleton as SkeletonBlock } from '@rootnative/components/skeleton'
 import { StyleSheet, View } from 'react-native'
-import { GRID_GAP } from '../lib/grid'
+import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
 import { LIFT_SPACE } from '../lib/motion'
 import { CARD_WIDTH } from './MovieCard'
 
@@ -17,11 +16,9 @@ import { CARD_WIDTH } from './MovieCard'
  * static block under reduced motion. The local version reproduced all of that
  * by hand; only the sizes below are this app's concern.
  */
-export function SkeletonCard({ stretch = false }: { stretch?: boolean }) {
+export function SkeletonCard() {
   return (
-    // In a Grid the cell already sets the width, so the card fills it. In a
-    // horizontal row there is no cell, so it keeps MovieCard's fixed width.
-    <View style={stretch ? styles.cardStretch : styles.card}>
+    <View style={styles.card}>
       {/*
         The 2:3 ratio lives on this wrapper, not on the block.
 
@@ -89,55 +86,44 @@ export function SkeletonRow({ count }: { count?: number }) {
 }
 
 /**
- * A loading stand-in for a poster grid, sized to the window.
+ * A loading stand-in for a poster grid, in the geometry of the grid it stands
+ * in for.
  *
- * `Grid` takes a breakpoint map rather than a measured column count: the
- * placeholders only have to hold the right shape, and a map is resolved by the
- * library against the MD3 window size classes. The real results grid still
- * measures, because its column count has to match the card width exactly.
+ * `width` is the width the results will lay out in: the content width on a
+ * page, the window on the search sheet. The column count and the inset come
+ * from lib/grid.ts, the same as the results, so each placeholder stands
+ * where a card will and nothing moves when the data lands. An earlier
+ * version resolved its columns from a breakpoint map and stretched each card
+ * to its cell: on a phone the placeholders were full width and 16 from the
+ * edge, and the 160 wide results then jumped in by 17.
  *
- * `rows` of placeholders, so the grid fills the viewport at every width instead
- * of showing a fixed number of cards that a wide window leaves half empty.
+ * `rows` of placeholders, so the grid fills the viewport at every width
+ * instead of showing a fixed number of cards that a wide window leaves half
+ * empty. The rows are laid out one by one, as FlatList lays out the results,
+ * rather than wrapped: a window too narrow for two columns then overflows
+ * the same way the results do, instead of dropping to one.
  */
-export function SkeletonGrid({ rows = 2 }: { rows?: number }) {
-  // The same map Grid resolves, read here so the card count matches the column
-  // count. Rendering a fixed worst-case count instead would build six rows on a
-  // phone to show two, and rely on clipping to hide the rest.
-  const columns = useBreakpointValue(SKELETON_COLUMNS)
+export function SkeletonGrid({ width, rows = 2 }: { width: number; rows?: number }) {
+  const columns = posterColumns(width)
 
   return (
-    /*
-      Each card is a direct child of the Grid, not grouped under a wrapper.
-      Grid maps over its own children and puts each one in a cell View sized
-      to `100 / columns` percent, so a single wrapper element would become one
-      cell holding every card — a column rather than a grid.
-
-      That is also why `<Stagger>` is not used here. It renders no host view
-      and assigns delays from its own children's render order, so it can
-      neither sit inside the Grid (it would collapse to one cell) nor around it
-      (it would see one child). The cards pulse together instead, which is what
-      the library block does on its own.
-    */
-    <Grid columns={SKELETON_COLUMNS} gap={GRID_GAP} style={styles.grid}>
-      {Array.from({ length: columns * rows }, (_, i) => (
-        <SkeletonCard key={i} stretch />
+    <View
+      testID="skeleton-grid"
+      style={[styles.grid, { paddingHorizontal: gridInset(width) }]}
+    >
+      {Array.from({ length: rows }, (_, row) => (
+        <View key={row} style={styles.gridRow}>
+          {Array.from({ length: columns }, (_, column) => (
+            <SkeletonCard key={column} />
+          ))}
+        </View>
       ))}
-    </Grid>
+    </View>
   )
 }
 
-/**
- * Placeholder columns per MD3 window size class.
- *
- * Two is the floor for the same reason the results grids use it: one column
- * would give each poster the full width, which reads as a list of billboards
- * rather than a grid.
- */
-const SKELETON_COLUMNS = { compact: 2, medium: 3, expanded: 4, large: 6 } as const
-
 const styles = StyleSheet.create({
   card: { width: CARD_WIDTH, gap: 8 },
-  cardStretch: { width: '100%', gap: 8 },
   // The TMDB poster ratio, matching MovieCard's media box, so the skeleton
   // occupies the same space the real card will.
   posterBox: { width: '100%', aspectRatio: 2 / 3 },
@@ -151,7 +137,9 @@ const styles = StyleSheet.create({
   row: { gap: LIFT_SPACE, marginBottom: 24, overflow: 'hidden' },
   heading: { marginHorizontal: ROW_PADDING },
   rowCards: { flexDirection: 'row', gap: ROW_GAP, paddingHorizontal: ROW_PADDING },
-  // The real grid holds the same inset and the same gap, so the placeholder
-  // stands where the cards will.
-  grid: { paddingHorizontal: ROW_PADDING, paddingTop: GRID_GAP },
+  // The same top inset and the same gap as the results list, so the
+  // placeholder stands where the cards will. Clipped for the overflow case
+  // the comment on SkeletonGrid describes.
+  grid: { paddingTop: GRID_GAP, gap: GRID_GAP, overflow: 'hidden' },
+  gridRow: { flexDirection: 'row', gap: GRID_GAP },
 })

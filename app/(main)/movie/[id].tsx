@@ -19,6 +19,7 @@ import { GalleryRow } from '../../../components/GalleryRow'
 import { GenreChips } from '../../../components/GenreChips'
 import { MovieRow } from '../../../components/MovieRow'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../../../components/NoindexHead'
 import { SkeletonRow } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
 import { VideoRow } from '../../../components/VideoRow'
@@ -295,7 +296,7 @@ export default function MovieScreen() {
         page that exists.
       */}
         {failure?.kind === 'missing' ? (
-          <PageHead title={REPORTS.missing.title} noindex />
+          <NoindexHead title={REPORTS.missing.title} />
         ) : movie ? (
           <PageHead {...movieMeta(movie)} />
         ) : null}

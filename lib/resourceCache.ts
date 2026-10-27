@@ -67,4 +67,27 @@ export const evictCache = (key: string): void => {
 
 export const clearCache = (): void => {
   entries.clear()
+  inFlight.clear()
+}
+
+const inFlight = new Map<string, Promise<unknown>>()
+
+/**
+ * The request for `key`, shared by everyone who asks while it runs.
+ *
+ * Two hooks that mount with the same key in one commit each start the effect
+ * that asks, and without this each one sent its own request: on a cold web
+ * load every home list went out twice. The first caller's promise is held
+ * here until it settles, and a later caller gets the same one. A settled
+ * answer is the store's business, so the promise is dropped as soon as it
+ * lands and the next ask after that sends a request of its own.
+ */
+export const shareRequest = <T>(key: string, fetcher: () => Promise<T>): Promise<T> => {
+  const pending = inFlight.get(key) as Promise<T> | undefined
+  if (pending) return pending
+  const promise: Promise<T> = fetcher().finally(() => {
+    if (inFlight.get(key) === promise) inFlight.delete(key)
+  })
+  inFlight.set(key, promise)
+  return promise
 }

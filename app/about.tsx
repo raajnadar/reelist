@@ -5,7 +5,7 @@ import { Divider } from '@rootnative/components/divider'
 import { Menu } from '@rootnative/components/menu'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
-import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../components/NoindexHead'
 import { metadataFor, noindexMeta } from '../lib/head'
 import {
   useBreakpoint,
@@ -154,7 +154,7 @@ export default function AboutScreen() {
       come from the theme the card is about to change.
     */
     <View style={styles.layer} role={landmark}>
-      <PageHead title="About" noindex />
+      <NoindexHead title="About" />
       {/*
         The scrim. A press on it dismisses, which is what a reader expects of
         the dark area around a dialog, and it is the reason this is a Pressable

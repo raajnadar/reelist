@@ -8,7 +8,7 @@ import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StateMessage } from '../../../components/StateMessage'
 import { TrailerPlayer } from '../../../components/TrailerPlayer'
-import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../../../components/NoindexHead'
 import { metadataFor, noindexMeta } from '../../../lib/head'
 import { ON_STAGE, STAGE } from '../../../lib/stage'
 import { watchUrl } from '../../../lib/youtube'
@@ -64,7 +64,7 @@ export default function TrailerScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <PageHead title={title ? `${title} trailer` : 'Trailer'} noindex />
+      <NoindexHead title={title ? `${title} trailer` : 'Trailer'} />
       {/*
         `fullScreenModal` rather than `modal`: the iOS sheet leaves the screen
         behind it visible at the top and rounds the corners over the video, and
@@ -139,7 +139,10 @@ export default function TrailerScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: STAGE },
+  // Clipped: the focus ring of an icon button draws 5 past its box, and the
+  // bar pads it by 4, so on the web the ring widened the page by a pixel and
+  // the browser answered with a sideways scroll.
+  screen: { flex: 1, backgroundColor: STAGE, overflow: 'hidden' },
   bar: {
     height: BAR_HEIGHT,
     flexDirection: 'row',

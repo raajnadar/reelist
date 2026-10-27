@@ -30,7 +30,8 @@ jest.mock('expo-router', () => ({
 
 // The role reads the root stack, which this render has none of.
 // lib/useRootScreenRole.test.tsx checks it in a real router.
-jest.mock('../../lib/useRootScreenRole', () => ({ useRootScreenRole: () => undefined }))
+let mockRole: 'main' | undefined
+jest.mock('../../lib/useRootScreenRole', () => ({ useRootScreenRole: () => mockRole }))
 
 jest.mock('../../lib/api', () => ({
   searchMovies: jest.fn(),
@@ -44,6 +45,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   jest.useFakeTimers()
   mockParams = {}
+  mockRole = undefined
   searchMovies.mockResolvedValue({ results: [] })
 })
 
@@ -301,4 +303,30 @@ it('offers no clear icon while the box is empty', () => {
 
   // The icon would be an action that does nothing.
   expect(screen.queryByLabelText('Clear the search box')).toBeNull()
+})
+
+describe('as the first screen', () => {
+  // A deep link opens the sheet with no page under it. The glass then has
+  // nothing to blur, and without a background the reader saw the scrim alone.
+  it('draws the page background under the glass', () => {
+    mockRole = 'main'
+
+    const screen = renderWithProviders(<SearchScreen />)
+
+    const style = Object.assign(
+      {},
+      ...[screen.getByTestId('search-layer').props.style].flat(9),
+    ) as { backgroundColor?: string }
+    expect(style.backgroundColor).toEqual(expect.any(String))
+  })
+
+  it('stays see-through over a page', () => {
+    const screen = renderWithProviders(<SearchScreen />)
+
+    const style = Object.assign(
+      {},
+      ...[screen.getByTestId('search-layer').props.style].flat(9),
+    ) as { backgroundColor?: string }
+    expect(style.backgroundColor).toBeUndefined()
+  })
 })

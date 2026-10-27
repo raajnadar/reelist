@@ -27,9 +27,10 @@ jest.mock('expo-router', () => ({
 
 jest.mock('../../../lib/api', () => ({
   getMoviesByGenre: jest.fn(),
+  getGenres: jest.fn(),
 }))
 
-const { getMoviesByGenre } = jest.requireMock('../../../lib/api')
+const { getMoviesByGenre, getGenres } = jest.requireMock('../../../lib/api')
 
 /**
  * A page of `count` films whose ids start at `from`, so pages never overlap.
@@ -56,6 +57,7 @@ const pageOf = (
 beforeEach(() => {
   jest.clearAllMocks()
   mockParams = { id: '28', name: 'Action' }
+  getGenres.mockResolvedValue([])
   getMoviesByGenre.mockResolvedValue({
     results: mockMovies,
     page: 1,
@@ -101,13 +103,35 @@ describe('the screen states', () => {
     await waitFor(() => expect(screen.getByText('Action')).toBeTruthy())
   })
 
-  // A deep link can arrive without the name the chips attach.
-  it('falls back to a generic title when the query has no name', async () => {
+  // A deep link can arrive without the name the chips attach. The genre list
+  // then names it, under the key the home screen loads the chips with.
+  it('reads the name from the genre list when the query has none', async () => {
     mockParams = { id: '28' }
+    getGenres.mockResolvedValue([
+      { id: 28, name: 'Action' },
+      { id: 35, name: 'Comedy' },
+    ])
+
+    const screen = renderWithProviders(<GenreScreen />)
+
+    await waitFor(() => expect(screen.getByText('Action')).toBeTruthy())
+    expect(screen.queryByText('Genre')).toBeNull()
+  })
+
+  it('falls back to a generic title when the genre list fails too', async () => {
+    mockParams = { id: '28' }
+    getGenres.mockRejectedValue(new Error('TMDB is unavailable'))
 
     const screen = renderWithProviders(<GenreScreen />)
 
     await waitFor(() => expect(screen.getByText('Genre')).toBeTruthy())
+  })
+
+  it('asks for no genre list while the query carries the name', async () => {
+    const screen = renderWithProviders(<GenreScreen />)
+
+    await waitFor(() => expect(screen.getByText('Action')).toBeTruthy())
+    expect(getGenres).not.toHaveBeenCalled()
   })
 
   it('reports a failed request', async () => {

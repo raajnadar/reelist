@@ -11,7 +11,7 @@ import { GlassLayer } from '../components/GlassLayer'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
-import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../components/NoindexHead'
 import { metadataFor, noindexMeta } from '../lib/head'
 import { haptic } from '../lib/haptics'
 import { searchMovies } from '../lib/api'
@@ -178,8 +178,20 @@ export default function SearchScreen() {
   const landmark = useRootScreenRole()
 
   return (
-    <View style={styles.layer} role={landmark}>
-      <PageHead title="Search" noindex />
+    <View
+      testID="search-layer"
+      /*
+        The page background when this is the first screen, on a deep link:
+        there is no page under the sheet, so the glass had nothing to blur
+        and the reader saw the scrim colour alone.
+      */
+      style={[
+        styles.layer,
+        landmark === 'main' && { backgroundColor: theme.colors.background },
+      ]}
+      role={landmark}
+    >
+      <NoindexHead title="Search" />
       {/*
         The field is the sheet's title, and a field is not a heading. A screen
         reader still needs one to name the sheet, so it gets one that only a
@@ -334,7 +346,7 @@ export default function SearchScreen() {
                 transition="exit"
                 style={StyleSheet.absoluteFill}
               >
-                <SkeletonGrid />
+                <SkeletonGrid width={width} />
               </Motion.View>
             ) : failure ? (
               <StateMessage

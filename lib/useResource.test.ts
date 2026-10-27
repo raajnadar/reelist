@@ -364,3 +364,46 @@ describe('reconnect', () => {
     expect(fetcher).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('one request per key', () => {
+  it('shares a request between two hooks that ask for the same key together', async () => {
+    let resolve: (v: string) => void = () => {}
+    const fetcher = jest.fn(
+      () =>
+        new Promise<string>((r) => {
+          resolve = r
+        }),
+    )
+
+    // Two screens mounted in one commit, as the home rows and the genre chips
+    // are on a cold web load. Each one sent its own request before this.
+    const first = renderHook(() => useResource('a', fetcher, 'failed'))
+    const second = renderHook(() => useResource('a', fetcher, 'failed'))
+
+    expect(fetcher).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolve('film')
+    })
+    expect(first.result.current.data).toBe('film')
+    expect(second.result.current.data).toBe('film')
+  })
+
+  it('asks again once the shared request has settled and expired', async () => {
+    jest.useFakeTimers()
+    const fetcher = jest.fn().mockResolvedValueOnce('old').mockResolvedValueOnce('new')
+
+    const first = renderHook(() => useResource('a', fetcher, 'failed'))
+    await act(async () => {})
+    first.unmount()
+
+    // A settled request is not shared: the store answers for it, and once the
+    // copy is stale the next hook sends a request of its own.
+    jest.advanceTimersByTime(CACHE_TTL_MS)
+    const second = renderHook(() => useResource('a', fetcher, 'failed'))
+    await act(async () => {})
+    expect(second.result.current.data).toBe('new')
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    jest.useRealTimers()
+  })
+})

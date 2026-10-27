@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
-import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../../components/NoindexHead'
 import { metadataFor, noindexMeta } from '../../lib/head'
 import { haptic } from '../../lib/haptics'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
@@ -77,7 +77,7 @@ export default function WatchlistScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <PageHead title="Watchlist" noindex />
+      <NoindexHead title="Watchlist" />
       <AppBar
         title="Watchlist"
         insetTop
@@ -128,7 +128,7 @@ export default function WatchlistScreen() {
             "Nothing saved yet" for a frame before their films arrive.
           */
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
-            <SkeletonGrid />
+            <SkeletonGrid width={width} />
           </Motion.View>
         ) : movies.length ? (
           <Motion.View

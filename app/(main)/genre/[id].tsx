@@ -11,9 +11,10 @@ import { DiscoverFilterRow } from '../../../components/DiscoverFilterRow'
 import { MovieCard } from '../../../components/MovieCard'
 import { PullToRefresh } from '../../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../../../components/NoindexHead'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
-import { getMoviesByGenre } from '../../../lib/api'
+import { getGenres, getMoviesByGenre } from '../../../lib/api'
 import {
   EMPTY_FILTERS,
   filterKey,
@@ -258,7 +259,21 @@ export default function GenreScreen() {
   }, [key, genreId, filters, page, totalPages, loading, loadingMore, failure])
 
   const seeded = usePrerendered<Genre>(`/(main)/genre/${params.id}`)
-  const name = params.name ?? seeded?.name
+  const known = params.name ?? seeded?.name
+
+  /**
+   * The name from the genre list, for a link that carries none: a shared
+   * link, or a web address typed by hand for a genre the export did not
+   * write. The key is the one the home screen uses, so a reader who came
+   * through the chips is answered from the store. A null key while the name
+   * is already known: there is nothing to ask.
+   */
+  const list = useResource<Genre[]>(
+    known || !validId ? null : 'home:genres',
+    getGenres,
+    'Could not load genres',
+  )
+  const name = known ?? list.data?.find((genre) => genre.id === genreId)?.name
   const title = name ?? 'Genre'
 
   // The handler behind REPORTS, which carries only the words. `setup` has none:
@@ -274,7 +289,7 @@ export default function GenreScreen() {
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {/* A missing genre gets `noindex`, for the reason the film screen gives. */}
       {failure?.kind === 'missing' ? (
-        <PageHead title={REPORTS.missing.title} noindex />
+        <NoindexHead title={REPORTS.missing.title} />
       ) : validId && name ? (
         <PageHead {...genreMeta(genreId, name)} />
       ) : null}
@@ -299,7 +314,7 @@ export default function GenreScreen() {
           // A grid of placeholders, not a spinner: it holds the shape the
           // results will take, so the layout does not jump when they arrive.
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
-            <SkeletonGrid />
+            <SkeletonGrid width={width} />
           </Motion.View>
         ) : failure ? (
           /*

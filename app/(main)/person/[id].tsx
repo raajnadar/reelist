@@ -7,12 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
 import { MovieCard } from '../../../components/MovieCard'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { NoindexHead } from '../../../components/NoindexHead'
 import { PersonProfile, PersonProfileSkeleton } from '../../../components/PersonProfile'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
 import { getPerson } from '../../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
-import { GRID_GAP, GRID_PADDING, posterColumns } from '../../../lib/grid'
+import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
 import { metadataFor, noindexMeta, personMeta } from '../../../lib/head'
 import type { PersonDetail } from '../../../lib/types'
 import { useContentWidth } from '../../../lib/useContentWidth'
@@ -138,7 +139,7 @@ export default function PersonScreen() {
         A missing person gets `noindex`, for the reason the film screen gives.
       */}
       {failure?.kind === 'missing' ? (
-        <PageHead title={REPORTS.missing.title} noindex />
+        <NoindexHead title={REPORTS.missing.title} />
       ) : person ? (
         <PageHead {...personMeta(person)} />
       ) : null}
@@ -156,10 +157,15 @@ export default function PersonScreen() {
           <Motion.View key="loading" exit={{ opacity: 0 }} transition="exit">
             {/* The placeholder holds the box the content will: the profile,
                 then the grid of films under it. */}
-            <View style={[styles.profilePlaceholder, { paddingTop: headerSpace }]}>
+            <View
+              style={[
+                styles.profilePlaceholder,
+                { paddingTop: headerSpace, paddingHorizontal: gridInset(width) },
+              ]}
+            >
               <PersonProfileSkeleton photoWidth={photoWidth} />
             </View>
-            <SkeletonGrid />
+            <SkeletonGrid width={width} />
           </Motion.View>
         ) : failure ? (
           <StateMessage
@@ -207,7 +213,11 @@ export default function PersonScreen() {
               columnWrapperStyle={columns > 1 ? styles.column : undefined}
               contentContainerStyle={[
                 styles.list,
-                { paddingTop: headerSpace, paddingBottom: insets.bottom + 16 },
+                {
+                  paddingTop: headerSpace,
+                  paddingBottom: insets.bottom + 16,
+                  paddingHorizontal: gridInset(width),
+                },
               ]}
               ListHeaderComponent={
                 <View style={styles.header}>
@@ -245,12 +255,14 @@ export default function PersonScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  list: { paddingHorizontal: GRID_PADDING, gap: GRID_GAP },
+  // The horizontal inset comes from the content width; see gridInset. A fixed
+  // inset left the slack of the columns on the right: 50 beside 16 on a phone.
+  list: { gap: GRID_GAP },
   column: { gap: GRID_GAP },
   // The list already pads itself, so the header only carries the space between
   // the profile and the first row of posters.
   header: { gap: 20, marginBottom: 4 },
   // The placeholder is outside the list, so it repeats the padding the list
   // gives its header, including the room for the floating bar.
-  profilePlaceholder: { paddingHorizontal: GRID_PADDING, marginBottom: 24 },
+  profilePlaceholder: { marginBottom: 24 },
 })
