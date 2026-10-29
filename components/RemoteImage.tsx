@@ -14,33 +14,13 @@ import type { ImageSize } from '../lib/images'
 const FADE_MS = 220
 
 /**
- * The web `<img>` behaves as a View only with these. The browser reads the
- * `width` and `height` attributes as a CSS size, so without `auto` here an
- * `<img>` with `flex: 1` does not stretch, and an `aspectRatio` does nothing
- * because both sides are set. The call site's own `width` still wins.
- *
- * The rest are the defaults that react-native-web gives every View. Without
- * `minHeight: 0`, a `flex: 1` picture keeps the height its ratio gives,
- * overflows a shorter frame, and shows the top of the picture instead of the
- * centre. Without `borderStyle`, a border width draws no border. Without
- * `flexShrink: 0`, a row can squeeze it.
- *
- * The cast is for `borderStyle`: CSS takes it on an image, and the React
- * Native image type does not list it.
- *
- * A workaround for a `@rootnative/seo` defect (DX item R17). Remove it when
- * `Picture` sets this base itself.
+ * `Picture` gives the web `<img>` the file size as its CSS size. With both
+ * sides set, an `<img>` with `flex: 1` does not stretch, and an `aspectRatio`
+ * does nothing. Each call site sizes the picture with its own style, so this
+ * clears both sides, and `Picture` then sets `auto`. The call site's own
+ * `width` still wins.
  */
-const WEB_BOX = {
-  width: 'auto',
-  height: 'auto',
-  boxSizing: 'border-box',
-  borderStyle: 'solid',
-  borderWidth: 0,
-  flexShrink: 0,
-  minHeight: 0,
-  minWidth: 0,
-} as ImageStyle
+const WEB_FLUID: ImageStyle = { width: undefined, height: undefined }
 
 type Props = {
   /** The TMDB URL. A film with no artwork draws its own fallback instead. */
@@ -113,7 +93,7 @@ export function RemoteImage({
         height={size.height}
         contentFit="cover"
         loading={priority === 'high' ? 'eager' : 'lazy'}
-        style={[WEB_BOX, { backgroundColor: theme.colors.surfaceVariant }, style]}
+        style={[WEB_FLUID, { backgroundColor: theme.colors.surfaceVariant }, style]}
       />
     )
   }

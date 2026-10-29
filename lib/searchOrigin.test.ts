@@ -1,4 +1,4 @@
-import type { View } from 'react-native'
+import type { ViewInstance } from 'react-native'
 import {
   clearSearchOrigin,
   measureWindowRect,
@@ -39,7 +39,7 @@ describe('measureWindowRect', () => {
     const node = {
       measureInWindow: (callback: (x: number, y: number, w: number, h: number) => void) =>
         callback(RECT.x, RECT.y, RECT.width, RECT.height),
-    } as unknown as View
+    } as unknown as ViewInstance
 
     await expect(measureWindowRect(node)).resolves.toEqual(RECT)
   })

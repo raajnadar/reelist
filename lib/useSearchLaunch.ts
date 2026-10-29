@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import { useRef } from 'react'
-import type { View } from 'react-native'
+import type { ViewInstance } from 'react-native'
 import { measureWindowRect, setSearchOrigin } from './searchOrigin'
 
 /**
@@ -17,7 +17,7 @@ import { measureWindowRect, setSearchOrigin } from './searchOrigin'
  */
 export function useSearchLaunch() {
   const router = useRouter()
-  const ref = useRef<View>(null)
+  const ref = useRef<ViewInstance>(null)
 
   const open = async () => {
     const rect = await measureWindowRect(ref.current)

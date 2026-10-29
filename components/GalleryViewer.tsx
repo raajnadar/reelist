@@ -21,8 +21,8 @@ import {
   StyleSheet,
   View,
   type GestureResponderEvent,
+  type ListViewToken,
   type PanResponderGestureState,
-  type ViewToken,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { backdropUrl } from '../lib/images'
@@ -290,10 +290,10 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
    */
   const viewability = useMemo(() => ({ itemVisiblePercentThreshold: 60 }), [])
   const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const first = viewableItems[0]
-      if (!first || first.index === null) return
-      setIndex(first.index)
+    ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
+      const firstIndex = viewableItems[0]?.index
+      if (typeof firstIndex !== 'number') return
+      setIndex(firstIndex)
       setZoomed(false)
       animate(panX, 0, INSTANT)
       animate(panY, 0, INSTANT)

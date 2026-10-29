@@ -39,9 +39,7 @@ jest.mock('../../lib/useRootScreenRole', () => ({ useRootScreenRole: () => undef
 // Spied rather than replaced with a module mock. `Linking` is one export of
 // the react-native module the whole render tree imports, and a factory mock of
 // it hands every other consumer an object without the members it reads.
-const openURL = jest
-  .spyOn(Linking, 'openURL')
-  .mockImplementation(() => Promise.resolve(true))
+const openURL = jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve())
 
 beforeEach(() => {
   jest.clearAllMocks()

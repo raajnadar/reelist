@@ -42,18 +42,23 @@ beforeEach(() => {
   mockCanGoBack.mockReturnValue(true)
 })
 
-it('goes back', () => {
+// Each test waits for the device read. A read that lands after the test ends
+// updates the screen outside act(), and React logs a warning.
+
+it('goes back', async () => {
   const screen = renderWithProviders(<WatchlistScreen />)
+  await screen.findByTestId('watchlist-empty')
 
   fireEvent.press(screen.getByLabelText('Go back'))
   expect(mockBack).toHaveBeenCalled()
 })
 
-it('returns to the home screen when there is nowhere to go back to', () => {
+it('returns to the home screen when there is nowhere to go back to', async () => {
   // A deep link makes this the first entry in the history.
   mockCanGoBack.mockReturnValue(false)
 
   const screen = renderWithProviders(<WatchlistScreen />)
+  await screen.findByTestId('watchlist-empty')
 
   fireEvent.press(screen.getByLabelText('Go back'))
   expect(mockBack).not.toHaveBeenCalled()
@@ -134,6 +139,8 @@ it('sorts the films from the options menu', async () => {
   fireEvent.press(await screen.findByText('Title'))
 
   await waitFor(() => expect(order()).toEqual([first.title, second.title]))
+  // The pick also closes the menu. Its exit ends after the order changes.
+  await waitFor(() => expect(screen.queryByText('Clear watchlist')).toBeNull())
 })
 
 it('clears the watchlist, and the undo puts every film back', async () => {

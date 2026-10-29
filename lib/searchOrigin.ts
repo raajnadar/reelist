@@ -1,4 +1,4 @@
-import type { View } from 'react-native'
+import type { ViewInstance } from 'react-native'
 
 /** A box in window coordinates: where a view is drawn on the screen. */
 export type Rect = { x: number; y: number; width: number; height: number }
@@ -45,7 +45,7 @@ export function clearSearchOrigin(): void {
  * in rather than before, which is the order the modal needs: it reads the box
  * when it mounts.
  */
-export function measureWindowRect(node: View | null): Promise<Rect | null> {
+export function measureWindowRect(node: ViewInstance | null): Promise<Rect | null> {
   if (!node) return Promise.resolve(null)
 
   return new Promise((resolve) => {

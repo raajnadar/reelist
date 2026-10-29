@@ -9,7 +9,7 @@ import {
 } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useRef } from 'react'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Pressable, StyleSheet, View, type ViewInstance } from 'react-native'
 import { backdropUrl } from '../lib/images'
 import { cascadeWindow, LIFT_SPACE } from '../lib/motion'
 import type { GalleryImage } from '../lib/types'
@@ -46,7 +46,7 @@ type Props = {
  */
 export function GalleryRow({ movieId, title, images }: Props) {
   const theme = useTheme()
-  const ref = useRef<View>(null)
+  const ref = useRef<ViewInstance>(null)
 
   // The row owns the in-view trigger, for the reason MovieRow explains: a
   // card's nearest scroll container is the horizontal list, which cannot say

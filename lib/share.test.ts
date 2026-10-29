@@ -37,7 +37,7 @@ describe('shareTitle', () => {
 
 describe('shareMovie', () => {
   it('sends the link in the url field on iOS', async () => {
-    shareSpy.mockResolvedValue({ action: Share.sharedAction })
+    shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
 
     const outcome = await shareMovie(dune)
 
@@ -51,7 +51,7 @@ describe('shareMovie', () => {
   it('appends the link to the message on Android, which reads no url field', async () => {
     const os = Platform.OS
     Platform.OS = 'android'
-    shareSpy.mockResolvedValue({ action: Share.sharedAction })
+    shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
 
     await shareMovie(dune)
 
@@ -63,7 +63,7 @@ describe('shareMovie', () => {
   })
 
   it('reports a dismissed sheet', async () => {
-    shareSpy.mockResolvedValue({ action: Share.dismissedAction })
+    shareSpy.mockResolvedValue({ action: Share.dismissedAction, activityType: undefined })
 
     expect(await shareMovie(dune)).toBe('dismissed')
   })

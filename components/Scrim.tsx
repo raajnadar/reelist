@@ -1,6 +1,6 @@
-import { useId } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
+import { useSvgId } from '../lib/useSvgId'
 
 /**
  * One stop of the gradient: how far along the box it sits (0 to 1), top to
@@ -36,12 +36,10 @@ export function Scrim({
 }) {
   const across = axis === 'horizontal'
   // Two scrims render on the detail screen, and on web they become two real
-  // `<svg>` elements in one document. A fixed id would make the second
-  // definition win for both, so each instance names its own.
-  //
-  // `useId` returns a value with colons (`:r0:`), which a `url(#...)` reference
-  // cannot carry, so the separators are dropped.
-  const gradientId = `scrim-${useId().replace(/[^a-zA-Z0-9]/g, '')}`
+  // `<svg>` elements in one document. The key holds every value the gradient
+  // draws, so two scrims share an id only when they draw the same gradient.
+  // See lib/useSvgId.ts.
+  const gradientId = useSvgId(`scrim-${axis}-${color}-${stops.join('-')}`)
 
   // The position lives on a View, not on the Svg. On web `react-native-svg`
   // hands the style to the raw `<svg>` element as an array, which React DOM

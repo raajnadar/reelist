@@ -373,7 +373,7 @@ describe('the share button', () => {
   it('opens the sheet with the web link for the film', async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
     getMovie.mockResolvedValue(movie)
-    shareSpy.mockResolvedValue({ action: Share.sharedAction })
+    shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
 
     const screen = renderWithProviders(<MovieScreen />)
 

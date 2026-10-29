@@ -11,7 +11,7 @@ import {
 } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useRef } from 'react'
-import { FlatList, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View, type ViewInstance } from 'react-native'
 import { cascadeWindow, LIFT_SPACE } from '../lib/motion'
 import type { Video } from '../lib/types'
 import { useServerPainted } from '../lib/useServerPainted'
@@ -40,7 +40,7 @@ type Props = {
  */
 export function VideoRow({ title, videos, trailer }: Props) {
   const theme = useTheme()
-  const ref = useRef<View>(null)
+  const ref = useRef<ViewInstance>(null)
 
   // The row owns the in-view trigger, for the reason MovieRow explains.
   const inView = useInView(ref, { amount: 0.1, transition: 'cascade' })

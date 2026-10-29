@@ -1,7 +1,7 @@
 import { Typography } from '@rootnative/components/typography'
 import { useInView, useMotionValue } from '@rootnative/inertia'
 import { useRef } from 'react'
-import { FlatList, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View, type ViewInstance } from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
 import type { CastMember } from '../lib/types'
 import { useServerPainted } from '../lib/useServerPainted'
@@ -16,7 +16,7 @@ import { CastCard } from './CastCard'
  * same reason.
  */
 export function CastRow({ title, cast }: { title: string; cast: CastMember[] }) {
-  const ref = useRef<View>(null)
+  const ref = useRef<ViewInstance>(null)
 
   // The row owns the in-view trigger, for the reason MovieRow explains: a
   // card's nearest scroll container is the horizontal list, which cannot say

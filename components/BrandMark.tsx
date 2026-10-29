@@ -1,6 +1,6 @@
 import { useTheme } from '@rootnative/core'
-import { useId } from 'react'
 import Svg, { Circle, Mask, Path, Rect } from 'react-native-svg'
+import { useSvgId } from '../lib/useSvgId'
 
 /**
  * The Reelist mark: a film reel with a play button as its hub. This is the
@@ -11,19 +11,8 @@ import Svg, { Circle, Mask, Path, Rect } from 'react-native-svg'
 export function BrandMark({ size = 26, color }: { size?: number; color?: string }) {
   const theme = useTheme()
 
-  /**
-   * One mask id for each mark on screen.
-   *
-   * A fixed id breaks the moment two marks share a document, which on the web
-   * is a DOM. `url(#...)` resolves to the first element with that id, so the
-   * second mark points at the first mark's mask — and when a navigator hides
-   * the screen holding that first one, the mask renders nothing and the mark
-   * comes out as a plain filled circle with no reel holes and no play button.
-   *
-   * The colons React puts in a `useId` value are legal in an id but not in the
-   * `url(#...)` reference that reads it, so they come out here.
-   */
-  const maskId = `reel-holes-${useId().replace(/:/g, '')}`
+  // One mask id for each mark on screen. See lib/useSvgId.ts.
+  const maskId = useSvgId('reel-holes')
 
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">

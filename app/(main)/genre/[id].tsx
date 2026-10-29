@@ -375,7 +375,7 @@ export default function GenreScreen() {
                   <View style={styles.footer}>
                     <ActivityIndicator color={theme.colors.primary} />
                   </View>
-                ) : null
+                ) : undefined
               }
               showsVerticalScrollIndicator={false}
             />

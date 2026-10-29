@@ -106,10 +106,9 @@ describe('on the web', () => {
       height: 750,
       loading: 'eager',
     })
-    // The browser reads the size attributes as a CSS size, so the style has to
-    // reset them, or a `flex: 1` picture does not stretch and an aspect ratio
-    // does nothing. A raw img also has none of the View defaults: without
-    // `minHeight: 0` it shows the top of a shorter frame.
+    // The style has to reset the file size, or a `flex: 1` picture does not
+    // stretch and an aspect ratio does nothing. A raw img also has none of the
+    // View defaults: without `minHeight: 0` it shows the top of a shorter frame.
     expect(img.props.style).toMatchObject({ width: 'auto', height: 'auto', minHeight: 0 })
   })
 

@@ -35,7 +35,7 @@ it('lists the clipboard and every site, and no browser sheet without the API', a
 
 it('leads with the browser sheet when the browser has one', async () => {
   setNavigator({ share: jest.fn() })
-  shareSpy.mockResolvedValue({ action: Share.sharedAction })
+  shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
 
   const screen = renderWithProviders(<ShareButton movie={movie} />)
 

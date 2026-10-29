@@ -4,7 +4,13 @@ import { Typography, type TypographyProps } from '@rootnative/components/typogra
 import { useTheme, type IconSource } from '@rootnative/core'
 import { Motion, Stagger } from '@rootnative/inertia'
 import type { RefObject } from 'react'
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import {
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewInstance,
+  type ViewStyle,
+} from 'react-native'
 import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /** Milliseconds between the badge, the text, and the action. */
@@ -53,7 +59,7 @@ type Props = {
    * The watchlist's "Find a movie" is one: the search sheet starts its field
    * as a pill over the button that opened it.
    */
-  actionRef?: RefObject<View | null>
+  actionRef?: RefObject<ViewInstance | null>
   style?: StyleProp<ViewStyle>
   testID?: string
 }

@@ -20,9 +20,7 @@ jest.mock('expo-router', () =>
 )
 
 // Spied for the reason about.test.tsx gives.
-const openURL = jest
-  .spyOn(Linking, 'openURL')
-  .mockImplementation(() => Promise.resolve(true))
+const openURL = jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve())
 
 beforeEach(() => {
   jest.clearAllMocks()

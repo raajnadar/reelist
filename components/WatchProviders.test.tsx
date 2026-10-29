@@ -9,7 +9,7 @@ const mockPush = jest.fn()
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
 
-const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
+const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined)
 
 beforeEach(() => {
   openURL.mockClear()

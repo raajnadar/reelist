@@ -33,7 +33,8 @@ it('gives each instance its own gradient id', () => {
   expect(ids[0]).not.toEqual(ids[1])
 })
 
-// A `url(#...)` reference cannot carry the colons React puts in a generated id.
+// A `url(#...)` reference cannot carry every character of the colour and the
+// stops in the key, or the colons React puts in a generated id.
 it('builds a reference with no characters a url cannot hold', () => {
   const tree = render(<Scrim color="#000000" stops={stops} />)
 

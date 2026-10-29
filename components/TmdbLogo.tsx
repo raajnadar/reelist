@@ -1,5 +1,5 @@
-import { useId } from 'react'
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg'
+import { useSvgId } from '../lib/useSvgId'
 
 const VIEW_WIDTH = 273.42
 const VIEW_HEIGHT = 35.52
@@ -13,9 +13,8 @@ const VIEW_HEIGHT = 35.52
  * SVG source: https://www.themoviedb.org/about/logos-attribution
  */
 export function TmdbLogo({ height = 14 }: { height?: number }) {
-  // One gradient id for each logo on screen, for the reason
-  // components/BrandMark.tsx gives for its mask id.
-  const gradientId = `tmdb-gradient-${useId().replace(/:/g, '')}`
+  // One gradient id for each logo on screen. See lib/useSvgId.ts.
+  const gradientId = useSvgId('tmdb-gradient')
 
   return (
     <Svg

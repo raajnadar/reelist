@@ -1,14 +1,14 @@
 import { Typography } from '@rootnative/components/typography'
 import { useInView, useMotionValue } from '@rootnative/inertia'
 import { useRef } from 'react'
-import { FlatList, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View, type ViewInstance } from 'react-native'
 import { LIFT_SPACE } from '../lib/motion'
 import type { Movie } from '../lib/types'
 import { useServerPainted } from '../lib/useServerPainted'
 import { MovieCard } from './MovieCard'
 
 export function MovieRow({ title, movies }: { title: string; movies: Movie[] }) {
-  const ref = useRef<View>(null)
+  const ref = useRef<ViewInstance>(null)
 
   /*
     The row, not the card, owns the trigger.
