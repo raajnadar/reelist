@@ -1,10 +1,13 @@
+import { fireEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
 import { renderWithProviders } from '../lib/test-utils'
 import type { Movie } from '../lib/types'
 import { MovieCard } from './MovieCard'
 
+const mockPush = jest.fn()
+
 jest.mock('expo-router', () =>
-  jest.requireActual('../lib/test-utils').expoRouterMock(() => ({ push: jest.fn() })),
+  jest.requireActual('../lib/test-utils').expoRouterMock(() => ({ push: mockPush })),
 )
 
 const movie: Movie = {
@@ -107,5 +110,34 @@ describe('the text', () => {
     expect(shortHeight).toBe(longHeight)
     // A reserved box, not a collapsed one.
     expect(shortHeight).toBeGreaterThan(0)
+  })
+})
+
+describe('select mode', () => {
+  it('is one checkbox that picks the film and does not open it', () => {
+    const onToggle = jest.fn()
+    const screen = renderWithProviders(
+      <MovieCard movie={movie} selection={{ selected: true, onToggle }} />,
+    )
+
+    // One control: the drawn checkbox shows the state and is hidden from a
+    // screen reader, so the card alone reads as the checkbox.
+    const checkboxes = screen.getAllByRole('checkbox')
+    expect(checkboxes).toHaveLength(1)
+    expect(checkboxes[0]).toBeChecked()
+
+    fireEvent.press(checkboxes[0])
+
+    expect(onToggle).toHaveBeenCalledTimes(1)
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('opens the film outside select mode', () => {
+    const screen = renderWithProviders(<MovieCard movie={movie} />)
+
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    fireEvent.press(screen.getByText('Fight Club'))
+
+    expect(mockPush).toHaveBeenCalledWith('/movie/550')
   })
 })

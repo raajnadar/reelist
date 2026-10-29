@@ -15,6 +15,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native'
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from './BrandMark'
+import { filmCount } from '../lib/format'
 import {
   activeDestination,
   activeDrawerItem,
@@ -29,7 +30,7 @@ import { ContentWidthContext } from '../lib/useContentWidth'
 import { useHydrating } from '../lib/useHydrating'
 import { useKeyboardShrinksWindow } from '../lib/useKeyboardShrinksWindow'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
-import { useWatchlist } from '../lib/watchlist'
+import { isWatched, useWatchlist } from '../lib/watchlist'
 
 /**
  * The MD3 navigation bar height, before the bottom inset the bar adds itself.
@@ -86,7 +87,8 @@ export function AppNavigation({ children }: { children: ReactNode }) {
   const keyboardUp = useKeyboardShrinksWindow()
   const bar = kind === 'bar' && !hidden && !keyboardUp
   const hydrating = useHydrating()
-  const saved = useWatchlist().movies.length
+  // A watched film is done, so the badge counts only the films still to watch.
+  const toWatch = useWatchlist().movies.filter((m) => !isWatched(m)).length
 
   /**
    * The snackbar layer draws over the whole window, so on a phone it has to
@@ -133,11 +135,14 @@ export function AppNavigation({ children }: { children: ReactNode }) {
         ),
       }
     }
-    if (d.value === 'watchlist' && saved > 0) {
+    if (d.value === 'watchlist' && toWatch > 0) {
       // The library draws the badge for the eye only, so the label carries
       // the count for a screen reader.
-      const count = saved === 1 ? '1 film' : `${saved} films`
-      return { ...d, badge: saved, accessibilityLabel: `${d.label}, ${count}` }
+      return {
+        ...d,
+        badge: toWatch,
+        accessibilityLabel: `${d.label}, ${filmCount(toWatch)} to watch`,
+      }
     }
     return d
   })

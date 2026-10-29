@@ -26,6 +26,9 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
   const { movies } = useWatchlist()
   const savedAt = movies.findIndex((m) => m.id === movie.id)
   const saved = savedAt !== -1
+  // The undo puts back the stored copy, not `movie`: only the stored copy
+  // carries the watched mark.
+  const stored = saved ? movies[savedAt] : movie
   const [pops, setPops] = useState(0)
   const painted = useServerPainted()
 
@@ -48,7 +51,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
             duration: 'long',
             replace: true,
             onAction: () => {
-              restoreSaved([movie], savedAt)
+              restoreSaved([stored], savedAt)
               haptic('save')
             },
           }

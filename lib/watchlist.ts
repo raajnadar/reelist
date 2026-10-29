@@ -22,7 +22,17 @@ import type { Movie } from './types'
  */
 export const STORAGE_KEY = 'reelist.watchlist.v1'
 
-let movies: Movie[] = []
+/**
+ * A saved film, and whether the reader saw it.
+ *
+ * `watched` is optional, and absent rather than `false` on a film to watch, so
+ * this is still the v1 shape: a list from before the field reads as all to
+ * watch, and an older build that reads this list keeps the field it does not
+ * know.
+ */
+export type SavedMovie = Movie & { watched?: true }
+
+let movies: SavedMovie[] = []
 const listeners = new Set<() => void>()
 
 /**
@@ -51,14 +61,14 @@ const emit = () => {
  * without an id would reach FlatList as a child with no key, so the check is
  * what the grid depends on rather than a formality.
  */
-export function parseStored(raw: string | null): Movie[] {
+export function parseStored(raw: string | null): SavedMovie[] {
   if (!raw) return []
 
   try {
     const value: unknown = JSON.parse(raw)
     if (!Array.isArray(value)) return []
     return value.filter(
-      (item): item is Movie =>
+      (item): item is SavedMovie =>
         typeof item === 'object' &&
         item !== null &&
         typeof (item as Movie).id === 'number',
@@ -121,8 +131,11 @@ const getLoaded = () => loaded
  * Storing that would put a film's whole detail response on the device for every
  * save, so the narrowing happens here rather than at the call site, where a
  * later caller could forget it.
+ *
+ * The watched mark goes through, so an undo that puts a removed film back
+ * also puts it back on the right tab.
  */
-const toSaved = (movie: Movie): Movie => ({
+const toSaved = (movie: SavedMovie): SavedMovie => ({
   id: movie.id,
   title: movie.title,
   poster_path: movie.poster_path,
@@ -130,11 +143,20 @@ const toSaved = (movie: Movie): Movie => ({
   vote_average: movie.vote_average,
   release_date: movie.release_date,
   overview: movie.overview,
+  ...(isWatched(movie) ? { watched: true as const } : {}),
 })
 
 /** Whether `id` is in `saved`. */
 export const isSaved = (saved: Movie[], id: number): boolean =>
   saved.some((m) => m.id === id)
+
+/**
+ * Whether the reader marked the film watched.
+ *
+ * A strict test, because the device copy is not trusted input: see
+ * `parseStored`.
+ */
+export const isWatched = (movie: SavedMovie): boolean => movie.watched === true
 
 /**
  * Adds the film, or removes it when it is already saved.
@@ -157,7 +179,7 @@ export function toggleSaved(movie: Movie): void {
  * Returns the films it removed, so the caller can offer an undo that hands them
  * to `restoreSaved`.
  */
-export function clearWatchlist(): Movie[] {
+export function clearWatchlist(): SavedMovie[] {
   const removed = movies
   touched = true
   movies = []
@@ -177,7 +199,7 @@ export function clearWatchlist(): Movie[] {
  * A film the reader saved again before the undo is skipped, so an undo never
  * makes a duplicate.
  */
-export function restoreSaved(films: Movie[], at = Number.POSITIVE_INFINITY): void {
+export function restoreSaved(films: SavedMovie[], at = Number.POSITIVE_INFINITY): void {
   const back = films.filter((m) => !isSaved(movies, m.id)).map(toSaved)
   if (!back.length) return
 
@@ -186,6 +208,53 @@ export function restoreSaved(films: Movie[], at = Number.POSITIVE_INFINITY): voi
   movies = [...movies.slice(0, index), ...back, ...movies.slice(index)]
   persist()
   emit()
+}
+
+/**
+ * Removes the films, wherever they stand in the list.
+ *
+ * Returns each removed film with the index it had, lowest index first. An undo
+ * hands them to `restoreSaved` one by one in that order, and each film then
+ * goes back to its old place: every film before it is already back.
+ */
+export function removeSaved(ids: readonly number[]): { film: SavedMovie; at: number }[] {
+  const gone = new Set(ids)
+  const removed = movies
+    .map((film, at) => ({ film, at }))
+    .filter(({ film }) => gone.has(film.id))
+  if (!removed.length) return removed
+
+  touched = true
+  movies = movies.filter((m) => !gone.has(m.id))
+  persist()
+  emit()
+  return removed
+}
+
+/**
+ * Marks the films watched, or back to watch. A film keeps its place in the
+ * list, so the date-added order of each tab does not change.
+ *
+ * Returns the ids it changed, so an undo can hand them back with the other
+ * value. A film that already had the value is not in the result, and the undo
+ * then leaves it alone.
+ */
+export function setWatched(ids: readonly number[], watched: boolean): number[] {
+  const wanted = new Set(ids)
+  const changed: number[] = []
+  const next = movies.map((film) => {
+    if (!wanted.has(film.id) || isWatched(film) === watched) return film
+    changed.push(film.id)
+    const { watched: _was, ...rest } = film
+    return watched ? { ...rest, watched: true as const } : rest
+  })
+  if (!changed.length) return changed
+
+  touched = true
+  movies = next
+  persist()
+  emit()
+  return changed
 }
 
 export type WatchlistOrder = 'added' | 'title' | 'rating'
@@ -197,7 +266,7 @@ export type WatchlistOrder = 'added' | 'title' | 'rating'
  * `Array.prototype.sort` is stable, so two films with the same rating keep
  * their date-added order.
  */
-export function sortWatchlist(saved: Movie[], order: WatchlistOrder): Movie[] {
+export function sortWatchlist<T extends Movie>(saved: T[], order: WatchlistOrder): T[] {
   if (order === 'added') return saved
   const sorted = [...saved]
   return order === 'title'
@@ -212,7 +281,7 @@ export function sortWatchlist(saved: Movie[], order: WatchlistOrder): Movie[] {
  * because it compares snapshots by identity: a fresh `{ movies, loaded }` on
  * every render would never be equal to the last one and would loop.
  */
-export function useWatchlist(): { movies: Movie[]; loaded: boolean } {
+export function useWatchlist(): { movies: SavedMovie[]; loaded: boolean } {
   return {
     movies: useSyncExternalStore(subscribe, getMovies, getMovies),
     loaded: useSyncExternalStore(subscribe, getLoaded, getLoaded),

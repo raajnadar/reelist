@@ -77,3 +77,6 @@ export const lifeSpan = (birthday: string, deathday: string) => {
   if (died) return `Died ${died}`
   return ''
 }
+
+/** A count of films with the right noun: `1 film`, `2 films`. */
+export const filmCount = (count: number) => (count === 1 ? '1 film' : `${count} films`)

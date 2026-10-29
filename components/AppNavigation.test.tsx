@@ -6,7 +6,7 @@ import { mockMovies } from '../lib/mock'
 import { readSearchOrigin } from '../lib/searchOrigin'
 import { renderWithProviders } from '../lib/test-utils'
 import { useContentWidth } from '../lib/useContentWidth'
-import { STORAGE_KEY } from '../lib/watchlist'
+import { setWatched, STORAGE_KEY } from '../lib/watchlist'
 import { AppNavigation } from './AppNavigation'
 
 let mockBreakpoint = 'compact'
@@ -235,7 +235,32 @@ describe('AppNavigation', () => {
     const screen = await renderNavigation()
 
     // The label carries the count: the badge is for the eye only.
-    expect(await screen.findByLabelText('Watchlist, 2 films')).toBeTruthy()
+    expect(await screen.findByLabelText('Watchlist, 2 films to watch')).toBeTruthy()
+  })
+
+  it('leaves the watched films out of the count', async () => {
+    const [first, second, third] = mockMovies
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify([first, { ...second, watched: true }, { ...third, watched: true }]),
+    )
+
+    const screen = await renderNavigation()
+
+    expect(await screen.findByLabelText('Watchlist, 1 film to watch')).toBeTruthy()
+  })
+
+  it('drops the count when the last film to watch is marked watched', async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mockMovies.slice(0, 1)))
+
+    const screen = await renderNavigation()
+    expect(await screen.findByLabelText('Watchlist, 1 film to watch')).toBeTruthy()
+
+    act(() => {
+      setWatched([mockMovies[0].id], true)
+    })
+
+    await waitFor(() => expect(screen.queryByLabelText(/^Watchlist, /)).toBeNull())
   })
 
   it('counts the saved films at the end of the drawer row', async () => {
@@ -244,7 +269,7 @@ describe('AppNavigation', () => {
 
     const screen = await renderNavigation()
 
-    const watchlist = await screen.findByLabelText('Watchlist, 1 film')
+    const watchlist = await screen.findByLabelText('Watchlist, 1 film to watch')
     expect(watchlist).toHaveTextContent(/1$/)
   })
 

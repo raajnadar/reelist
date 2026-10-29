@@ -1,4 +1,5 @@
 import {
+  filmCount,
   lifeSpan,
   metaLine,
   ratingLabel,
@@ -164,5 +165,16 @@ describe('lifeSpan', () => {
   // draw. A separator or a stray dash on its own would read as a defect.
   it('returns an empty string when neither date is known', () => {
     expect(lifeSpan('', '')).toBe('')
+  })
+})
+
+describe('filmCount', () => {
+  it('uses the singular for one film', () => {
+    expect(filmCount(1)).toBe('1 film')
+  })
+
+  it('uses the plural for none and for many', () => {
+    expect(filmCount(0)).toBe('0 films')
+    expect(filmCount(12)).toBe('12 films')
   })
 })

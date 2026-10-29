@@ -1,4 +1,5 @@
 import { Card } from '@rootnative/components/card'
+import { Checkbox } from '@rootnative/components/checkbox'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import {
@@ -36,11 +37,29 @@ type Props = {
    * navigation. See app/_layout.tsx.
    */
   dismissTo?: boolean
+  /**
+   * Turns the card into a checkbox, for the watchlist's select mode. A press
+   * then picks the film and does not open it.
+   */
+  selection?: { selected: boolean; onToggle: () => void }
 }
 
-export function MovieCard({ movie, index = 0, progress, dismissTo }: Props) {
+export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: Props) {
   const theme = useTheme()
   const uri = posterUrl(movie.poster_path)
+
+  /*
+    Spread, not passed as `undefined` on the link path: `Link asChild` merges
+    its own props into the Card, and a prop the Card sets, even to
+    `undefined`, replaces the link's `role`.
+  */
+  const checkboxProps = selection
+    ? {
+        onPress: selection.onToggle,
+        role: 'checkbox' as const,
+        'aria-checked': selection.selected,
+      }
+    : {}
 
   // Runs on both paths because a hook cannot be conditional. A resting 1 sits
   // at the end of the card's window, so the style is inert without a row.
@@ -49,6 +68,73 @@ export function MovieCard({ movie, index = 0, progress, dismissTo }: Props) {
     progress ?? resting,
     { opacity: [0, 1], translateY: [24, 0] },
     { inputRange: cascadeWindow(index) },
+  )
+
+  const card = (
+    <Card
+      variant="filled"
+      style={styles.card}
+      accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
+      {...checkboxProps}
+    >
+      {/* 2:3 is the TMDB poster ratio.
+
+          The image needs its own size. A remote picture has no measurable
+          size until it loads, so one with no dimensions lays out at zero
+          height and the poster never appears, whatever the parent sets. The
+          fallback View below is fine with `flex: 1`, because a View has no
+          intrinsic size to wait for. */}
+      <Card.Media aspectRatio={2 / 3}>
+        {uri ? (
+          <RemoteImage
+            testID="movie-poster"
+            uri={uri}
+            alt={movie.title}
+            // The row recycles this view as it scrolls. See RemoteImage.
+            recyclingKey={String(movie.id)}
+            size={POSTER_W342}
+            style={styles.poster}
+          />
+        ) : (
+          <View
+            style={[styles.fallback, { backgroundColor: theme.colors.surfaceVariant }]}
+          >
+            <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+              No poster
+            </Typography>
+          </View>
+        )}
+        {selection ? (
+          /*
+            The checkbox only shows the state. The Card carries the press and
+            the `checkbox` role, so a screen reader reads one control. The disc
+            keeps the empty box visible on a dark poster.
+          */
+          <View style={styles.check}>
+            <View style={[styles.checkDisc, { backgroundColor: theme.colors.surface }]} />
+            <Checkbox value={selection.selected} />
+          </View>
+        ) : null}
+      </Card.Media>
+
+      <Card.Content>
+        {/* The title box is always two lines tall, even when the title needs
+            one. numberOfLines caps the text but reserves no space, so without
+            a fixed height a short title makes a shorter card, and a horizontal
+            row of cards ends up ragged along the bottom. The height comes from
+            the theme, so a change to the type scale keeps the two lines. */}
+        <Typography
+          variant="labelLargeEmphasized"
+          numberOfLines={2}
+          style={{ height: theme.typography.labelLargeEmphasized.lineHeight * 2 }}
+        >
+          {movie.title}
+        </Typography>
+        <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
+          {metaLine(movie.vote_average, movie.release_date)}
+        </Typography>
+      </Card.Content>
+    </Card>
   )
 
   return (
@@ -90,65 +176,16 @@ export function MovieCard({ movie, index = 0, progress, dismissTo }: Props) {
         {/*
           A link, not a press handler, so the web renders an anchor: a crawler
           can follow it, and a reader can open it in a new tab. `asChild` puts
-          the href and the handler on the Card, which forwards both.
+          the href and the handler on the Card, which forwards both. In select
+          mode the card opens nothing, so it has no link.
         */}
-        <Link href={`/movie/${movie.id}`} dismissTo={dismissTo} asChild>
-          <Card
-            variant="filled"
-            style={styles.card}
-            accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
-          >
-            {/* 2:3 is the TMDB poster ratio.
-
-          The image needs its own size. A remote picture has no measurable
-          size until it loads, so one with no dimensions lays out at zero
-          height and the poster never appears, whatever the parent sets. The
-          fallback View below is fine with `flex: 1`, because a View has no
-          intrinsic size to wait for. */}
-            <Card.Media aspectRatio={2 / 3}>
-              {uri ? (
-                <RemoteImage
-                  testID="movie-poster"
-                  uri={uri}
-                  alt={movie.title}
-                  // The row recycles this view as it scrolls. See RemoteImage.
-                  recyclingKey={String(movie.id)}
-                  size={POSTER_W342}
-                  style={styles.poster}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.fallback,
-                    { backgroundColor: theme.colors.surfaceVariant },
-                  ]}
-                >
-                  <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
-                    No poster
-                  </Typography>
-                </View>
-              )}
-            </Card.Media>
-
-            <Card.Content>
-              {/* The title box is always two lines tall, even when the title needs
-            one. numberOfLines caps the text but reserves no space, so without
-            a fixed height a short title makes a shorter card, and a horizontal
-            row of cards ends up ragged along the bottom. The height comes from
-            the theme, so a change to the type scale keeps the two lines. */}
-              <Typography
-                variant="labelLargeEmphasized"
-                numberOfLines={2}
-                style={{ height: theme.typography.labelLargeEmphasized.lineHeight * 2 }}
-              >
-                {movie.title}
-              </Typography>
-              <Typography variant="labelSmall" color={theme.colors.onSurfaceVariant}>
-                {metaLine(movie.vote_average, movie.release_date)}
-              </Typography>
-            </Card.Content>
-          </Card>
-        </Link>
+        {selection ? (
+          card
+        ) : (
+          <Link href={`/movie/${movie.id}`} dismissTo={dismissTo} asChild>
+            {card}
+          </Link>
+        )}
       </Motion.View>
     </Motion.View>
   )
@@ -163,4 +200,15 @@ const styles = StyleSheet.create({
   // carries its own ratio rather than inheriting one from the slot.
   poster: { width: '100%', aspectRatio: 2 / 3 },
   fallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Card.Media stretches each child over the poster. A width and a height win
+  // over that stretch. 48 is the square the checkbox draws in.
+  check: { top: 4, left: 4, width: 48, height: 48, pointerEvents: 'none' },
+  checkDisc: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
 })

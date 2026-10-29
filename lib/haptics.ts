@@ -8,9 +8,10 @@ import {
 import { Platform } from 'react-native'
 
 /**
- * A film saved (also an undo that puts films back), a film removed (also a
- * cleared watchlist), and a pick: a filter, a theme, a carousel slot landed
- * on by a swipe, a cleared search box, a closed gallery.
+ * A film saved or marked watched (also an undo that puts films back), a film
+ * removed or marked not watched (also a cleared watchlist), and a pick: a
+ * filter, a theme, a carousel slot landed on by a swipe, a cleared search box,
+ * a closed gallery, a film picked in select mode.
  */
 export type Haptic = 'save' | 'unsave' | 'select'
 

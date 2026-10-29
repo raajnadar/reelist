@@ -1,16 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { mockMovies } from './mock'
-import type { Movie, MovieDetail } from './types'
+import type { MovieDetail } from './types'
 import {
   clearWatchlist,
   isSaved,
+  isWatched,
   parseStored,
+  removeSaved,
   restoreSaved,
+  setWatched,
   sortWatchlist,
   STORAGE_KEY,
   toggleSaved,
   useWatchlist,
+  type SavedMovie,
 } from './watchlist'
 
 const [first, second, third] = mockMovies
@@ -38,6 +42,28 @@ describe('parseStored', () => {
     const raw = JSON.stringify([first, { title: 'No id' }, { id: '7' }])
 
     expect(parseStored(raw)).toEqual([first])
+  })
+
+  it('keeps the watched mark', () => {
+    const watched = { ...first, watched: true }
+
+    expect(parseStored(JSON.stringify([watched, second]))).toEqual([watched, second])
+  })
+})
+
+describe('isWatched', () => {
+  it('is true for a film marked watched', () => {
+    expect(isWatched({ ...first, watched: true })).toBe(true)
+  })
+
+  it('is false for a film from before the mark existed', () => {
+    expect(isWatched(first)).toBe(false)
+  })
+
+  it('accepts only `true`, because the device copy is not trusted', () => {
+    expect(isWatched(JSON.parse(JSON.stringify({ ...first, watched: 'yes' })))).toBe(
+      false,
+    )
   })
 })
 
@@ -153,7 +179,7 @@ describe('useWatchlist', () => {
     act(() => toggleSaved(first))
     act(() => toggleSaved(second))
 
-    let removed: Movie[] = []
+    let removed: SavedMovie[] = []
     act(() => {
       removed = clearWatchlist()
     })
@@ -187,7 +213,7 @@ describe('useWatchlist', () => {
     act(() => toggleSaved(second))
     act(() => toggleSaved(first))
 
-    let removed: Movie[] = []
+    let removed: SavedMovie[] = []
     act(() => {
       removed = clearWatchlist()
     })
@@ -243,6 +269,164 @@ describe('useWatchlist', () => {
 
     await waitFor(() => expect(result.current.loaded).toBe(true))
     expect(result.current.movies).toEqual([])
+  })
+})
+
+describe('setWatched', () => {
+  // Stored newest first, so the list reads first, second, third.
+  const saveThree = async () => {
+    const hook = renderHook(() => useWatchlist())
+    await waitFor(() => expect(hook.result.current.loaded).toBe(true))
+    act(() => toggleSaved(third))
+    act(() => toggleSaved(second))
+    act(() => toggleSaved(first))
+    return hook
+  }
+
+  it('marks the films watched, and keeps each in its place', async () => {
+    const { result } = await saveThree()
+
+    act(() => {
+      setWatched([first.id, third.id], true)
+    })
+
+    expect(result.current.movies).toEqual([
+      { ...first, watched: true },
+      second,
+      { ...third, watched: true },
+    ])
+  })
+
+  it('writes the mark to the device', async () => {
+    await saveThree()
+
+    act(() => {
+      setWatched([second.id], true)
+    })
+
+    await waitFor(async () =>
+      expect(parseStored(await AsyncStorage.getItem(STORAGE_KEY))).toEqual([
+        first,
+        { ...second, watched: true },
+        third,
+      ]),
+    )
+  })
+
+  it('takes the mark off, and leaves no `watched` key behind', async () => {
+    const { result } = await saveThree()
+    act(() => {
+      setWatched([first.id], true)
+    })
+
+    act(() => {
+      setWatched([first.id], false)
+    })
+
+    // `toStrictEqual`, so a `watched: undefined` left on the film fails.
+    expect(result.current.movies[0]).toStrictEqual(first)
+  })
+
+  it('returns only the films it changed, so an undo leaves the others alone', async () => {
+    const { result } = await saveThree()
+    act(() => {
+      setWatched([first.id], true)
+    })
+
+    let changed: number[] = []
+    act(() => {
+      // `first` is watched already, and 999 is not saved.
+      changed = setWatched([first.id, second.id, 999], true)
+    })
+    expect(changed).toEqual([second.id])
+
+    act(() => {
+      setWatched(changed, false)
+    })
+    expect(result.current.movies.map(isWatched)).toEqual([true, false, false])
+  })
+
+  it('does nothing when no film changes', async () => {
+    const { result } = await saveThree()
+    const before = result.current.movies
+
+    act(() => {
+      setWatched([first.id], false)
+    })
+
+    expect(result.current.movies).toBe(before)
+  })
+})
+
+describe('removeSaved', () => {
+  it('removes the films, and returns each with its old place', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(third))
+    act(() => toggleSaved(second))
+    act(() => toggleSaved(first))
+
+    let removed: { film: SavedMovie; at: number }[] = []
+    act(() => {
+      removed = removeSaved([third.id, first.id])
+    })
+
+    expect(result.current.movies).toEqual([second])
+    // Lowest index first, whatever order the ids came in.
+    expect(removed).toEqual([
+      { film: first, at: 0 },
+      { film: third, at: 2 },
+    ])
+  })
+
+  it('puts every film back in its old place when the undo restores them in order', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    const fourth = { ...first, id: 104, title: 'Fourth' }
+    for (const film of [fourth, third, second, first]) act(() => toggleSaved(film))
+
+    let removed: { film: SavedMovie; at: number }[] = []
+    act(() => {
+      removed = removeSaved([second.id, fourth.id])
+    })
+    act(() => {
+      for (const { film, at } of removed) restoreSaved([film], at)
+    })
+
+    expect(result.current.movies).toEqual([first, second, third, fourth])
+  })
+
+  it('keeps the watched mark through a removal and its undo', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(second))
+    act(() => toggleSaved(first))
+    act(() => {
+      setWatched([first.id], true)
+    })
+
+    let removed: { film: SavedMovie; at: number }[] = []
+    act(() => {
+      removed = removeSaved([first.id])
+    })
+    act(() => restoreSaved([removed[0].film], removed[0].at))
+
+    expect(result.current.movies).toEqual([{ ...first, watched: true }, second])
+  })
+
+  it('returns an empty list and changes nothing for an id that is not saved', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    await waitFor(() => expect(result.current.loaded).toBe(true))
+    act(() => toggleSaved(first))
+    const before = result.current.movies
+
+    let removed: { film: SavedMovie; at: number }[] = []
+    act(() => {
+      removed = removeSaved([999])
+    })
+
+    expect(removed).toEqual([])
+    expect(result.current.movies).toBe(before)
   })
 })
 

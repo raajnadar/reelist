@@ -454,6 +454,32 @@ describe('the save button', () => {
     expect(mockHaptic).toHaveBeenLastCalledWith('save')
   })
 
+  it('keeps the watched mark when the undo puts a watched film back', async () => {
+    const stored = {
+      id: movie.id,
+      title: movie.title,
+      poster_path: movie.poster_path,
+      backdrop_path: movie.backdrop_path,
+      vote_average: movie.vote_average,
+      release_date: movie.release_date,
+      overview: movie.overview,
+      watched: true,
+    }
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([stored]))
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+    fireEvent.press(await screen.findByText('Saved'))
+    fireEvent.press(await screen.findByText('Undo'))
+
+    expect(await screen.findByText('Saved')).toBeTruthy()
+    // The film the screen holds has no mark. The undo uses the stored copy.
+    await waitFor(async () =>
+      expect(parseStored(await AsyncStorage.getItem(STORAGE_KEY))).toEqual([stored]),
+    )
+  })
+
   it('reports a save, and opens the watchlist from the report', async () => {
     mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
     getMovie.mockResolvedValue(movie)
