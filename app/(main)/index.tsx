@@ -1,4 +1,4 @@
-import { IconButton } from '@rootnative/components/icon-button'
+import { AppBar } from '@rootnative/components/appbar'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
 import { useBreakpoint, useTheme } from '@rootnative/core'
@@ -172,38 +172,40 @@ export default function HomeScreen() {
     <View
       style={[
         styles.screen,
-        { backgroundColor: theme.colors.background, paddingTop: insets.top },
+        { backgroundColor: theme.colors.background },
+        navigation === 'drawer' && { paddingTop: insets.top },
       ]}
     >
       <PageHead {...homeMeta} />
       {/*
-        The header leaves out what the navigation beside it shows: the rail
-        has the mark, and the drawer has the mark, the name, and the settings.
-        Beside the drawer the name stays the page's h1 for a screen reader.
+        The same AppBar as the genre and the watchlist screens, so the home
+        has no header style of its own. It leaves out what the navigation
+        beside it shows: the rail has the mark, and the drawer has the mark,
+        the name, and the settings. Beside the drawer there is no bar, and
+        the name stays the page's h1 for a screen reader. The search and the
+        watchlist are in the navigation around every screen; see
+        components/AppNavigation.tsx.
       */}
-      <View style={[styles.header, navigation === 'drawer' && styles.headerBesideDrawer]}>
-        <View style={navigation === 'drawer' ? styles.hiddenHeading : styles.brand}>
-          {navigation === 'bar' ? <BrandMark size={26} /> : null}
-          <Typography variant="headlineMedium" level={1} style={styles.title}>
+      {navigation === 'drawer' ? (
+        <View style={styles.headerBesideDrawer}>
+          <Typography variant="headlineMedium" level={1} style={styles.hiddenHeading}>
             Reelist
           </Typography>
         </View>
-        {/* An IconButton rather than AppBar `actions`: this screen draws its own
-            title with the top inset above it, and swapping in an AppBar would
-            change the home layout to add one button. The search and the
-            watchlist are in the navigation around every screen; see
-            components/AppNavigation.tsx. */}
-        {navigation === 'drawer' ? null : (
-          <View style={styles.actions}>
-            <IconButton
-              icon={(props) => <SpinningCog {...props} />}
-              variant="standard"
-              accessibilityLabel="Settings"
-              onPress={() => router.push('/about')}
-            />
-          </View>
-        )}
-      </View>
+      ) : (
+        <AppBar
+          title="Reelist"
+          insetTop
+          leading={navigation === 'bar' ? <BrandMark size={26} /> : undefined}
+          actions={[
+            {
+              icon: (props) => <SpinningCog {...props} />,
+              accessibilityLabel: 'Settings',
+              onPress: () => router.push('/about'),
+            },
+          ]}
+        />
+      )}
 
       {/* Outside the Presence block below: the chips do not depend on the film
           rows, so they must not wait for them, disappear while they load, or
@@ -299,20 +301,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingRight: 8,
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingLeft: 16,
-  },
-  title: { paddingVertical: 12 },
-  actions: { flexDirection: 'row', alignItems: 'center' },
   // Only the hidden heading is left in the header, so this gap is all that
   // keeps the chips off the top edge.
   headerBesideDrawer: { paddingTop: 16 },
