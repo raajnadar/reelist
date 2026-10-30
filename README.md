@@ -1,848 +1,221 @@
-# Reelist
+<p align="center">
+  <a href="https://reelist.raajnadar.in/">
+    <img src="assets/logo/play-reel-3d.svg" alt="Reelist logo" width="112" height="119" />
+  </a>
+</p>
 
-Reelist is a React Native app that browses films from
-[TMDB](https://www.themoviedb.org/). It is built with Expo, Expo Router, and
-[RootNative UI](https://rootnative.github.io/ui/). The app runs on iOS, Android,
-and the web.
+<h1 align="center">Reelist</h1>
 
-The app holds no API key. It reads its data through a small proxy that keeps the
-key on a server. [Why that matters](#the-key-never-reaches-the-app) is explained
-below, because it shapes the whole data layer.
+<p align="center">
+  Browse films, watch trailers, and keep a watchlist.<br />
+  One codebase for iOS, Android, and the web.
+</p>
 
-The settings button in the home header opens the settings sheet: light or dark,
-and what the app is built with. See
-[Built with RootNative UI](#built-with-rootnative-ui).
+<p align="center">
+  <a href="https://github.com/raajnadar/reelist/actions/workflows/ci.yml"><img src="https://github.com/raajnadar/reelist/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status" /></a>
+  <a href="https://github.com/raajnadar/reelist/actions/workflows/deploy.yml"><img src="https://github.com/raajnadar/reelist/actions/workflows/deploy.yml/badge.svg?branch=main" alt="Web deploy status" /></a>
+  <img src="https://img.shields.io/badge/Expo_SDK-58-000020?logo=expo&logoColor=white" alt="Expo SDK 58" />
+  <img src="https://img.shields.io/badge/React_Native-0.88-20232A?logo=react&logoColor=61DAFB" alt="React Native 0.88" />
+  <img src="https://img.shields.io/badge/platforms-iOS_%7C_Android_%7C_Web-BE123C" alt="Platforms: iOS, Android, and web" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-BE123C" alt="MIT license" /></a>
+</p>
 
-## Try the app
+<p align="center">
+  <a href="https://reelist.raajnadar.in/"><b>Open the web app</b></a>
+  ·
+  <a href="#-try-it">Try it on a phone</a>
+  ·
+  <a href="#-quick-start">Quick start</a>
+  ·
+  <a href="#-documentation">Documentation</a>
+</p>
 
-### On a phone
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/web-home-dark.jpg" />
+    <img src="assets/docs/screenshots/web-home-light.jpg" alt="The Reelist home screen in a browser, with the navigation rail, the genre chips, and the trending carousel" width="100%" />
+  </picture>
+</p>
 
-Scan this code to open the app in Expo Go. You do not need this repository, and
-you do not need a development server.
+## ✨ Features
 
-<img src="assets/docs/expo-go-qr.png" alt="QR code that opens Reelist in Expo Go" width="220" />
+| Feature                 | What it does                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Film lists**          | Trending this week, Popular, Top rated, and Popular in the language of your device.                       |
+| **Film colours**        | Each film page takes its theme from the main colour of its poster, in light and in dark.                  |
+| **Trailers and stills** | The trailer plays inside the app. The gallery shows the stills of the film.                               |
+| **Cast and people**     | A cast card opens the person, with each film they appear in, newest first.                                |
+| **Genres**              | An endless grid for each genre, with filters for the decade, the rating, the language, and the runtime.   |
+| **Search**              | The results change as you type. On the web, `/` opens the search from any page.                           |
+| **Watchlist**           | It stays on the device, so it opens offline. It has "To watch" and "Watched" tabs, select mode, and undo. |
+| **Adaptive navigation** | A bar on a phone, a rail on a tablet or a laptop, and a drawer on a wide screen.                          |
+| **Light and dark**      | System, Light, or Dark. Material Design 3 makes all the colours from one seed colour.                     |
+| **No key in the app**   | The TMDB key stays on a server proxy. The app never holds it.                                             |
 
-1. Install **Expo Go** from the App Store or Google Play.
-2. Scan the code. Use the Expo Go app on Android, and the Camera app on iOS.
-3. The app opens. The code always serves the newest commit on `main`.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/web-film-dark.jpg" />
+    <img src="assets/docs/screenshots/web-film-light.jpg" alt="The film page of Dune: Part Two. The buttons and the rating use the orange of its poster." width="100%" />
+  </picture>
+  <br />
+  <sub>Each film page takes its colours from the poster.</sub>
+</p>
 
-If the code does not scan, open this link on the phone:
+## 📱 Try it
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/phone-home-dark.jpg" />
+    <img src="assets/docs/screenshots/phone-home-light.jpg" alt="The home screen on a phone, with the trending carousel" width="30%" />
+  </picture>
+  &nbsp;
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/phone-film-dark.jpg" />
+    <img src="assets/docs/screenshots/phone-film-light.jpg" alt="The film page of Dune: Part Two on a phone, in the colours of its poster" width="30%" />
+  </picture>
+  &nbsp;
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/phone-watchlist-dark.jpg" />
+    <img src="assets/docs/screenshots/phone-watchlist-light.jpg" alt="The watchlist on a phone: 2 of 8 films watched" width="30%" />
+  </picture>
+</p>
+
+<table>
+  <tr>
+    <th width="50%">On a phone</th>
+    <th width="50%">In a browser</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/docs/expo-go-qr.png" alt="QR code that opens Reelist in Expo Go" width="180" />
+      <br />
+      Scan with <b>Expo Go</b> on Android,<br />or with the <b>Camera</b> app on iOS.
+    </td>
+    <td align="center">
+      <a href="https://reelist.raajnadar.in/"><b>reelist.raajnadar.in</b></a>
+      <br /><br />
+      It updates on every push to <code>main</code>.<br />
+      You do not need an install or an account.
+    </td>
+  </tr>
+</table>
+
+The QR code always serves the newest commit on `main`. You do not need this
+repository or a development server. The app runs on Expo Go SDK 58. Update Expo
+Go if it reports a version mismatch.
+
+<details>
+<summary>The code does not scan?</summary>
+
+<br />
+
+Open this link on the phone:
 
 ```
 exp://u.expo.dev/7fe1b9fe-fa75-406c-aaf9-ae330957fc46?channel-name=main
 ```
 
-The app runs on Expo Go SDK 58. Update Expo Go if it reports a version mismatch.
+</details>
 
-### In a browser
+> [!NOTE]
+> The browser build has no gestures and no native animation driver, so the
+> carousel feels different there. Use the phone build to judge the motion.
 
-The web build is at **https://reelist.raajnadar.in/**. It updates on every
-push to `main`.
+## 🚀 Quick start
 
-The export is static: one HTML file per route, plus one per film in the three
-home lists. The deploy fetches that list with `yarn prerender:seed` before it
-exports, so a search engine gets each of those films with its text and its head
-tags. Every other film loads in the browser. See `lib/prerender.ts`.
-
-The server lays each page out for a 0 by 0 window, and React keeps a mismatched
-inline style from that HTML after hydration. So a screen reads the window
-through `useWindowDimensions` from `@rootnative/core`, which reports the
-server's window until the page is hydrated. ESLint rejects the `react-native` hook in app code.
-
-The browser build has no gestures and no native animation driver, so the carousel
-feels different there. Use the phone build to judge the motion.
-
-## Requirements
-
-- Node.js 24 or later (see `.nvmrc`; run `nvm use`)
-- Yarn 1 (the repository declares `packageManager`; do not use npm)
-- The Expo Go app, an iOS simulator, or an Android emulator
-- A TMDB account, for the API key the proxy uses
-
-## Start the app
-
-1. Install the dependencies:
-
-   ```bash
-   yarn install
-   ```
-
-2. Run the proxy. The app cannot load data without it. Full instructions are in
-   [proxy/README.md](proxy/README.md); the short form is:
-
-   ```bash
-   cd proxy
-   vercel link                       # once, to connect the project
-   echo "TMDB_API_KEY=<your key>" > .env.local
-   vercel dev                        # serves http://localhost:3000/api/tmdb
-   ```
-
-   Get the key from
-   [your TMDB API settings](https://www.themoviedb.org/settings/api). Use **API
-   Key (v3 auth)**, which is 32 characters — not the longer v4 read access
-   token, which this proxy does not accept.
-
-3. Point the app at the proxy:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Set `EXPO_PUBLIC_TMDB_PROXY_URL` in `.env`. For the local proxy above, that
-   is `http://localhost:3000/api/tmdb`.
-
-4. Start the development server, in a second terminal:
-
-   ```bash
-   yarn start
-   ```
-
-5. Press `i` for iOS, `a` for Android, or `w` for the web.
-
-Metro reads `.env` when it starts and caches the value. Run `yarn start --clear`
-after you change `.env`, or the old value stays in the bundle.
-
-## The key never reaches the app
-
-**Do not put the TMDB key in the app's `.env`.** It would ship to every user.
-
-Expo replaces each `process.env.EXPO_PUBLIC_*` read with the literal value when
-it builds for production. The substitution is in
-`babel-preset-expo/build/inline-env-vars.js`:
-
-```js
-if (isProduction) {
-  path.replaceWith(t.valueToNode(process.env[envVar]))
-}
-```
-
-The value becomes a plain string in the bundle. This applies to the web build,
-the `.apk`, and the `.ipa` alike — an Android package is an archive, and the
-bundle inside it can be read with `grep`. Minifying does not hide it, because a
-minifier renames variables and leaves string values alone.
-
-No client-side measure fixes this. Whatever the app can decrypt, a person
-holding the app can decrypt too. So the key stays on the server, and the app
-calls the proxy instead.
-
-`EXPO_PUBLIC_TMDB_PROXY_URL` is public by design. It is an address, not a
-credential.
-
-Two guards keep this from regressing:
-
-- **A lint rule.** `eslint.config.js` fails the build on any `process.env` read
-  in `app/`, `components/`, or `lib/` whose name contains `KEY`, `SECRET`,
-  `TOKEN`, or `PASSWORD`.
-- **A test.** `lib/tmdb.test.ts` asserts that no request the app makes carries an
-  `api_key`, and that none goes to `api.themoviedb.org` directly.
-
-## Scripts
-
-| Script               | Function                                         |
-| -------------------- | ------------------------------------------------ |
-| `yarn start`         | Starts the Expo development server.              |
-| `yarn ios`           | Starts the app in the iOS simulator.             |
-| `yarn android`       | Starts the app in the Android emulator.          |
-| `yarn web`           | Starts the app in the browser.                   |
-| `yarn typecheck`     | Generates the route types, then runs TypeScript. |
-| `yarn lint`          | Runs ESLint.                                     |
-| `yarn lint:fix`      | Runs ESLint and applies the fixes it can.        |
-| `yarn format`        | Applies Prettier to every file.                  |
-| `yarn format:check`  | Reports the files that Prettier would change.    |
-| `yarn test`          | Runs Jest: the app tests and the proxy tests.    |
-| `yarn test:watch`    | Runs Jest and re-runs on a change.               |
-| `yarn test:coverage` | Runs Jest and reports coverage.                  |
-| `yarn routes:types`  | Writes the Expo Router route types by hand.      |
-| `yarn export:web`    | Exports the static web build to `dist/`.         |
-| `yarn verify`        | Runs lint, typecheck, format:check, and test.    |
-
-CI runs `typecheck`, `lint`, `format:check`, and `test` on every push to `main`
-and on every pull request.
-
-`yarn typecheck` generates the route types first. `.expo/` is gitignored, so a
-clean checkout has none, and without them a link to a route that does not exist
-type-checks as a plain string and passes. See
-[scripts/generate-route-types.js](scripts/generate-route-types.js).
-
-## Tests
+You need Node.js 24 or later, Yarn 1, the
+[Vercel CLI](https://vercel.com/docs/cli), and a
+[TMDB API key](https://www.themoviedb.org/settings/api) (v3 auth, 32
+characters).
 
 ```bash
-yarn test                            # everything
-yarn test --selectProjects app       # the app only
-yarn test --selectProjects proxy     # the proxy only
+git clone https://github.com/raajnadar/reelist.git
+cd reelist
+yarn install
+yarn --cwd proxy install
 ```
 
-Jest runs two projects, because the proxy is server code that uses the Web
-`Request` and `Response` API rather than the React Native runtime.
-
-| Suite                                | Covers                                                 |
-| ------------------------------------ | ------------------------------------------------------ |
-| `lib/format.test.ts`                 | Both TMDB sentinels, and the four life-date forms      |
-| `lib/images.test.ts`                 | URL building, and null for a film with no art          |
-| `lib/api.test.ts`                    | The mapping, the paging, the trailer, the filmography  |
-| `lib/tmdb.test.ts`                   | The transport, and that no key is ever sent            |
-| `lib/motion.test.ts`                 | The transition tokens and the stagger ceiling          |
-| `lib/useDebounced.test.ts`           | The delay, and that one burst sends one value          |
-| `lib/useResource.test.ts`            | Stale answers, the store, the retry, and the idle key  |
-| `lib/resourceCache.test.ts`          | The life of an entry, and the eviction at the ceiling  |
-| `lib/watchlist.test.ts`              | The store, the device copy, a corrupt one, and the watched mark |
-| `lib/grid.test.ts`                   | The column count, at 7 screen widths                   |
-| `lib/useContentWidth.test.tsx`       | The page width: measured beside the navigation, else the window |
-| `lib/useHydrating.dom.test.tsx`      | Hydration in React DOM: true, then false, and a key that drops a server attribute |
-| `lib/useWebKey.dom.test.tsx`         | A web key: only on the top screen, not from a field, after an open menu |
-| `lib/network.test.ts`                | Online until the device says no; one native subscription for every hook |
-| `components/OfflineBanner.test.tsx`  | The strip while offline, and not on the trailer or the gallery |
-| `lib/errors.test.ts`                 | Which failures may offer a retry, and which may not    |
-| `lib/youtube.test.ts`                | The player parameters, the page, and an encoded key    |
-| `lib/appearance.test.ts`             | The chosen mode, the device copy, and a corrupt one    |
-| `components/BrandMark.test.tsx`      | The mask id, and that two marks never share one        |
-| `components/MovieCard.test.tsx`      | The poster size, the fixed card height, and select mode |
-| `components/CastCard.test.tsx`       | The photo size, the reserved heights, and the link     |
-| `components/MovieCarousel.test.tsx`  | The geometry invariant, at 5 screen widths             |
-| `components/Skeleton.test.ts`        | The placeholder count against the screen width         |
-| `components/HeroImage.test.tsx`      | The Motion plain-path rule the hero parallax needs     |
-| `components/StateMessage.test.tsx`   | The shared failure block, and its half-declared action |
-| `components/RemoteImage.test.tsx`    | The image tuning: recycling, caching, and the fade     |
-| `components/PersonProfile.test.tsx`  | The photo, the facts line, and the folded biography    |
-| `__tests__/app/movie/[id].test.tsx`  | The detail screen: every state and every error         |
-| `__tests__/app/search.test.tsx`      | Search: the debounce, both empty states, staleness     |
-| `__tests__/app/index.test.tsx`       | The home screen's settings button, the refresh, the language row |
-| `components/AppNavigation.test.tsx`  | The bar, the rail, the drawer, the count, and no remount |
-| `__tests__/app/genre/[id].test.tsx`  | The genre grid: paging, filters, a bad id, a stale page |
-| `__tests__/app/watchlist.test.tsx`   | The saved grid, the tabs, select mode, every empty state, and a live change |
-| `__tests__/app/person/[id].test.tsx` | The person screen: every state, and no films           |
-| `__tests__/app/trailer/[key].test.tsx` | The player: the frame, both exits, and a bad link   |
-| `__tests__/app/about.test.tsx`       | Every control on the settings screen, and its links    |
-| `proxy/api/tmdb.test.ts`             | The allowlist, both append values, and the key         |
-| `proxy/api/rate-limit.test.ts`       | The ceiling, the caller identity, and failing open     |
-
-No test needs a key or a network. The proxy tests mock `fetch`, and the screen
-tests mock `lib/api`.
-
-There is also `proxy/smoke.sh`, which checks a **running** proxy — local or
-deployed. It is not part of `yarn test`, because it needs a real key and network.
-
-## Project structure
-
-```
-app/                     # Expo Router: one file is one screen
-├── _layout.tsx          # Root layout with the ThemeProvider
-├── (main)/              # Every page with the navigation around it
-│   ├── _layout.tsx      # The navigation, and the page's <main>
-│   ├── index.tsx        # Home screen
-│   ├── watchlist.tsx    # The films saved on this device
-│   ├── genre/[id].tsx   # One genre, as an endless grid, with filters
-│   ├── movie/[id].tsx   # Film detail screen
-│   ├── person/[id].tsx  # One person, and the films they appear in
-│   ├── trailer/[key].tsx # The trailer, played in the app
-│   └── privacy.tsx      # The privacy policy that Google Play links to
-├── search.tsx           # Search sheet, debounced as you type
-└── about.tsx            # Light or dark, and what the app is built with
-components/
-├── AppNavigation.tsx    # The bar, the rail, or the drawer, by window size
-├── OfflineBanner.tsx    # A strip under the page while the device is offline
-├── MovieCarousel.tsx    # The featured row, with the scale effect
-├── CarouselCard.tsx     # One card in the carousel
-├── MovieRow.tsx         # A compact horizontal row
-├── MovieCard.tsx        # One card in a row
-├── CastRow.tsx          # The billed cast on the detail screen
-├── CastCard.tsx         # One person in the cast row
-├── GenreChips.tsx       # The genre shortcuts under the home header
-├── DiscoverFilterRow.tsx # The decade, rating, language, and runtime chips
-├── DetailHeader.tsx     # The floating bar that arrives with the scroll
-├── DetailHero.tsx       # The backdrop frame, and its two scrims
-├── DetailIdentity.tsx   # The poster and title box, filled and empty
-├── DetailActions.tsx    # The trailer and save buttons
-├── DetailOverview.tsx   # The tagline and the synopsis
-├── FilmTheme.tsx        # The film page theme, from the poster colour
-├── TrailerPlayer.tsx    # The video surface. A web view on a phone
-├── TrailerPlayer.web.tsx # The same surface in a browser: an iframe
-├── PersonProfile.tsx    # The person masthead and their biography
-├── Scrim.tsx            # The gradient that dissolves the detail masthead
-├── BrandMark.tsx        # The app mark beside the home title
-├── TmdbLogo.tsx         # The TMDB logo that the TMDB API terms require
-├── SpinningCog.tsx      # The settings icon, which turns once every few seconds
-├── StateMessage.tsx     # The shared failure, empty, and prompt block
-├── PullToRefresh.tsx    # The pull to refresh spinner, in the theme colours
-├── RemoteImage.tsx      # Every TMDB picture, cached and cross-dissolved
-└── Skeleton.tsx         # The loading placeholders
-lib/
-├── api.ts               # The seam. The only data file a screen imports
-├── tmdb.ts              # The transport. Calls the proxy
-├── config.ts            # Reads the proxy URL from the environment
-├── types.ts             # Movie, Paged, Genre, CastMember, Video
-├── discover.ts          # The genre filters, and the TMDB parameters they become
-├── mock.ts              # Static film data, now a test fixture only
-├── images.ts            # Builds a TMDB image URL from a path fragment
-├── format.ts            # Rating and year labels
-├── youtube.ts           # The embed URL, the watch URL, and the player page
-├── errors.ts            # Sorts a failure into transient, setup, or missing
-├── motion.ts            # The shared transition tokens and the stagger
-├── buttonSize.ts        # One Button size for each role
-├── navigation.ts        # The destinations, and which component carries them
-├── useRootScreenRole.ts # The <main> for a sheet with no page below it
-├── useHydrating.ts      # True on the export server and while the page hydrates
-├── network.ts           # Online or offline, from expo-network
-├── useDebounced.ts      # Delays a value until it stops changing
-├── useResource.ts       # Loads one key, and keeps the answer
-├── resourceCache.ts     # The store behind useResource
-├── watchlist.ts         # The saved films, and the device copy
-├── grid.ts              # The poster grid: columns, gap, padding
-├── appearance.ts        # Light, dark, or system, and the device copy
-└── test-utils.tsx       # render() wrapped in the app's providers
-proxy/                   # The TMDB proxy. Deploys on its own
-├── api/tmdb.ts          # The function that holds the key
-├── api/poster-color.ts  # The main colour of a poster
-├── api/rate-limit.ts    # The per-caller request ceiling
-└── smoke.sh             # Checks a running proxy
-__tests__/               # Tests that do not sit beside their subject
-scripts/                 # generate-route-types.js
-assets/                  # App icons, the splash screen, the README QR code
-theme.ts                 # The Material 3 light and dark themes
-app.json                 # Expo configuration
-app.config.js            # Adds `baseUrl` for the GitHub Pages build
-eas.json                 # EAS build profiles, each with its own update channel
-jest.config.js           # Two projects: app and proxy
-eslint.config.js         # The rules that ban a key in app code and a literal Button size
-CLAUDE.md                # Instructions for AI agents
-```
-
-## How the data layer works
-
-`lib/api.ts` is the single seam between the UI and the data. Every screen imports
-from it and from nowhere else.
-
-The seam has now proved itself twice. The functions were written `async` against
-static mock data first, so the screens already handled latency and failure.
-Moving to the live TMDB API changed `lib/api.ts` and added `lib/tmdb.ts` beneath
-it. Moving from a direct TMDB call to the proxy changed `lib/tmdb.ts` and
-`lib/config.ts`. **Neither change touched a screen.**
-
-Adding the cast, the trailer, and the "More like this" row was a different kind
-of proof. The detail screen draws three new sections, so that file did change.
-What did not change is the way it loads them: no second request, no extra state,
-and no extra effect. TMDB includes all three inside the film response when the
-request carries `append_to_response`, so `getMovie` returns three more fields on
-the type it already returned. The compiler then named every file that had to
-follow, starting with `lib/mock.ts`.
-
-| File            | Function                                                             |
-| --------------- | -------------------------------------------------------------------- |
-| `lib/api.ts`    | The seam. Maps a TMDB response to the app's own types.               |
-| `lib/tmdb.ts`   | The transport. Calls the proxy and turns a bad status into an error. |
-| `lib/config.ts` | Reads the proxy URL. Throws `MissingProxyUrlError` when absent.      |
-
-A setup mistake is a distinct error type from a failed request, so the app prints
-the instruction that fixes it rather than "Could not load movies", which would
-send a developer to check their network.
-
-`lib/types.ts` uses the TMDB field names — `poster_path`, `vote_average` — on
-purpose. The mock data and the live data share one type.
-
-### How a screen loads
-
-Every screen asks for its data through `useResource`, and no screen writes a
-fetch effect of its own.
-
-Each of the four wrote the same block before it: a state for the data, one for
-the failure, one for the loading flag, a counter the retry button raised, and an
-`active` flag that kept a late answer off a screen the reader had left. Three of
-them also tagged the stored answer with the id or the query it described,
-because either can change while a request is in flight.
-
-```ts
-const detail = useResource(validId ? `movie:${movieId}` : null, () => getMovie(movieId), 'Could not load the movie')
-```
-
-The hook returns `data`, `failure`, `loading`, `reload`, `refresh`, and
-`refreshing`. A `null` key is an idle resource: it sends no request and reports
-no failure, which is what makes an empty search box not a search, and a link
-that names no film not a loading screen.
-
-`lib/resourceCache.ts` keeps each answer for five minutes, under the ten minutes
-the proxy caches at its edge. A return to the home screen therefore draws the
-rows on the first frame instead of loading them again. After five minutes the
-old copy stays on screen while the new request runs, and a failed refresh leaves
-it there rather than replacing films the reader can see with an error.
-
-`reload` and `refresh` both ask again. They differ in what the reader sees:
-
-- `reload` is the retry button on a failed screen. It clears the answer, so the
-  placeholders come back while the request runs.
-- `refresh` is the pull to refresh on the home and the genre lists. The list
-  stays on screen while the request runs, and `refreshing` drives the spinner.
-  It resolves `false` when the request fails. The list then stays, and the
-  screen shows a short "Could not refresh" snackbar.
-
-`components/PullToRefresh.tsx` gives the native `RefreshControl` the theme
-colours, because it sits outside the theme. The browser shows no pull to
-refresh. The watchlist has none: it reads the device, and it has no request to
-repeat.
-
-One thing stayed in a screen. `app/(main)/genre/[id].tsx` appends page after
-page as the reader scrolls, and that is a growing list rather than the answer to
-one request. The hook holds its first page, which is why a return to the same genre
-is immediate. A pull to refresh on the grid loads the first page again. The
-later pages go when the new first page lands, because the reader pulled at the
-top and the list starts there again.
-
-### The person screen
-
-A cast card opens `app/(main)/person/[id].tsx`, which shows who the person is
-and every film TMDB credits them with. It is one request, for the same reason the film
-screen is: `/person/{id}` carries the filmography when the request appends
-`movie_credits`. That is a second allowed value in the proxy, beside the film
-one — see [proxy/README.md](proxy/README.md).
-
-Two rules live in `lib/api.ts` rather than in the screen, because both come from
-the shape of the response. TMDB returns a filmography in no order a reader would
-expect, so the mapping sorts it newest first and puts the announced films last.
-And a performer credited twice in one film — a dual role, or a voice part beside
-a screen part — gets one entry per credit under the same film id, which would
-hand FlatList two children with one key.
-
-The screen is one list with the profile as its header, not a scroll view holding
-a grid. A working actor has a hundred credits, and a grid inside a scroll view
-mounts every card at once. The name is drawn once: the floating bar carries it
-only after the profile has scrolled away, which is the arrangement
-`components/DetailHeader.tsx` was built for on the film screen.
-
-### The trailer player
-
-The "Watch trailer" button opens `app/(main)/trailer/[key].tsx` rather than
-handing the video to YouTube. The app used to call `openURL` and leave, which lost the
-reader to another app and lost the scroll position on the way back. A route of
-its own keeps the detail screen mounted underneath, and it earns the system back
-gesture and the Android hardware back button without any code.
-
-The screen makes no request. `getMovie` already chose the video, and the key is
-the whole of what a player needs, so it travels in the route with the film title
-beside it. That is why the player has no loading state and no failure state of
-its own.
-
-There are two player files. `components/TrailerPlayer.tsx` draws a web view, and
-`components/TrailerPlayer.web.tsx` draws an iframe. The split is not a
-preference: `react-native-webview` has no web build, and one file would pull a
-native-only module into the browser bundle. Metro picks the `.web` file for the
-web target, so the native one never reaches it. The web file imports the prop
-type from the native one and no value from it, so the two surfaces cannot drift
-apart.
-
-The two load the embed differently, and that difference is the whole reason
-`embedPage` in `lib/youtube.ts` exists. **YouTube checks the `Referer` header on
-every embed request, and it answers a bad one inside the frame rather than
-failing.** The player draws an error code, the video never plays, and nothing
-throws that the app could catch. The screen met two of those codes in turn on an
-iOS device, while the browser build played the same trailer throughout:
-
-| Code  | What the player showed             | What the referrer was        |
-| ----- | ---------------------------------- | ---------------------------- |
-| `153` | "Video player configuration error" | None                         |
-| `152` | "This video is not available"      | `https://www.youtube.com`    |
-
-A web view pointed straight at the embed URL makes that URL the top-level
-document, and a top-level document has no referrer to send — that is the 153.
-Wrapping the embed in a local page fixed the absence but not the value: a page
-served as youtube.com is an embed of YouTube inside YouTube, which YouTube
-refuses, and that is the 152.
-
-So the page needs both halves together. The embed sits in an iframe with a
-parent document, and that document claims a real third-party site through the
-web view's `baseUrl` — `PLAYER_ORIGIN`, which is this app's own web build on
-GitHub Pages. The referrer the phone sends is then the referrer the working
-browser build already sends. That build needs none of this, because its iframe
-already sits in a real page on that site.
-
-The player always offers a button that opens the video in YouTube itself. That
-is not a fallback after a failure, because there is no failure to catch: a studio
-can block a video from embedding, and TMDB still lists it. The embed then loads
-and plays nothing but the words "Video unavailable". The app cannot tell that
-apart from a slow start without the YouTube frame API, so it keeps the way out
-visible instead.
-
-## The watchlist
-
-The watchlist is the one thing in the app that belongs to the reader rather than
-to TMDB, and it is the only state written to the device.
-
-`lib/watchlist.ts` holds the saved films in memory and mirrors them to
-AsyncStorage under one key. It is a module with a `useSyncExternalStore` hook
-over it, not a React context: the detail screen and the watchlist screen are
-often mounted together, and both have to see one press. The root layout gains no
-provider for it.
-
-A save and an unsave each show a snackbar. An unsave offers "Undo", which puts
-the film back at its old place in the list. A save has nothing to undo, so it
-offers "View", which opens the watchlist. Both stay for the long duration,
-because a snackbar with an action otherwise waits until the reader dismisses it.
-
-A saved film is stored whole, not as an id. A grid of ids would need one request
-per card before it could draw anything, and a watchlist that cannot open offline
-is not worth keeping. The store narrows a `MovieDetail` to the seven fields a
-card reads, so a save does not put the cast, the videos, and twenty recommended
-films on the device.
-
-The screen has two tabs, "To watch" and "Watched", and a progress bar over the
-grid, for example "12 of 30 films watched". "Select films" in the options menu
-puts a checkbox on each card. A press then picks the film and does not open
-it. The bar offers "Select all", "Mark as watched" ("Mark as not watched" on
-the Watched tab), and "Remove from watchlist". Each action shows a snackbar
-with "Undo". Back on Android and Escape on the web end select mode, not the
-screen. On the web, Space picks the focused card, as it does a checkbox.
-
-The mark is an optional `watched: true` on the stored film. A film to watch
-has no field at all, so a list from before the mark reads as all to watch, and
-the key stays `reelist.watchlist.v1`. A film keeps its place in the list when
-the reader marks it, so the date-added order of each tab does not change.
-
-Three states the code treats as real rather than impossible:
-
-1. **The device copy is unread.** The screen shows placeholders until the read
-   finishes. Without that, a reader with a full watchlist sees "Nothing saved
-   yet" for a frame on every cold start.
-2. **The device copy is damaged.** A process the system kills mid-write leaves a
-   half-written string. `parseStored` returns an empty list for it and drops any
-   entry with no numeric id, because a film with no id reaches FlatList as a
-   child with no key.
-3. **Storage cannot be read or written.** A browser in private mode, or a full
-   disk. The list in memory is still correct, so the app keeps working and the
-   failure is not reported: there is no action a message could offer.
-
-## Built with RootNative UI
-
-The settings sheet, at [app/about.tsx](app/about.tsx), opens from the settings
-button in the home header. The light and dark control comes first. Below it, a
-short "about" part names [RootNative UI](https://rootnative.github.io/ui/), the
-three packages that draw the app, and the version of each one.
-
-### It is a modal, drawn by the app
-
-The screen is a detour, not a place: the reader opens it, changes the look, and
-returns to the film they were on. It has to keep the screen underneath on
-display while the theme repaints it, because that repaint is the one thing the
-screen exists to show.
-
-`app/_layout.tsx` gives the route two options and nothing else:
-
-```tsx
-<Stack.Screen name="about" options={{ presentation: 'transparentModal', animation: 'fade' }} />
-```
-
-`transparentModal` is plain React Navigation, and it behaves the same on all
-three platforms. The navigator keeps the screen below mounted and visible
-whenever the screen above it is a transparent presentation, and hands this route
-a see-through background:
-
-```js
-// react-navigation/native-stack/views/NativeStackView.js
-const TRANSPARENT_PRESENTATIONS = ['transparentModal', 'containedTransparentModal']
-display: (isFocused || TRANSPARENT_PRESENTATIONS.includes(nextPresentation)) ? 'flex' : 'none'
-```
-
-Everything the reader sees is then drawn by `app/about.tsx` — a scrim, and a
-card over it. That is the point rather than extra work: the card's colours and
-its corner (`theme.shape.cornerExtraLarge`) come from the theme, so **a change
-to light or dark repaints the card that made the change**. A presentation owned
-by the navigator could not do that.
-
-`useBreakpoint()` picks the shape. Below the `compact` boundary the card fills
-the window and drops its corner, because a centred card with margins is a worse
-full-screen page. Above it the card is 640 px wide and at most 86% of the window
-tall, centred on the scrim. A press on the scrim dismisses; the scrim itself is
-out of the accessibility tree, because it repeats what the close button already
-offers.
-
-**The path not taken.** `presentation: 'modal'` gives a native sheet on iOS and
-Android, and Expo Router has a web implementation with a centred desktop dialog
-— but only behind `EXPO_UNSTABLE_WEB_MODAL`. Without the flag Metro resolves
-`expo-router/build/layouts/_web-modal.js` to the plain stack and the route draws
-as a full page. That meant an unstable flag in three npm scripts, a local type
-for a `webModalStyle` option the package does not export, and a look the theme
-could not reach. `transparentModal` costs about forty lines of ordinary layout
-and has none of that.
-
-### Light and dark
-
-The reader picks System, Light, or Dark. The choice goes to
-[lib/appearance.ts](lib/appearance.ts), the root layout reads it, and the film
-rows behind the sheet repaint with it. The choice is kept on the device.
-
-The two themes come from one call in [theme.ts](theme.ts):
-`createMaterialTheme('#BE123C')`. The HCT colour engine behind
-`@rootnative/core/create-theme` derives all 49 MD3 roles from that seed, for
-light and for dark.
-
-### Each film in its own colours
-
-A film page takes its theme from the main colour of its poster. The proxy
-calculates the colour once for each poster (see
-[proxy/README.md](proxy/README.md#the-poster-colour)), and `getMovie` returns
-the film with its colour, so the page draws in the film colours from its first
-frame and does not repaint. The prerendered web pages carry the colour in
-their HTML.
-
-[components/FilmTheme.tsx](components/FilmTheme.tsx) puts a second
-`ThemeProvider` around the film page, with a theme from
-`createMaterialTheme(colour)`. The second provider takes the mode and the icon
-resolver from the root one, so the light or dark choice still applies to the
-film page, and the icons still draw. A film with no usable colour keeps the app
-theme.
-
-The MD3 roles keep their contrast whatever the seed is. A check of 40 posters
-in four scheme variants, light and dark, found no text pair under 4.5:1.
-
-### Motion is a vocabulary, not a number
-
-[lib/motion.ts](lib/motion.ts) registers six named transitions once, on
-`<MotionConfig>` at the app root. No component in the app writes a spring
-constant; each writes `transition="press"` or `transition="enter"`, and the feel
-of every surface changes from that one file.
-
-A TypeScript module augmentation in that file narrows the `transition` prop to
-the six names, so a typo is a compile error rather than a dev-time warning and a
-silent fallback to the default spring.
-
-Reduced motion is handled once, in the same place: `<MotionConfig>` defaults to
-`reducedMotion="user"`, and every animation below it downgrades to no animation
-when the OS asks.
-
-### Navigation that fits the window
-
-[components/AppNavigation.tsx](components/AppNavigation.tsx) wraps every
-page in the `(main)` route group. One `useBreakpoint()` call picks the
-component, and all three take the same three destinations from
-[lib/navigation.ts](lib/navigation.ts):
-
-| Window class                  | Width         | Component                    |
-| ----------------------------- | ------------- | ---------------------------- |
-| `compact`                     | under 600 dp  | `NavigationBar`, below       |
-| `medium`, `expanded`, `large` | 600 to 1599   | `NavigationRail`, beside     |
-| `extraLarge`                  | 1600 and over | `NavigationDrawer`, standard |
-
-MD3 allows the drawer from `large` (1200 dp). The rail stays until `extraLarge`
-here: a 13 inch laptop is 1440 dp wide, and a 360 dp panel takes a quarter of
-it from the film rows for three destinations.
-
-The drawer has room for more than the three destinations. At its end it has the
-settings and the privacy policy. The home header leaves out what the navigation
-beside it shows: next to the rail it has no mark, and next to the drawer it has
-no mark, no name, and no settings button. The name stays the page's `<h1>` for
-a screen reader.
-
-The watchlist shows the count of films still to watch in all three components:
-a watched film is done, so it does not count. The bar
-and the rail draw a badge on the icon, and the drawer puts the number at the end
-of the row. The label holds the count too, for a screen reader.
-
-The navigation lights the destination the reader is on. A film, a person, or a
-genre page lights none: it can be reached from the home and from the watchlist
-alike. The trailer and the gallery fill the window, so the navigation steps out
-of their way on those two routes.
-
-The search and the settings sheets are not in the group. They live in the root
-stack, above it, so their scrim covers the navigation as well as the page, and
-they centre on the window. The root layout draws no `<main>`: the group's layout
-draws it inside the navigation, and
-[lib/useRootScreenRole.ts](lib/useRootScreenRole.ts) gives a sheet that has no
-page below it, on a deep link, its own. A group name is part of the route key,
-so the prerendered data of the home is under `/(main)/index`.
-
-The navigation keeps one tree for every layout, with the screens in the same
-place. A change from the bar to the rail swaps the navigation only. It does not
-remount the screens, and on a wide window the static site makes that change on
-every load.
-
-A press on Search measures the icon and opens the sheet from it, the same way
-the home header button did before. The bar on a phone also takes the bottom
-inset, and raises the snackbar above itself with `useSnackbarOffset`, so a
-"Saved" notice never lands under it.
-
-On the web, `/` opens the search from any page that shows the navigation, and
-Escape closes the search, the settings, and the trailer.
-[lib/useWebKey.ts](lib/useWebKey.ts) listens on `window` while its screen is on
-top, so an open menu takes Escape first and one press closes one layer. A key
-typed in a field stays in the field. A React Native `TextInput` on the web stops
-each key it gets, so the search field reads Escape from its own `onKeyPress`.
-
-On the static web export the first paint is always the bar: the server renders
-each page for a 0 wide window, and the breakpoint hook keeps that reading until
-the page has hydrated. The rail or the drawer arrives one frame later.
-
-### One button size for each role
-
-[lib/buttonSize.ts](lib/buttonSize.ts) gives each kind of button one size, the
-same way `lib/motion.ts` names each transition:
-
-| Role     | Size     | Height | Where                                                    |
-| -------- | -------- | ------ | -------------------------------------------------------- |
-| `inline` | `small`  | 40 dp  | Film actions, share, "Show more", the about screen links |
-| `state`  | `medium` | 56 dp  | The one action of an empty or failed screen              |
-
-A screen writes `size={BUTTON_SIZE.inline}`. ESLint rejects a literal size on a
-`Button`, so a new button cannot drift from the table. The Button pads its touch
-area to 48 dp on iOS and Android, so a 40 dp button is still large enough to
-touch.
-
-## Technology
-
-- Expo SDK 58 and Expo Router 58
-- React Native 0.88 and React 19
-- `@rootnative/core` — the theme system with Material Design 3 tokens
-- `@rootnative/components` — the UI components
-- `@rootnative/inertia` — the animation primitives, over Reanimated
-- `expo-image` — every remote picture: the memory cache and the load fade
-- TypeScript
-- Jest and `@testing-library/react-native`
-- Vercel Functions, for the proxy
-
-## Deployment
-
-Four things deploy. The proxy and the store build are separate from the two
-workflows.
-
-| What                                                 | Publishes             | Target                                  |
-| ---------------------------------------------------- | --------------------- | --------------------------------------- |
-| [`deploy.yml`](.github/workflows/deploy.yml)         | The static web build  | GitHub Pages                            |
-| [`eas-update.yml`](.github/workflows/eas-update.yml) | The JavaScript bundle | The EAS `main` channel, for the QR code |
-| [`proxy/`](proxy/README.md)                          | The TMDB proxy        | Vercel, by hand                         |
-| [`eas.json`](eas.json)                               | The Android app       | Google Play, by hand                    |
-
-The two workflows run on every push to `main`. The proxy deploys separately, with
-`vercel deploy --prod`, because it changes rarely and holds the key.
-
-The QR image never changes. It points at the channel, and the workflow moves the
-channel to the newest bundle.
-
-To publish an app update by hand:
+**Terminal 1: the proxy.** It holds the TMDB key.
 
 ```bash
-npx eas update --branch main --message "What changed"
+cd proxy
+vercel link                                     # once, to connect the project
+echo "TMDB_API_KEY=<your v3 key>" > .env.local
+vercel dev                                      # serves http://localhost:3000/api/tmdb
 ```
 
-### Update channels
-
-Each build profile in [eas.json](eas.json) has its own channel. A build gets
-updates only from its own channel.
-
-| Channel       | Used by                       | Published by                               |
-| ------------- | ----------------------------- | ------------------------------------------ |
-| `main`        | Expo Go, through the QR code  | `eas-update.yml`, on each push to `main`   |
-| `development` | A development build           | You, by hand                               |
-| `preview`     | An internal test build        | You, by hand                               |
-| `production`  | The Google Play build         | You, by hand                               |
-
-The store build does not get the automatic updates. The workflow publishes
-each commit on `main`, and an untested commit must not reach store users.
-
-To publish an update to the store build:
+**Terminal 2: the app.**
 
 ```bash
-npx eas update --channel production --environment production --message "What changed"
+cp .env.example .env
+# Set EXPO_PUBLIC_TMDB_PROXY_URL=http://localhost:3000/api/tmdb in .env
+yarn start                                      # then press i, a, or w
 ```
 
-`--environment production` loads the proxy URL from EAS, the same value that the
-store build uses.
+> [!IMPORTANT]
+> Put the TMDB key only in `proxy/.env.local`. A key in the app's `.env` ships
+> to every user. [Read why](docs/architecture.md#the-key-never-reaches-the-app).
 
-Publish to `production` only for a change to JavaScript or to assets. The
-runtime version follows the Expo SDK (`"policy": "sdkVersion"`), so the store
-build also accepts an update that needs a new native module, and then it
-crashes. A new native module, a new config plugin, or a change to a native
-field in `app.json` needs a new store build.
+> [!TIP]
+> Metro caches `.env` when it starts. Run `yarn start --clear` after you change
+> it. On a phone, use the network address of your computer, not `localhost`.
 
-The policy stays `sdkVersion` because Expo Go loads only an update whose
-runtime version is the SDK version.
+The full setup, the scripts, and the tests are in
+[docs/development.md](docs/development.md).
 
-### Store build
+## 🧭 How it works
 
-The `production` profile builds an Android App Bundle (`.aab`) for Google Play.
-EAS keeps the upload key and increases the version code on each build.
-
-EAS Build does not receive `.env`, because git ignores it. The build reads the
-proxy URL from its EAS environment: `production` for the store build, `preview`
-for the test build. Step 7 below sets it.
-
-Test a `preview` build on a device before each store build. It is an APK that
-installs without the store:
-
-```bash
-npx eas build --platform android --profile preview
+```mermaid
+flowchart LR
+  subgraph app ["Reelist app: iOS, Android, web"]
+    direction LR
+    screens["Screens"] --> api["lib/api.ts<br/>the only data seam"]
+    api --> transport["lib/tmdb.ts<br/>calls the proxy"]
+    screens --> watchlist[("Watchlist<br/>on the device")]
+  end
+  transport -- "no key" --> proxy["Proxy on Vercel<br/>key, rate limit, edge cache"]
+  proxy -- "adds the key" --> tmdb[("TMDB API")]
 ```
 
-To build for Google Play:
+- **One seam.** Every screen gets its data from `lib/api.ts` and from nowhere
+  else. Two changes of the data source did not touch a screen.
+- **One loader.** Each screen loads through `useResource`, which keeps each
+  answer for five minutes. A return to a screen draws it on the first frame.
+- **One device store.** The watchlist is the only state on the device. It keeps
+  each film whole, so it opens offline.
 
-```bash
-npx eas build --platform android --profile production
-```
+Read the full design notes in [docs/architecture.md](docs/architecture.md) and
+[docs/design-system.md](docs/design-system.md).
 
-Google Play accepts the first bundle only by hand. Download the `.aab` from the
-build page, and upload it in Play Console. Send each later build with:
+## 🧰 Tech stack
 
-```bash
-npx eas submit --platform android --profile production --latest
-```
+| Layer    | Technology                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------------------- |
+| App      | Expo SDK 58, Expo Router, React Native 0.88, React 19, TypeScript                                                      |
+| UI       | [RootNative UI](https://rootnative.github.io/ui/): `@rootnative/core`, `@rootnative/components`, `@rootnative/inertia` |
+| Images   | `expo-image`, with a memory cache and a load fade                                                                      |
+| Proxy    | Vercel Functions, with an Upstash Redis rate limit                                                                     |
+| Web      | A static export, prerendered film pages, and `@rootnative/seo` checks                                                  |
+| Tests    | Jest and `@testing-library/react-native`                                                                               |
+| Delivery | GitHub Actions, GitHub Pages, EAS Update, and EAS Build                                                                |
 
-The submit profile sends the build to the internal testing track as a draft.
-Google accepts only a draft until the app has a published release. Roll out the
-draft in Play Console, by hand.
+## 📚 Documentation
 
-### Setup that this repository cannot do for itself
+| Page                                              | Read it to                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [Development](docs/development.md)                | Set up the app, run the scripts and the tests, and find your way in the code         |
+| [Architecture](docs/architecture.md)              | Learn how the data flows, why the key stays on a server, and how the watchlist works |
+| [Built with RootNative UI](docs/design-system.md) | Learn about the themes, the film colours, the motion, and the navigation             |
+| [Deployment](docs/deployment.md)                  | Publish the web build, an app update, or a store build                               |
+| [The TMDB proxy](proxy/README.md)                 | Run, test, and deploy the proxy                                                      |
 
-Eight steps need a web interface or an account login:
+## 🙏 Credits
 
-1. **Turn on Pages.** In `Settings → Pages`, set **Source** to **GitHub
-   Actions**. The deploy workflow fails until this is set.
-2. **Add the `EXPO_TOKEN` secret.** Make a token at
-   [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens),
-   then add it in `Settings → Secrets and variables → Actions`. The EAS workflow
-   skips its steps without it.
-3. **Add the `EXPO_PUBLIC_TMDB_PROXY_URL` variable.** In
-   `Settings → Secrets and variables → Actions`, on the **Variables** tab — not
-   the Secrets tab. The proxy URL is public, and storing it as a secret would
-   suggest it needs protecting. Both workflows read it, and the published app
-   cannot load data without it.
-4. **Give the proxy its key.** `vercel env add TMDB_API_KEY production`, then
-   deploy again. See [proxy/README.md](proxy/README.md).
-5. **Give the proxy its Redis credentials.** Create a database at
-   [console.upstash.com](https://console.upstash.com/), then add
-   `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Without them the
-   proxy runs with **no rate limit** and reports nothing. See
-   [proxy/README.md](proxy/README.md).
-6. **Require the CI check.** In `Settings → Branches`, add a rule for `main` and
-   mark the `check` job as required. Until then CI reports a failure but does not
-   stop a merge.
-7. **Add the proxy URL to EAS.** Use the same URL as step 3. Without it, every
-   screen of the store build shows the setup message.
+- Film data and images come from [TMDB](https://www.themoviedb.org/). This
+  product uses the TMDB API but is not endorsed or certified by TMDB.
+- Trailers play from YouTube.
+- [RootNative UI](https://rootnative.github.io/ui/) draws every screen.
 
-   ```bash
-   npx eas env:set --name EXPO_PUBLIC_TMDB_PROXY_URL --value <proxy URL> --visibility plaintext --environment production --environment preview
-   ```
+## 📄 License
 
-8. **Give EAS a Google service account key.** Create the account and give it
-   access to the app in Play Console, as
-   [expo.fyi/creating-google-service-account](https://expo.fyi/creating-google-service-account)
-   shows. Upload its JSON key with `npx eas credentials --platform android`,
-   under **Google Service Account**, then delete the file. `eas submit` reads
-   the key from EAS, so the key never enters the repository.
-
-## More information
-
-- [RootNative UI documentation](https://rootnative.github.io/ui)
-- [RootNative UI source](https://github.com/rootnative/ui) — `@rootnative/core`
-  and `@rootnative/components`
-- [RootNative Inertia source](https://github.com/rootnative/inertia) — the
-  animation layer, in a repository of its own
-- [Expo Router documentation](https://docs.expo.dev/router/introduction/)
-- [Expo documentation](https://docs.expo.dev/)
-- [TMDB API reference](https://developer.themoviedb.org/reference/intro/getting-started)
-
-The about screen carries the same links. Each package name on it opens that
-package's repository, and the URL is read from the package's own `homepage`
-field rather than written into the screen, so a package that moves takes its
-link with it.
-
-The version beside each name comes from the same place — the package's own
-`version` field, read at runtime. All three packages publish `./package.json`
-in their exports, so the screen states what is installed and a `yarn upgrade`
-cannot leave it behind. A test compares the number on screen
-against the number installed, so an upgrade that left the page behind fails the
-build.
+[MIT](LICENSE) © 2026 Rajendran Nadar
