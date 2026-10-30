@@ -22,6 +22,7 @@ import { useDebounced } from '../lib/useDebounced'
 import { useKeyboardHeight } from '../lib/useKeyboardHeight'
 import { useResource } from '../lib/useResource'
 import { useRootScreenRole } from '../lib/useRootScreenRole'
+import { useWebKey } from '../lib/useWebKey'
 import type { Paged } from '../lib/types'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Search'))
@@ -175,6 +176,7 @@ export default function SearchScreen() {
   // Matches the about screen: `router.back` alone dead-ends when this screen is
   // the first entry in the history, as it is on a deep link.
   const dismiss = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  useWebKey('Escape', dismiss)
   const landmark = useRootScreenRole()
 
   return (
@@ -295,6 +297,11 @@ export default function SearchScreen() {
                 returnKeyType="search"
                 autoCorrect={false}
                 autoCapitalize="none"
+                // On the web the field stops each key it gets, so the Escape of
+                // the screen below never hears a key pressed here.
+                onKeyPress={(event) => {
+                  if (event.nativeEvent.key === 'Escape') dismiss()
+                }}
               />
               {/*
                 The clear appears only when there is text to clear, so the bar

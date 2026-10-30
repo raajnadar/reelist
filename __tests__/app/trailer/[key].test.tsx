@@ -18,6 +18,7 @@ const mockUseLocalSearchParams = jest.fn()
 // real one needs a navigator above it that no test mounts.
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
+  useIsFocused: () => true,
   useLocalSearchParams: () => mockUseLocalSearchParams(),
   useRouter: () => ({
     push: jest.fn(),

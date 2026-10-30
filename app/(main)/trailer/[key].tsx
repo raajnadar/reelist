@@ -11,6 +11,7 @@ import { TrailerPlayer } from '../../../components/TrailerPlayer'
 import { NoindexHead } from '../../../components/NoindexHead'
 import { metadataFor, noindexMeta } from '../../../lib/head'
 import { ON_STAGE, STAGE } from '../../../lib/stage'
+import { useWebKey } from '../../../lib/useWebKey'
 import { watchUrl } from '../../../lib/youtube'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Trailer'))
@@ -49,6 +50,9 @@ export default function TrailerScreen() {
   const { key, title } = useLocalSearchParams<{ key: string; title?: string }>()
 
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  // The player is a YouTube frame. While it has the focus, the keys go to the
+  // frame, not to this page, so Escape works once the focus is outside it.
+  useWebKey('Escape', close)
 
   /**
    * The largest 16:9 frame the window holds.

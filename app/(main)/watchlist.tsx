@@ -22,6 +22,7 @@ import { haptic } from '../../lib/haptics'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
 import { useContentWidth } from '../../lib/useContentWidth'
 import { useSearchLaunch } from '../../lib/useSearchLaunch'
+import { useWebKey } from '../../lib/useWebKey'
 import {
   clearWatchlist,
   isWatched,
@@ -111,15 +112,9 @@ export default function WatchlistScreen() {
    * sheet, and the listener would then take the back press of the sheet.
    */
   const focused = useIsFocused()
+  useWebKey('Escape', stopSelecting, { active: selecting })
   useEffect(() => {
-    if (!selecting || !focused) return
-    if (Platform.OS === 'web') {
-      const onKey = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') setPicks(null)
-      }
-      window.addEventListener('keydown', onKey)
-      return () => window.removeEventListener('keydown', onKey)
-    }
+    if (!selecting || !focused || Platform.OS === 'web') return
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       setPicks(null)
       return true

@@ -28,6 +28,7 @@ import { REGIONS, deviceRegion, regionName, setRegion, useRegion } from '../lib/
 import { NEW_TAB } from '../lib/share'
 import { BUTTON_SIZE } from '../lib/buttonSize'
 import { useRootScreenRole } from '../lib/useRootScreenRole'
+import { useWebKey } from '../lib/useWebKey'
 
 export const generateMetadata = () => metadataFor(noindexMeta('About'))
 
@@ -144,6 +145,7 @@ export default function AboutScreen() {
   const cardRadius = roomy ? theme.shape.cornerExtraLarge : theme.shape.cornerNone
 
   const dismiss = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  useWebKey('Escape', dismiss)
   const landmark = useRootScreenRole()
 
   return (

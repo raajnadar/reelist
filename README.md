@@ -189,6 +189,7 @@ Jest runs two projects, because the proxy is server code that uses the Web
 | `lib/grid.test.ts`                   | The column count, at 7 screen widths                   |
 | `lib/useContentWidth.test.tsx`       | The page width: measured beside the navigation, else the window |
 | `lib/useHydrating.dom.test.tsx`      | Hydration in React DOM: true, then false, and a key that drops a server attribute |
+| `lib/useWebKey.dom.test.tsx`         | A web key: only on the top screen, not from a field, after an open menu |
 | `lib/network.test.ts`                | Online until the device says no; one native subscription for every hook |
 | `components/OfflineBanner.test.tsx`  | The strip while offline, and not on the trailer or the gallery |
 | `lib/errors.test.ts`                 | Which failures may offer a retry, and which may not    |
@@ -655,6 +656,13 @@ A press on Search measures the icon and opens the sheet from it, the same way
 the home header button did before. The bar on a phone also takes the bottom
 inset, and raises the snackbar above itself with `useSnackbarOffset`, so a
 "Saved" notice never lands under it.
+
+On the web, `/` opens the search from any page that shows the navigation, and
+Escape closes the search, the settings, and the trailer.
+[lib/useWebKey.ts](lib/useWebKey.ts) listens on `window` while its screen is on
+top, so an open menu takes Escape first and one press closes one layer. A key
+typed in a field stays in the field. A React Native `TextInput` on the web stops
+each key it gets, so the search field reads Escape from its own `onKeyPress`.
 
 On the static web export the first paint is always the bar: the server renders
 each page for a 0 wide window, and the breakpoint hook keeps that reading until

@@ -30,6 +30,7 @@ import { ContentWidthContext } from '../lib/useContentWidth'
 import { useHydrating } from '../lib/useHydrating'
 import { useKeyboardShrinksWindow } from '../lib/useKeyboardShrinksWindow'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
+import { useWebKey } from '../lib/useWebKey'
 import { isWatched, useWatchlist } from '../lib/watchlist'
 
 /**
@@ -124,6 +125,9 @@ export function AppNavigation({ children }: { children: ReactNode }) {
    * own. See lib/useSearchLaunch.ts.
    */
   const { ref: searchRef, open: openSearch } = useSearchLaunch()
+  // `/` opens the search, as on many sites. Not from a field, where it types a
+  // slash, and not where the navigation steps aside.
+  useWebKey('/', () => void openSearch(), { active: !hidden })
   const items: Item[] = DESTINATIONS.map((d) => {
     if (d.value === 'search') {
       return {

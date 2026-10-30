@@ -15,13 +15,14 @@ const mockHaptic = haptic as jest.Mock
 
 const mockPush = jest.fn()
 const mockDismissTo = jest.fn()
+const mockBack = jest.fn()
 let mockParams: { q?: string } = {}
 
 jest.mock('expo-router', () => ({
   ...jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     dismissTo: mockDismissTo,
-    back: jest.fn(),
+    back: mockBack,
     replace: jest.fn(),
     canGoBack: () => true,
   })),
@@ -296,6 +297,18 @@ it('clears the box with the trailing icon', async () => {
 
   await waitFor(() => expect(screen.getByText('Search for a movie')).toBeTruthy())
   expect(mockHaptic).toHaveBeenCalledWith('select')
+})
+
+it('closes on Escape typed in the field', () => {
+  const screen = renderWithProviders(<SearchScreen />)
+  const field = screen.getByLabelText(FIELD)
+
+  // On the web the field stops each key, so the screen reads Escape here.
+  fireEvent(field, 'keyPress', { nativeEvent: { key: 'a' } })
+  expect(mockBack).not.toHaveBeenCalled()
+
+  fireEvent(field, 'keyPress', { nativeEvent: { key: 'Escape' } })
+  expect(mockBack).toHaveBeenCalledTimes(1)
 })
 
 it('offers no clear icon while the box is empty', () => {
