@@ -18,15 +18,19 @@ const mockPush = jest.fn()
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
 const mockCanGoBack = jest.fn(() => true)
+const mockSetParams = jest.fn()
+let mockParams: { sort?: string; tab?: string } = {}
 
-jest.mock('expo-router', () =>
-  jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
+jest.mock('expo-router', () => ({
+  ...jest.requireActual('../../lib/test-utils').expoRouterMock(() => ({
     push: mockPush,
     back: mockBack,
     replace: mockReplace,
+    setParams: mockSetParams,
     canGoBack: mockCanGoBack,
   })),
-)
+  useLocalSearchParams: () => mockParams,
+}))
 
 // See index.test.tsx: the renderer's `measureInWindow` never answers.
 const BUTTON_RECT = { x: 120, y: 480, width: 150, height: 40 }
@@ -41,6 +45,7 @@ const [first, second, third] = mockMovies
 beforeEach(() => {
   jest.clearAllMocks()
   mockCanGoBack.mockReturnValue(true)
+  mockParams = {}
 })
 
 // Each test waits for the device read. A read that lands after the test ends
@@ -142,6 +147,58 @@ it('sorts the films from the options menu', async () => {
   await waitFor(() => expect(order()).toEqual([first.title, second.title]))
   // The pick also closes the menu. Its exit ends after the order changes.
   await waitFor(() => expect(screen.queryByText('Clear watchlist')).toBeNull())
+})
+
+// So a reload keeps the order. The default stays out of the address.
+it('writes the order to the address, and takes the default out again', async () => {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([second, first]))
+
+  const screen = renderWithProviders(<WatchlistScreen />)
+  expect(await screen.findByText(first.title)).toBeTruthy()
+  expect(mockSetParams).not.toHaveBeenCalled()
+
+  fireEvent.press(screen.getByTestId('watchlist-options'))
+  fireEvent.press(await screen.findByText('Title'))
+  await waitFor(() =>
+    expect(mockSetParams).toHaveBeenCalledWith({ sort: 'title', tab: undefined }),
+  )
+
+  mockParams = { sort: 'title' }
+  fireEvent.press(screen.getByTestId('watchlist-options'))
+  fireEvent.press(await screen.findByText('Date added'))
+  await waitFor(() =>
+    expect(mockSetParams).toHaveBeenLastCalledWith({ sort: undefined, tab: undefined }),
+  )
+})
+
+it('starts on the order and the tab the address carries', async () => {
+  mockParams = { sort: 'title', tab: 'watched' }
+  // Saved in date order with Oppenheimer last; the title order puts Dune first.
+  await AsyncStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify([third, { ...second, watched: true }, { ...first, watched: true }]),
+  )
+
+  const screen = renderWithProviders(<WatchlistScreen />)
+
+  expect(await screen.findByText(first.title)).toBeTruthy()
+  expect(screen.queryByText(third.title)).toBeNull()
+  const titles = screen
+    .getAllByText(new RegExp(`^(${first.title}|${second.title})$`))
+    .map((t) => t.props.children)
+  expect(titles).toEqual([first.title, second.title])
+  expect(mockSetParams).not.toHaveBeenCalled()
+})
+
+it('ignores an order or a tab the screen does not offer, and takes them out', async () => {
+  mockParams = { sort: 'colour', tab: 'later' }
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([first]))
+
+  const screen = renderWithProviders(<WatchlistScreen />)
+
+  expect(await screen.findByText(first.title)).toBeTruthy()
+  expect(mockSetParams).toHaveBeenCalledTimes(1)
+  expect(mockSetParams).toHaveBeenCalledWith({ sort: undefined, tab: undefined })
 })
 
 it('clears the watchlist, and the undo puts every film back', async () => {

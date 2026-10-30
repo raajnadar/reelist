@@ -16,6 +16,7 @@ const mockHaptic = haptic as jest.Mock
 const mockPush = jest.fn()
 const mockDismissTo = jest.fn()
 const mockBack = jest.fn()
+const mockSetParams = jest.fn()
 let mockParams: { q?: string } = {}
 
 jest.mock('expo-router', () => ({
@@ -24,6 +25,7 @@ jest.mock('expo-router', () => ({
     dismissTo: mockDismissTo,
     back: mockBack,
     replace: jest.fn(),
+    setParams: mockSetParams,
     canGoBack: () => true,
   })),
   useLocalSearchParams: () => mockParams,
@@ -77,6 +79,35 @@ it('fills the field from the q parameter and searches for it', async () => {
   expect(screen.getByLabelText(FIELD).props.value).toBe('dune')
   await settle()
   expect(searchMovies).toHaveBeenCalledWith('dune')
+})
+
+// So a reload or a shared link searches again. The settled value, not each
+// keystroke: the address changes once for "dune".
+it('writes the settled query to the address, and clears it with the field', async () => {
+  const screen = renderWithProviders(<SearchScreen />)
+  const field = screen.getByLabelText(FIELD)
+
+  fireEvent.changeText(field, 'dun')
+  fireEvent.changeText(field, 'dune')
+  expect(mockSetParams).not.toHaveBeenCalled()
+
+  await settle()
+  expect(mockSetParams).toHaveBeenCalledTimes(1)
+  expect(mockSetParams).toHaveBeenCalledWith({ q: 'dune' })
+
+  mockParams = { q: 'dune' }
+  fireEvent.changeText(field, '')
+  await settle()
+  expect(mockSetParams).toHaveBeenLastCalledWith({ q: undefined })
+})
+
+// A link that already carries the query makes no change to the address.
+it('leaves the address alone when it already carries the query', async () => {
+  mockParams = { q: 'dune' }
+  renderWithProviders(<SearchScreen />)
+
+  await settle()
+  expect(mockSetParams).not.toHaveBeenCalled()
 })
 
 it('sends one request for a burst of keystrokes, carrying the last value', async () => {

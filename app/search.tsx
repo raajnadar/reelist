@@ -22,6 +22,7 @@ import { useDebounced } from '../lib/useDebounced'
 import { useKeyboardHeight } from '../lib/useKeyboardHeight'
 import { useResource } from '../lib/useResource'
 import { useRootScreenRole } from '../lib/useRootScreenRole'
+import { useUrlState } from '../lib/useUrlState'
 import { useWebKey } from '../lib/useWebKey'
 import type { Paged } from '../lib/types'
 
@@ -147,6 +148,10 @@ export default function SearchScreen() {
   // so it fires once the typing stops. See lib/useDebounced.ts.
   const debouncedQuery = useDebounced(query)
   const trimmed = debouncedQuery.trim()
+  // The settled query goes back into the address, so a reload or a shared
+  // link searches again. The debounced value, so the address does not change
+  // on each keystroke.
+  useUrlState({ q: trimmed || undefined })
 
   /**
    * The search, or nothing while the box is empty.

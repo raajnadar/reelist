@@ -13,6 +13,7 @@ import type { Movie } from '../../../lib/types'
 // becomes a route and Metro then bundles the testing library into the app.
 
 const mockReplace = jest.fn()
+const mockSetParams = jest.fn()
 let mockParams: Record<string, string> = { id: '28', name: 'Action' }
 
 jest.mock('expo-router', () => ({
@@ -20,6 +21,7 @@ jest.mock('expo-router', () => ({
     push: jest.fn(),
     back: jest.fn(),
     replace: mockReplace,
+    setParams: mockSetParams,
     canGoBack: () => true,
   })),
   useLocalSearchParams: () => mockParams,
@@ -397,6 +399,51 @@ describe('the filters', () => {
 
     expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, { language: 'ta' })
     expect(screen.getByText('Tamil')).toBeTruthy()
+  })
+
+  // So a reload or a shared link keeps the pick. Every name is sent, and a
+  // cleared filter as `undefined`, which takes it out of the address.
+  it('writes each pick to the address', async () => {
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+    expect(mockSetParams).not.toHaveBeenCalled()
+
+    fireEvent.press(screen.getByTestId('filter-rating'))
+    fireEvent.press(await screen.findByText('7+'))
+
+    await waitFor(() =>
+      expect(mockSetParams).toHaveBeenCalledWith({
+        decade: undefined,
+        rating: '7',
+        language: undefined,
+        runtime: undefined,
+      }),
+    )
+  })
+
+  it('starts on the filters the address carries, over the preferred language', async () => {
+    act(() => setLanguage('ta'))
+    mockParams = { id: '28', name: 'Action', decade: '1990', rating: '7' }
+
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, { decade: 1990, rating: 7 })
+    expect(screen.getByText('1990s')).toBeTruthy()
+    expect(screen.getByText('7+')).toBeTruthy()
+    expect(screen.getByText('Language')).toBeTruthy()
+    // The address already says so.
+    expect(mockSetParams).not.toHaveBeenCalled()
+  })
+
+  // A link is untrusted. A value the menu does not offer reads as no filter.
+  it('ignores a filter value the menu does not offer', async () => {
+    mockParams = { id: '28', name: 'Action', rating: '9', language: 'xx' }
+
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, {})
   })
 
   it('names the pick on its chip', async () => {

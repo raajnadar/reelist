@@ -6,6 +6,8 @@ import {
   RATINGS,
   RUNTIMES,
   filterKey,
+  filtersFromParams,
+  filtersToParams,
   hasFilters,
   toDiscoverParams,
 } from './discover'
@@ -108,5 +110,44 @@ describe('the options', () => {
     const values = options.map((o) => String(o.value))
 
     expect(new Set(values).size).toBe(values.length)
+  })
+})
+
+describe('filtersFromParams', () => {
+  it('reads each filter the address names', () => {
+    expect(
+      filtersFromParams({ decade: '1990', rating: '7', language: 'ta', runtime: 'long' }),
+    ).toEqual({ decade: 1990, rating: 7, language: 'ta', runtime: 'long' })
+  })
+
+  it('reads nothing from an empty address', () => {
+    expect(filtersFromParams({})).toEqual({})
+  })
+
+  // A link is untrusted: a value the menu does not offer is not a filter.
+  it('drops a value the menu does not offer', () => {
+    expect(
+      filtersFromParams({ decade: '1985', rating: '9', language: 'xx', runtime: 'epic' }),
+    ).toEqual({})
+  })
+
+  it('takes the first value of a repeated parameter', () => {
+    expect(filtersFromParams({ rating: ['8', '6'] })).toEqual({ rating: 8 })
+  })
+})
+
+describe('filtersToParams', () => {
+  it('names every parameter, with the unset ones undefined', () => {
+    expect(filtersToParams({ decade: 2010, language: 'hi' })).toEqual({
+      decade: '2010',
+      rating: undefined,
+      language: 'hi',
+      runtime: undefined,
+    })
+  })
+
+  it('round-trips through the address', () => {
+    const filters = { decade: 1970, rating: 6, language: 'ko', runtime: 'short' as const }
+    expect(filtersFromParams(filtersToParams(filters))).toEqual(filters)
   })
 })

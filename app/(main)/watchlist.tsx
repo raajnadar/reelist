@@ -8,7 +8,7 @@ import { Tabs } from '@rootnative/components/tabs'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useIsFocused, useRouter } from 'expo-router'
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { BackHandler, FlatList, Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -22,6 +22,7 @@ import { haptic } from '../../lib/haptics'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
 import { useContentWidth } from '../../lib/useContentWidth'
 import { useSearchLaunch } from '../../lib/useSearchLaunch'
+import { useUrlState } from '../../lib/useUrlState'
 import { useWebKey } from '../../lib/useWebKey'
 import {
   clearWatchlist,
@@ -48,6 +49,13 @@ const TABS: { value: Tab; label: string }[] = [
   { value: 'toWatch', label: 'To watch' },
   { value: 'watched', label: 'Watched' },
 ]
+
+const DEFAULT_ORDER: WatchlistOrder = 'added'
+const DEFAULT_TAB: Tab = 'toWatch'
+
+const isOrder = (value: unknown): value is WatchlistOrder =>
+  ORDERS.some((o) => o.value === value)
+const isTab = (value: unknown): value is Tab => TABS.some((t) => t.value === value)
 
 /**
  * Below this content width the two tabs share the row. Above it each tab
@@ -76,8 +84,22 @@ export default function WatchlistScreen() {
 
   const snackbar = useSnackbar()
   const { ref: searchRef, open: openSearch } = useSearchLaunch()
-  const [order, setOrder] = useState<WatchlistOrder>('added')
-  const [tab, setTab] = useState<Tab>('toWatch')
+  /**
+   * The order and the tab, read from the address once and written back on
+   * each change, so a reload keeps them. The defaults stay out of the
+   * address: `/watchlist` alone is the list to watch by date added.
+   */
+  const params = useLocalSearchParams<{ sort?: string; tab?: string }>()
+  const [order, setOrder] = useState<WatchlistOrder>(() =>
+    isOrder(params.sort) ? params.sort : DEFAULT_ORDER,
+  )
+  const [tab, setTab] = useState<Tab>(() =>
+    isTab(params.tab) ? params.tab : DEFAULT_TAB,
+  )
+  useUrlState({
+    sort: order === DEFAULT_ORDER ? undefined : order,
+    tab: tab === DEFAULT_TAB ? undefined : tab,
+  })
 
   /**
    * The ids the reader picked, or null outside select mode. One state for

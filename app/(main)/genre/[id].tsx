@@ -18,8 +18,11 @@ import { getGenres, getMoviesByGenre } from '../../../lib/api'
 import {
   EMPTY_FILTERS,
   filterKey,
+  filtersFromParams,
+  filtersToParams,
   hasFilters,
   type DiscoverFilters,
+  type FilterParam,
 } from '../../../lib/discover'
 import { missingFailure, type FailureKind } from '../../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
@@ -28,6 +31,7 @@ import { genreEntry, loadSeed } from '../../../lib/prerender'
 import { useContentWidth } from '../../../lib/useContentWidth'
 import { usePrerendered } from '../../../lib/usePrerendered'
 import { useResource } from '../../../lib/useResource'
+import { useUrlState } from '../../../lib/useUrlState'
 import type { Genre, Movie, Paged } from '../../../lib/types'
 
 /**
@@ -115,7 +119,9 @@ export default function GenreScreen() {
   const width = useContentWidth()
   const columns = posterColumns(width)
 
-  const params = useLocalSearchParams<{ id: string; name?: string }>()
+  const params = useLocalSearchParams<
+    { id: string; name?: string } & Partial<Record<FilterParam, string>>
+  >()
   const genreId = Number(params.id)
 
   // A route parameter is a string from an untrusted source: a deep link can
@@ -124,18 +130,23 @@ export default function GenreScreen() {
   const validId = Number.isInteger(genreId) && genreId > 0
 
   /**
-   * The filters the reader picked. Screen state rather than a route parameter:
-   * a genre link from the home chips carries none, and a pick belongs to this
-   * visit rather than to the address.
+   * The filters the reader picked, read from the address once and written
+   * back on each pick, so a reload or a shared link keeps them. Screen state
+   * in between: a pick is a change to this screen, not a new entry in the
+   * history.
    *
-   * The grid starts on the reader's preferred film language, when they set one
-   * on the about screen. It is a start value only: the row can change or clear
-   * it for this visit, and a change to the preference reaches the next visit.
+   * A link with no filter starts on the reader's preferred film language,
+   * when they set one on the about screen. It is a start value only: the row
+   * can change or clear it for this visit, and a change to the preference
+   * reaches the next visit.
    */
   const { code: preferredLanguage } = useLanguage()
-  const [filters, setFilters] = useState<DiscoverFilters>(() =>
-    preferredLanguage ? { language: preferredLanguage } : EMPTY_FILTERS,
-  )
+  const [filters, setFilters] = useState<DiscoverFilters>(() => {
+    const linked = filtersFromParams(params)
+    if (hasFilters(linked)) return linked
+    return preferredLanguage ? { language: preferredLanguage } : EMPTY_FILTERS
+  })
+  useUrlState(filtersToParams(filters))
 
   /**
    * What is being asked for: one genre under one set of filters.

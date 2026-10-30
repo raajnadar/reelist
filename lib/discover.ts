@@ -142,3 +142,51 @@ export const toDiscoverParams = (filters: DiscoverFilters): Record<string, strin
  */
 export const filterKey = (filters: DiscoverFilters): string =>
   new URLSearchParams(toDiscoverParams(filters)).toString()
+
+/** The names the filters take in the address: `/genre/28?decade=1990&rating=7`. */
+export const FILTER_PARAMS = ['decade', 'rating', 'language', 'runtime'] as const
+
+export type FilterParam = (typeof FILTER_PARAMS)[number]
+
+/** A route parameter, as Expo Router reads it: one value, or one per repeat. */
+type RouteParams = Partial<Record<FilterParam, string | string[]>>
+
+const firstValue = (value: string | string[] | undefined): string | undefined =>
+  Array.isArray(value) ? value[0] : value
+
+const pick = <T extends string | number>(
+  options: FilterOption<T>[],
+  value: string | undefined,
+): T | undefined => options.find((o) => String(o.value) === value)?.value
+
+/**
+ * The filters a link carries. A link comes from an untrusted source, so each
+ * value must be one the menu offers, and any other value reads as unset. TMDB
+ * would answer an unknown language with an empty list, not with an error.
+ */
+export const filtersFromParams = (params: RouteParams): DiscoverFilters => {
+  const filters: DiscoverFilters = {}
+  const decade = pick(DECADES, firstValue(params.decade))
+  const rating = pick(RATINGS, firstValue(params.rating))
+  const language = pick(LANGUAGES, firstValue(params.language))
+  const runtime = pick(RUNTIMES, firstValue(params.runtime))
+  if (decade !== undefined) filters.decade = decade
+  if (rating !== undefined) filters.rating = rating
+  if (language !== undefined) filters.language = language
+  if (runtime !== undefined) filters.runtime = runtime
+  return filters
+}
+
+/**
+ * The route parameters for one set of filters. Every name is present, and an
+ * unset filter is `undefined`: `router.setParams` merges, and only an explicit
+ * `undefined` takes a cleared filter out of the address.
+ */
+export const filtersToParams = (
+  filters: DiscoverFilters,
+): Record<FilterParam, string | undefined> => ({
+  decade: filters.decade === undefined ? undefined : String(filters.decade),
+  rating: filters.rating === undefined ? undefined : String(filters.rating),
+  language: filters.language,
+  runtime: filters.runtime,
+})
