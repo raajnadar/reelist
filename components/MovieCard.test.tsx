@@ -132,6 +132,29 @@ describe('select mode', () => {
     expect(mockPush).not.toHaveBeenCalled()
   })
 
+  it('picks the film on Space, the key of a checkbox on the web', () => {
+    const onToggle = jest.fn()
+    const preventDefault = jest.fn()
+    const screen = renderWithProviders(
+      <MovieCard movie={movie} selection={{ selected: false, onToggle }} />,
+    )
+    const card = screen.getByRole('checkbox')
+
+    fireEvent(card, 'keyDown', { nativeEvent: { key: ' ' }, preventDefault })
+    expect(onToggle).toHaveBeenCalledTimes(1)
+    // The page must not scroll.
+    expect(preventDefault).toHaveBeenCalled()
+
+    // A held key repeats, and the repeats do not pick and drop the film.
+    fireEvent(card, 'keyDown', {
+      nativeEvent: { key: ' ', repeat: true },
+      preventDefault,
+    })
+    // react-native-web presses on Enter itself, so the handler leaves it.
+    fireEvent(card, 'keyDown', { nativeEvent: { key: 'Enter' }, preventDefault })
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+
   it('opens the film outside select mode', () => {
     const screen = renderWithProviders(<MovieCard movie={movie} />)
 

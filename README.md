@@ -487,7 +487,7 @@ puts a checkbox on each card. A press then picks the film and does not open
 it. The bar offers "Select all", "Mark as watched" ("Mark as not watched" on
 the Watched tab), and "Remove from watchlist". Each action shows a snackbar
 with "Undo". Back on Android and Escape on the web end select mode, not the
-screen.
+screen. On the web, Space picks the focused card, as it does a checkbox.
 
 The mark is an optional `watched: true` on the stored film. A film to watch
 has no field at all, so a list from before the mark reads as all to watch, and

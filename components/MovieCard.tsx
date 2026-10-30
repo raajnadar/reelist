@@ -18,6 +18,12 @@ import type { Movie } from '../lib/types'
 
 export const CARD_WIDTH = 160
 
+/** What react-native-web hands `onKeyDown`. Native never calls it. */
+type KeyDownEvent = {
+  nativeEvent: { key?: string; repeat?: boolean }
+  preventDefault?: () => void
+}
+
 type Props = {
   movie: Movie
   index?: number
@@ -58,6 +64,18 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
         onPress: selection.onToggle,
         role: 'checkbox' as const,
         'aria-checked': selection.selected,
+        /*
+          Space is the key of a checkbox, and react-native-web presses an
+          element on Space only when its role is `button`. Enter still goes
+          through the press. Native sends no key events. The first press of a
+          held key counts once.
+        */
+        onKeyDown: (event: KeyDownEvent) => {
+          if (event.nativeEvent.key !== ' ' || event.nativeEvent.repeat) return
+          // Without this the page scrolls.
+          event.preventDefault?.()
+          selection.onToggle()
+        },
       }
     : {}
 
