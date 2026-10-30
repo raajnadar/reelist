@@ -15,9 +15,10 @@ function useExportData<T>(): T | null {
  * In the browser, only the data the page HTML carries.
  *
  * `useLoaderData` fetches `/_expo/loaders/...` for a page whose HTML does not
- * carry its data, which is every page after the first. That path has no base
- * URL, so under /reelist/ it gets a 404 and the screen throws. A page with no
- * data here loads from the proxy, the same as a film the export did not write.
+ * carry its data, which is every page after the first. The export writes that
+ * file only for a page it prerendered. For any other film or genre the fetch
+ * gets a 404, and the screen throws. A page with no data here loads from the
+ * proxy, the same as a page the export did not write.
  */
 function useHtmlData<T>(key: string): T | null {
   const data = (globalThis as LoaderGlobal).__EXPO_ROUTER_LOADER_DATA__
