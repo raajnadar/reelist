@@ -11,7 +11,7 @@ import { shellTags } from '@rootnative/seo/expo-router'
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html'
 import type { PropsWithChildren } from 'react'
 import { STORAGE_KEY as APPEARANCE_STORAGE_KEY } from '../lib/appearance'
-import { darkTheme } from '../theme'
+import { darkTheme, lightTheme } from '../theme'
 
 /**
  * The origin of the TMDB proxy, or null when the build has no proxy URL.
@@ -30,8 +30,8 @@ function proxyOrigin(): string | null {
 
 /**
  * The HTML shell of every page the static export writes. It is Expo Router's
- * default shell with two preconnect links, the theme colour, the touch icon,
- * the manifest, and the inertia entrance guard added, and the obsolete
+ * default shell with two preconnect links, the theme colours, the icons, the
+ * manifest, and the inertia entrance guard added, and the obsolete
  * `X-UA-Compatible` tag removed.
  *
  * The icon and the manifest live in public/, and their links carry the base
@@ -48,9 +48,11 @@ function proxyOrigin(): string | null {
  * browser does not use a preconnected socket for a CORS request unless the
  * link is in the same mode. The images load through a plain `<img>`, so their
  * link has no `crossOrigin`.
+ *
+ * The SVG favicon must come before the `favicon.ico` link that Expo writes from
+ * app.json after the page head. Chrome takes the first of two icon links with
+ * no `sizes`, and Firefox always takes an SVG. Safari falls back to the ICO.
  */
-/** The splash colour from app.json, which the browser paints around the page. */
-const THEME_COLOR = '#4C0519'
 
 /**
  * The scheme guard of core alpha.28, with the stored choice of this app.
@@ -86,7 +88,11 @@ export default function Root({ children }: PropsWithChildren) {
       <head>
         {shellTags({
           basePath: process.env.EXPO_BASE_URL,
-          themeColor: THEME_COLOR,
+          themeColor: {
+            light: lightTheme.colors.background,
+            dark: darkTheme.colors.background,
+          },
+          favicon: '/favicon.svg',
           appleTouchIcon: '/apple-touch-icon.png',
           manifest: '/manifest.webmanifest',
           preconnect: [

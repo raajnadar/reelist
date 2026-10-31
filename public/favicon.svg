@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 5 90 90">
+  <!-- Reelist mark, flat, from assets/logo/play-reel.svg. A lighter red on a dark browser theme, where the brand red is too dark to see. -->
+  <style>
+    .mark { fill: #BE123C; }
+    @media (prefers-color-scheme: dark) {
+      .mark { fill: #F43F5E; }
+    }
+  </style>
+  <mask id="m">
+    <rect x="-10" y="-10" width="120" height="120" fill="#fff"/>
+    <circle cx="50" cy="18.5" r="6.5" fill="#000"/>
+    <circle cx="77.3" cy="34.2" r="6.5" fill="#000"/>
+    <circle cx="77.3" cy="65.8" r="6.5" fill="#000"/>
+    <circle cx="50" cy="81.5" r="6.5" fill="#000"/>
+    <circle cx="22.7" cy="65.8" r="6.5" fill="#000"/>
+    <circle cx="22.7" cy="34.2" r="6.5" fill="#000"/>
+    <path d="M44.5 37.5 L66.5 50 L44.5 62.5 Z" fill="#000" stroke="#000" stroke-width="7" stroke-linejoin="round"/>
+  </mask>
+  <circle class="mark" cx="50" cy="50" r="45" mask="url(#m)"/>
+</svg>

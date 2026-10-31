@@ -16,17 +16,20 @@ import type { ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { UpdateSnackbar } from '../components/UpdateSnackbar'
 import { setMode, useAppearance } from '../lib/appearance'
+import { useBrowserThemeColor } from '../lib/useBrowserThemeColor'
 import { site } from '../lib/site'
 import { transitions } from '../lib/motion'
 import { darkTheme, lightTheme } from '../theme'
 
 /**
- * The status bar sits outside the theme, so it has to be told which scheme is
- * rendering. `scheme` is the resolved 'light' | 'dark' — not `mode`, which can
- * still be 'system'.
+ * The status bar and the browser chrome sit outside the theme, so they have to
+ * be told which scheme is rendering. `scheme` is the resolved 'light' | 'dark'
+ * — not `mode`, which can still be 'system'.
  */
 function ThemedStatusBar() {
   const { scheme } = useThemeMode()
+  const theme = useTheme()
+  useBrowserThemeColor(theme.colors.background)
 
   return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
 }
