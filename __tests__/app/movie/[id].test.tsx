@@ -10,7 +10,7 @@ import { MissingProxyUrlError } from '../../../lib/config'
 import { movieUrl } from '../../../lib/share'
 import { ContentWidthContext } from '../../../lib/useContentWidth'
 import { parseStored, STORAGE_KEY } from '../../../lib/watchlist'
-import { lightTheme } from '../../../theme'
+import { FILM_SCHEME_OPTIONS, lightTheme } from '../../../theme'
 import { haptic } from '../../../lib/haptics'
 
 jest.mock('../../../lib/haptics', () => ({ haptic: jest.fn() }))
@@ -184,7 +184,7 @@ describe('the poster colour', () => {
     const screen = renderWithProviders(<MovieScreen />)
     await screen.findByText(movie.overview)
 
-    const film = createMaterialTheme(movie.poster_color!).lightTheme
+    const film = createMaterialTheme(movie.poster_color!, FILM_SCHEME_OPTIONS).lightTheme
     expect(pageColor(screen)).toBe(film.colors.background)
     expect(pageColor(screen)).not.toBe(lightTheme.colors.background)
   })

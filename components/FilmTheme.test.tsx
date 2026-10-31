@@ -11,7 +11,7 @@ import { MotionConfig, useMotionConfig } from '@rootnative/inertia'
 import { act, render } from '@testing-library/react-native'
 import { useEffect, type ReactNode } from 'react'
 import { transitions } from '../lib/motion'
-import { darkTheme, lightTheme } from '../theme'
+import { darkTheme, lightTheme, FILM_SCHEME_OPTIONS } from '../theme'
 import { FilmTheme } from './FilmTheme'
 
 /**
@@ -20,7 +20,7 @@ import { FilmTheme } from './FilmTheme'
  */
 
 const SEED = '#1E3A8A'
-const film = createMaterialTheme(SEED)
+const film = createMaterialTheme(SEED, FILM_SCHEME_OPTIONS)
 
 type Seen = {
   primary: string

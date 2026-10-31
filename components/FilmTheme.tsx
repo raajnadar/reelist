@@ -1,7 +1,7 @@
 import { ThemeProvider, type Theme } from '@rootnative/core'
 import { createMaterialTheme } from '@rootnative/core/create-theme'
 import { useMemo, type ReactNode } from 'react'
-import { darkTheme, lightTheme } from '../theme'
+import { darkTheme, lightTheme, FILM_SCHEME_OPTIONS } from '../theme'
 
 type ThemePair = { light: Theme; dark: Theme }
 
@@ -13,7 +13,10 @@ const APP_THEMES: ThemePair = { light: lightTheme, dark: darkTheme }
  */
 export function filmThemes(seed: string | null): ThemePair {
   if (!seed) return APP_THEMES
-  const { lightTheme: light, darkTheme: dark } = createMaterialTheme(seed)
+  const { lightTheme: light, darkTheme: dark } = createMaterialTheme(
+    seed,
+    FILM_SCHEME_OPTIONS,
+  )
   return { light, dark }
 }
 
