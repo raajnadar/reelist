@@ -3,7 +3,7 @@ import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -22,6 +22,7 @@ import { useDebounced } from '../lib/useDebounced'
 import { useKeyboardHeight } from '../lib/useKeyboardHeight'
 import { useResource } from '../lib/useResource'
 import { useRootScreenRole } from '../lib/useRootScreenRole'
+import { useAddressKey, useAddressParams } from '../lib/useAddressParams'
 import { useUrlState } from '../lib/useUrlState'
 import { useWebKey } from '../lib/useWebKey'
 import type { Paged } from '../lib/types'
@@ -86,7 +87,12 @@ const REPORTS: Record<
  * drawn over the button that opened it, flies to the top of the window, and
  * widens into the search bar; the results appear under it once it is wide.
  */
-export default function SearchScreen() {
+export default function SearchRoute() {
+  const key = useAddressKey()
+  return <SearchScreen key={key} />
+}
+
+function SearchScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -138,7 +144,7 @@ export default function SearchScreen() {
   // `q` is the parameter the search box on a result page sends. See the
   // WebSite structured data in lib/head.ts. The app itself opens the sheet
   // with no query.
-  const params = useLocalSearchParams<{ q?: string }>()
+  const params = useAddressParams<{ q?: string }>()
   const [query, setQuery] = useState(params.q ?? '')
   const clear = () => {
     setQuery('')

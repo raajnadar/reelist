@@ -8,7 +8,7 @@ import { Tabs } from '@rootnative/components/tabs'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
+import { useIsFocused, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { BackHandler, FlatList, Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -22,6 +22,7 @@ import { haptic } from '../../lib/haptics'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
 import { useContentWidth } from '../../lib/useContentWidth'
 import { useSearchLaunch } from '../../lib/useSearchLaunch'
+import { useAddressKey, useAddressParams } from '../../lib/useAddressParams'
 import { useUrlState } from '../../lib/useUrlState'
 import { useWebKey } from '../../lib/useWebKey'
 import {
@@ -64,7 +65,12 @@ const isTab = (value: unknown): value is Tab => TABS.some((t) => t.value === val
  */
 const SPLIT_TABS_MAX_WIDTH = 600
 
-export default function WatchlistScreen() {
+export default function WatchlistRoute() {
+  const key = useAddressKey()
+  return <WatchlistScreen key={key} />
+}
+
+function WatchlistScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -89,7 +95,7 @@ export default function WatchlistScreen() {
    * each change, so a reload keeps them. The defaults stay out of the
    * address: `/watchlist` alone is the list to watch by date added.
    */
-  const params = useLocalSearchParams<{ sort?: string; tab?: string }>()
+  const params = useAddressParams<{ sort?: string; tab?: string }>()
   const [order, setOrder] = useState<WatchlistOrder>(() =>
     isOrder(params.sort) ? params.sort : DEFAULT_ORDER,
   )

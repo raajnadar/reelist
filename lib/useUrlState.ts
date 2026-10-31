@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef } from 'react'
+import { useHydrating } from './useHydrating'
 
 export type UrlState = Record<string, string | undefined>
 
@@ -17,10 +18,15 @@ export type UrlState = Record<string, string | undefined>
  * The effect runs when the state changes, not when the address does, so the
  * two cannot chase each other. A parameter the address already has is not
  * written again: a link that carries the filters makes no change on mount.
+ *
+ * Nothing is written in the hydration render. Its state comes from the HTML,
+ * which has no query string (lib/useAddressParams.ts), and a write would take
+ * the query out of the address before the screen mounts again to read it.
  */
 export function useUrlState(state: UrlState) {
   const router = useRouter()
   const params = useLocalSearchParams<Record<string, string | string[]>>()
+  const hydrating = useHydrating()
   // Effects run in order, so this one is current when the one below reads it.
   const latest = useRef({ params, router, state })
   useEffect(() => {
@@ -33,11 +39,12 @@ export function useUrlState(state: UrlState) {
     .join('&')
 
   useEffect(() => {
+    if (hydrating) return
     const { params: current, router: target, state: wanted } = latest.current
     const stale = Object.entries(wanted).some(([name, value]) => {
       const present = current[name]
       return (Array.isArray(present) ? present[0] : present) !== value
     })
     if (stale) target.setParams(wanted)
-  }, [signature])
+  }, [signature, hydrating])
 }

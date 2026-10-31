@@ -2,7 +2,7 @@ import { AppBar } from '@rootnative/components/appbar'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../../../lib/language'
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
@@ -30,6 +30,7 @@ import { genreEntry, loadSeed } from '../../../lib/prerender'
 import { useContentWidth } from '../../../lib/useContentWidth'
 import { usePrerendered } from '../../../lib/usePrerendered'
 import { useResource } from '../../../lib/useResource'
+import { useAddressKey, useAddressParams } from '../../../lib/useAddressParams'
 import { useUrlState } from '../../../lib/useUrlState'
 import type { Genre, Movie, Paged } from '../../../lib/types'
 
@@ -110,7 +111,12 @@ export function mergePages(seen: Movie[], incoming: Movie[]): Movie[] {
   return [...seen, ...incoming.filter((m) => !ids.has(m.id))]
 }
 
-export default function GenreScreen() {
+export default function GenreRoute() {
+  const key = useAddressKey()
+  return <GenreScreen key={key} />
+}
+
+function GenreScreen() {
   const theme = useTheme()
   const snackbar = useSnackbar()
   const router = useRouter()
@@ -118,7 +124,7 @@ export default function GenreScreen() {
   const width = useContentWidth()
   const columns = posterColumns(width)
 
-  const params = useLocalSearchParams<
+  const params = useAddressParams<
     { id: string; name?: string } & Partial<Record<FilterParam, string>>
   >()
   const genreId = Number(params.id)
