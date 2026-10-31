@@ -9,33 +9,41 @@ import { Platform } from 'react-native'
 
 /**
  * A film saved or marked watched (also an undo that puts films back), a film
- * removed or marked not watched (also a cleared watchlist), and a pick: a
- * filter, a theme, a carousel slot landed on by a swipe, a cleared search box,
- * a closed gallery, a film picked in select mode.
+ * removed or marked not watched (also a cleared watchlist), a pick: a filter,
+ * a theme, a carousel slot landed on by a swipe, a cleared search box, a
+ * closed gallery, a film picked in select mode, and a long press that opens
+ * the menu of a film.
  */
-export type Haptic = 'save' | 'unsave' | 'select'
+export type Haptic = 'save' | 'unsave' | 'select' | 'menu'
 
 // Android 14 is the first level with TOGGLE_ON, TOGGLE_OFF, and SEGMENT_TICK.
 // On an older level the call rejects, so those devices get CONTEXT_CLICK,
-// which every level has.
+// which every level has. LONG_PRESS is on every level too.
 const ANDROID_14 = 34
 
 const ANDROID: Record<Haptic, AndroidHaptics> = {
   save: AndroidHaptics.Toggle_On,
   unsave: AndroidHaptics.Toggle_Off,
   select: AndroidHaptics.Segment_Tick,
+  menu: AndroidHaptics.Long_Press,
+}
+
+const IOS_IMPACT: Record<Exclude<Haptic, 'select'>, ImpactFeedbackStyle> = {
+  save: ImpactFeedbackStyle.Light,
+  unsave: ImpactFeedbackStyle.Soft,
+  menu: ImpactFeedbackStyle.Medium,
 }
 
 const play = (kind: Haptic): Promise<void> => {
   if (Platform.OS === 'android') {
     return performAndroidHapticsAsync(
-      Platform.Version >= ANDROID_14 ? ANDROID[kind] : AndroidHaptics.Context_Click,
+      kind === 'menu' || Platform.Version >= ANDROID_14
+        ? ANDROID[kind]
+        : AndroidHaptics.Context_Click,
     )
   }
   if (kind === 'select') return selectionAsync()
-  return impactAsync(
-    kind === 'save' ? ImpactFeedbackStyle.Light : ImpactFeedbackStyle.Soft,
-  )
+  return impactAsync(IOS_IMPACT[kind])
 }
 
 /**

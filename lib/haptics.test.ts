@@ -42,6 +42,11 @@ describe('haptic on iOS', () => {
     haptic('select')
     expect(selectionAsync).toHaveBeenCalledTimes(1)
   })
+
+  it('plays a medium impact for a long press that opens a menu', () => {
+    haptic('menu')
+    expect(impactAsync).toHaveBeenCalledWith(ImpactFeedbackStyle.Medium)
+  })
 })
 
 describe('haptic on Android', () => {
@@ -61,6 +66,17 @@ describe('haptic on Android', () => {
     setPlatform('android', 33)
     haptic('save')
     expect(performAndroidHapticsAsync).toHaveBeenCalledWith(AndroidHaptics.Context_Click)
+  })
+
+  it('uses the long press haptic for a menu on every level', () => {
+    setPlatform('android', 34)
+    haptic('menu')
+    setPlatform('android', 26)
+    haptic('menu')
+    expect(jest.mocked(performAndroidHapticsAsync).mock.calls).toEqual([
+      [AndroidHaptics.Long_Press],
+      [AndroidHaptics.Long_Press],
+    ])
   })
 
   it('never uses the Vibrator haptics, which need the blocked VIBRATE permission', () => {

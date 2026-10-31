@@ -5,7 +5,7 @@ import { ThemeProvider } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { render, screen } from '@testing-library/react-native'
 import { cloneElement, type ReactElement } from 'react'
-import { Linking } from 'react-native'
+import { Linking, type PressableProps } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { transitions } from './motion'
 import { darkTheme, lightTheme } from '../theme'
@@ -27,7 +27,7 @@ type LinkMockProps = {
   asChild?: boolean
   dismissTo?: boolean
   children: ReactElement<{ onPress?: (event?: unknown) => void }>
-}
+} & Pick<PressableProps, 'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction'>
 
 /**
  * What a test hands `jest.mock('expo-router', ...)`: a router and a `Link`.
@@ -38,6 +38,7 @@ type LinkMockProps = {
  * assert the same call it asserted when the card was a press handler. A link
  * with `dismissTo` calls `router.dismissTo` instead, as the real one does. An
  * href with a scheme goes to `Linking.openURL`, as the real `Link` sends it.
+ * The long press props go on to the child, as the real `Link` passes them.
  *
  * `router` is a function, because a mock factory runs when the module is
  * first required, which is before the `mockPush` at the top of a test file is
@@ -48,8 +49,15 @@ type LinkMockProps = {
 export function expoRouterMock<
   R extends { push: (href: string) => void; dismissTo?: (href: string) => void },
 >(router: () => R) {
-  function Link({ href, dismissTo, children }: LinkMockProps) {
+  function Link({
+    href,
+    dismissTo,
+    asChild: _asChild,
+    children,
+    ...rest
+  }: LinkMockProps) {
     return cloneElement(children, {
+      ...rest,
       onPress: (event?: unknown) => {
         children.props.onPress?.(event)
         if (/^[a-z][a-z\d+.-]*:/i.test(href)) void Linking.openURL(href)

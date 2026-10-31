@@ -1,15 +1,13 @@
 import { Button } from '@rootnative/components/button'
-import { useSnackbar } from '@rootnative/components/snackbar'
 import { Motion } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
 import { useServerPainted } from '../lib/useServerPainted'
+import { useToggleSaved } from '../lib/useToggleSaved'
 import { BookmarkIcon } from './BookmarkIcon'
 import { ShareButton } from './ShareButton'
-import { haptic } from '../lib/haptics'
-import { restoreSaved, toggleSaved, useWatchlist } from '../lib/watchlist'
 import { BUTTON_SIZE } from '../lib/buttonSize'
 
 /**
@@ -22,47 +20,13 @@ import { BUTTON_SIZE } from '../lib/buttonSize'
  */
 export function DetailActions({ movie }: { movie: MovieDetail }) {
   const router = useRouter()
-  const snackbar = useSnackbar()
-  const { movies } = useWatchlist()
-  const savedAt = movies.findIndex((m) => m.id === movie.id)
-  const saved = savedAt !== -1
-  // The undo puts back the stored copy, not `movie`: only the stored copy
-  // carries the watched mark.
-  const stored = saved ? movies[savedAt] : movie
+  const { saved, toggle: toggleSaved } = useToggleSaved(movie)
   const [pops, setPops] = useState(0)
   const painted = useServerPainted()
 
   const toggle = () => {
-    toggleSaved(movie)
-    haptic(saved ? 'unsave' : 'save')
     if (!saved) setPops((n) => n + 1)
-
-    // Both directions report, so a save and an unsave read the same. A save
-    // has nothing to undo, so its action opens the list it went into.
-    //
-    // `long`, because the library makes a snackbar with an action wait
-    // forever by default, and it would then stay on the screens the reader
-    // opens next. `replace`, so a fast save and unsave does not queue two.
-    snackbar.show(
-      saved
-        ? {
-            message: 'Removed from your watchlist',
-            actionLabel: 'Undo',
-            duration: 'long',
-            replace: true,
-            onAction: () => {
-              restoreSaved([stored], savedAt)
-              haptic('save')
-            },
-          }
-        : {
-            message: 'Saved to your watchlist',
-            actionLabel: 'View',
-            duration: 'long',
-            replace: true,
-            onAction: () => router.push('/watchlist'),
-          },
-    )
+    toggleSaved()
   }
 
   // Read into a const before the callback below reads it. `movie.trailer` is a

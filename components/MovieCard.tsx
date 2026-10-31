@@ -9,8 +9,11 @@ import {
   type SharedValue,
 } from '@rootnative/inertia'
 import { Link } from 'expo-router'
-import { StyleSheet, View } from 'react-native'
+import { useState } from 'react'
+import { Platform, StyleSheet, View, type AccessibilityActionEvent } from 'react-native'
 import { metaLine } from '../lib/format'
+import { haptic } from '../lib/haptics'
+import { FilmMenu } from './FilmMenu'
 import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
 import { POSTER_W342, posterUrl } from '../lib/images'
@@ -40,7 +43,7 @@ type Props = {
    * Closes the sheet the card is on before the film opens, for a card in the
    * search sheet. A plain link from a sheet in the root stack puts the film
    * above the sheet, in a second copy of the `(main)` group with a second
-   * navigation. See app/_layout.tsx.
+   * navigation. See app/_layout.tsx. The screens the menu opens obey it too.
    */
   dismissTo?: boolean
   /**
@@ -78,6 +81,32 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
         },
       }
     : {}
+
+  /*
+    The menu of a long press, on Android only. On the web, a held mouse button
+    would open it, and the click would then open the film too. On iOS the
+    search is a native modal, which draws over the portal the menu uses; iOS
+    is to get the native `Link.Preview` instead.
+
+    Null until the first long press, so a list of cards mounts no menus. The
+    menu then stays mounted, so its exit animation can run.
+  */
+  const [menu, setMenu] = useState<boolean | null>(null)
+  const openMenu = () => {
+    haptic('menu')
+    setMenu(true)
+  }
+  const longPressProps =
+    Platform.OS === 'android'
+      ? {
+          onLongPress: openMenu,
+          // TalkBack offers a long press only when the view declares it.
+          accessibilityActions: [{ name: 'longpress', label: 'Show film options' }],
+          onAccessibilityAction: (event: AccessibilityActionEvent) => {
+            if (event.nativeEvent.actionName === 'longpress') openMenu()
+          },
+        }
+      : {}
 
   // Runs on both paths because a hook cannot be conditional. A resting 1 sits
   // at the end of the card's window, so the style is inert without a row.
@@ -200,11 +229,25 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
         {selection ? (
           card
         ) : (
-          <Link href={`/movie/${movie.id}`} dismissTo={dismissTo} asChild>
+          <Link
+            href={`/movie/${movie.id}`}
+            dismissTo={dismissTo}
+            {...longPressProps}
+            asChild
+          >
             {card}
           </Link>
         )}
       </Motion.View>
+      {/* Beside the inner layer, so the press scale does not move the menu. */}
+      {menu === null ? null : (
+        <FilmMenu
+          movie={movie}
+          visible={menu}
+          onDismiss={() => setMenu(false)}
+          dismissTo={dismissTo}
+        />
+      )}
     </Motion.View>
   )
 }
