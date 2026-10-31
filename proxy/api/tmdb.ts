@@ -25,9 +25,10 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
  * TMDB relay: anyone who finds the URL gets unmetered use of the key, and the
  * abuse is billed to this project's rate limit rather than theirs.
  *
- * `/movie/{id}` and `/person/{id}` are matched by a pattern because the id is
- * unbounded. Each pattern requires digits and ends there, so neither
- * `/movie/../account` nor `/person/1/images` can pass through it.
+ * `/movie/{id}`, `/person/{id}`, and `/collection/{id}` are matched by a
+ * pattern because the id is unbounded. Each pattern requires digits and ends
+ * there, so neither `/movie/../account` nor `/person/1/images` can pass
+ * through it.
  *
  * `/discover/movie` takes the genre id as the `with_genres` parameter rather
  * than in the path, so it needs no pattern of its own. TMDB ignores a value it
@@ -45,7 +46,7 @@ const ALLOWED_EXACT = new Set([
   '/discover/movie',
 ])
 
-const ALLOWED_PATTERNS = [/^\/movie\/\d+$/, /^\/person\/\d+$/]
+const ALLOWED_PATTERNS = [/^\/movie\/\d+$/, /^\/person\/\d+$/, /^\/collection\/\d+$/]
 
 const isAllowed = (path: string): boolean =>
   ALLOWED_EXACT.has(path) || ALLOWED_PATTERNS.some((p) => p.test(path))
@@ -81,8 +82,8 @@ const ALLOWED_PARAMS = new Set([
  * enough for them.
  *
  * `append_to_response` names the sub-resources TMDB includes in a film detail
- * response, and TMDB accepts any of them there: `reviews`, `images`,
- * `keywords`, `watch/providers`. Forwarding the caller's value would undo the
+ * response, and TMDB accepts any of them there: `keywords`, `lists`,
+ * `images`, `watch/providers`. Forwarding the caller's value would undo the
  * path allowlist, because one allowed path would then reach every sub-resource
  * below it. So this parameter is checked by value.
  *
@@ -90,10 +91,15 @@ const ALLOWED_PARAMS = new Set([
  * the app reads that names a path of its own, and it is reached only inside the
  * detail response, never as a path.
  *
- * The two allowed values must stay identical to `APPEND` and `PERSON_APPEND` in
- * `lib/api.ts` — the film blocks and the person block. A mismatch is silent: the
- * parameter is dropped, TMDB answers with a plain detail response, and the
- * sections that needed it render empty with no error.
+ * The film value must stay identical to `APPEND` in `lib/api.ts`, and the
+ * person value to `PERSON_APPEND`. A mismatch is silent: the parameter is
+ * dropped, TMDB answers with a plain detail response, and the sections that
+ * needed it render empty with no error.
+ *
+ * The shorter film value is the one the app sent before the reviews and the
+ * similar films were added. An installed build keeps sending it until it takes
+ * the update, so it stays allowed. Remove it once every store build is on the
+ * longer value.
  *
  * `include_image_language` is checked the same way, against `IMAGE_LANGUAGES`
  * in `lib/api.ts`. It names languages rather than a path, so it cannot reach
@@ -108,7 +114,11 @@ const ALLOWED_PARAMS = new Set([
 const ALLOWED_PARAM_VALUES = new Map([
   [
     'append_to_response',
-    new Set(['credits,videos,recommendations,images,watch/providers', 'movie_credits']),
+    new Set([
+      'credits,videos,recommendations,images,watch/providers,reviews,similar',
+      'credits,videos,recommendations,images,watch/providers',
+      'movie_credits',
+    ]),
   ],
   ['include_image_language', new Set(['en,null'])],
 ])

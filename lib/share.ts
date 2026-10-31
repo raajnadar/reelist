@@ -9,6 +9,9 @@ export const movieUrl = (id: number) => `${SITE_URL}/movie/${id}`
 /** The canonical web page for one person. */
 export const personUrl = (id: number) => `${SITE_URL}/person/${id}`
 
+/** The canonical web page for one franchise. */
+export const collectionUrl = (id: number) => `${SITE_URL}/collection/${id}`
+
 /**
  * The canonical web page for one genre, with no query. The export writes the
  * name into each genre page. The genre chips still add `?name=`, so an in-app

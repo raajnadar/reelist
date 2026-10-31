@@ -56,6 +56,7 @@ describe('the allowlist', () => {
     '/search/movie',
     '/movie/550',
     '/person/1082047',
+    '/collection/10',
     '/genre/movie/list',
     '/discover/movie',
   ])('forwards %s', async (path) => {
@@ -76,6 +77,8 @@ describe('the allowlist', () => {
     ['/person/abc', 'a non-numeric person id'],
     ['/person/', 'an empty person id'],
     ['/person/1082047/images', 'a sub-resource under an allowed person'],
+    ['/collection/10/images', 'a sub-resource under an allowed collection'],
+    ['/collection/abc', 'a non-numeric collection id'],
     ['/discover/tv', 'a discover path the app does not use'],
     ['/genre/tv/list', 'a genre path the app does not use'],
   ])('rejects %s (%s)', async (path) => {
@@ -185,6 +188,18 @@ describe('the key', () => {
     )
   })
 
+  // The value the film screen sends now. It must stay identical to `APPEND` in
+  // lib/api.ts, or the reviews and the similar films arrive empty with no error.
+  it('forwards the append value with the reviews and the similar films', async () => {
+    await get(
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Cwatch%2Fproviders%2Creviews%2Csimilar',
+    )
+
+    expect(upstreamUrl().searchParams.get('append_to_response')).toBe(
+      'credits,videos,recommendations,images,watch/providers,reviews,similar',
+    )
+  })
+
   // The providers are reached only inside the film response. The path form is
   // still refused, so the allowlist stays one pattern per endpoint.
   it('refuses the watch providers path on its own', async () => {
@@ -217,7 +232,7 @@ describe('the key', () => {
    * path allowlist the file above it enforces.
    */
   it('drops an append value the app does not use', async () => {
-    await get('path=%2Fmovie%2F550&append_to_response=reviews')
+    await get('path=%2Fmovie%2F550&append_to_response=keywords')
 
     expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)
   })
@@ -236,7 +251,7 @@ describe('the key', () => {
   // through, which is the mistake this test exists to catch.
   it('drops an append value that only starts with the allowed one', async () => {
     await get(
-      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Cwatch%2Fproviders%2Creviews',
+      'path=%2Fmovie%2F550&append_to_response=credits%2Cvideos%2Crecommendations%2Cimages%2Cwatch%2Fproviders%2Creviews%2Csimilar%2Ckeywords',
     )
 
     expect(upstreamUrl().searchParams.has('append_to_response')).toBe(false)

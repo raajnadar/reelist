@@ -109,8 +109,14 @@ describe('useWatchlist', () => {
       trailer: null,
       videos: [],
       recommendations: mockMovies,
+      similar: mockMovies,
       images: [{ file_path: '/still.jpg', aspect_ratio: 1.778 }],
       providers: {},
+      crew: [],
+      reviews: [],
+      collection: null,
+      imdb_id: 'tt0000001',
+      homepage: '',
     }
 
     act(() => toggleSaved(detail))

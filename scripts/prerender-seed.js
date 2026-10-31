@@ -108,6 +108,16 @@ const toEntry = (raw, posterColor) => ({
   tagline: raw.tagline ?? '',
   vote_count: raw.vote_count ?? 0,
   poster_color: posterColor,
+  collection: raw.belongs_to_collection
+    ? {
+        id: raw.belongs_to_collection.id,
+        name: raw.belongs_to_collection.name ?? '',
+        poster_path: raw.belongs_to_collection.poster_path ?? null,
+        backdrop_path: raw.belongs_to_collection.backdrop_path ?? null,
+      }
+    : null,
+  imdb_id: raw.imdb_id ?? '',
+  homepage: raw.homepage ?? '',
 })
 
 async function main() {

@@ -4,15 +4,24 @@ import type { Genre, Movie, MovieDetail } from './types'
  * One film as the prerender seed stores it.
  *
  * The seed carries only what the static HTML needs: the head tags, the title
- * block, the genres, the overview, and the poster colour that themes the page. The lists a film owns — the cast, the
- * trailer, the videos, the gallery, the recommendations, and the providers — arrive from
- * the proxy after the page hydrates, the same as for a film with no seed. They
- * are left out to keep each page small, because the page carries its part of
- * the seed in its HTML.
+ * block, the genres, the overview, the links, the franchise, and the poster
+ * colour that themes the page. The lists a film owns — the cast, the crew, the
+ * trailer, the videos, the gallery, the reviews, the recommendations, the
+ * similar films, and the providers — arrive from the proxy after the page
+ * hydrates, the same as for a film with no seed. They are left out to keep
+ * each page small, because the page carries its part of the seed in its HTML.
  */
 export type PrerenderedMovie = Omit<
   MovieDetail,
-  'cast' | 'trailer' | 'videos' | 'recommendations' | 'images' | 'providers'
+  | 'cast'
+  | 'trailer'
+  | 'videos'
+  | 'recommendations'
+  | 'similar'
+  | 'images'
+  | 'providers'
+  | 'crew'
+  | 'reviews'
 >
 
 /**
@@ -120,12 +129,18 @@ export const genreEntry = (seed: PrerenderSeed, id: string): Genre | null =>
  */
 export const fromSeed = (entry: PrerenderedMovie): MovieDetail => ({
   ...entry,
-  // A seed written before the poster colour existed has no such field.
+  // A seed written before a field existed has no such field.
   poster_color: entry.poster_color ?? null,
+  collection: entry.collection ?? null,
+  imdb_id: entry.imdb_id ?? '',
+  homepage: entry.homepage ?? '',
   cast: [],
   trailer: null,
   videos: [],
   recommendations: [],
+  similar: [],
   images: [],
   providers: {},
+  crew: [],
+  reviews: [],
 })

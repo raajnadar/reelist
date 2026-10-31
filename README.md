@@ -44,7 +44,8 @@
 | **Film lists**          | Trending this week, Popular, Top rated, and Popular in the language of your device.                       |
 | **Film colours**        | Each film page takes its theme from the main colour of its poster, in light and in dark.                  |
 | **Trailers and stills** | The trailer plays inside the app. The gallery shows the stills of the film.                               |
-| **Cast and people**     | A cast card opens the person, with each film they appear in, newest first.                                |
+| **Cast and people**     | A cast card opens the person, with each film they appear in, newest first. The director and the writers are named too. |
+| **Film page extras**    | Where to watch, reviews, similar films, the franchise the film is part of, and links to IMDb and the official site. |
 | **Genres**              | An endless grid for each genre, with filters for the decade, the rating, the language, and the runtime. The filters stay in the link. |
 | **Search**              | The results change as you type. On the web, `/` opens the search from any page.                           |
 | **Watchlist**           | It stays on the device, so it opens offline. It has "To watch" and "Watched" tabs, select mode, and undo. |

@@ -22,6 +22,14 @@ const entry: PrerenderedMovie = {
   tagline: 'Beyond fear, destiny awaits.',
   vote_count: 11204,
   poster_color: '#c4823a',
+  collection: {
+    id: 726871,
+    name: 'Dune Collection',
+    poster_path: null,
+    backdrop_path: null,
+  },
+  imdb_id: 'tt1160419',
+  homepage: 'https://www.dunemovie.com',
 }
 
 const seed: PrerenderSeed = {
@@ -39,18 +47,30 @@ it('widens a seed entry to a detail with every list empty', () => {
     trailer: null,
     videos: [],
     recommendations: [],
+    similar: [],
     images: [],
     providers: {},
+    crew: [],
+    reviews: [],
   })
 })
 
 // The deploy writes a new seed each time, but a local build can hold one from
-// before the poster colour. That film keeps the app colours.
-it('gives a seed entry with no poster colour the null colour', () => {
+// before a field existed. That film keeps the app colours, and has no links
+// and no franchise.
+it('fills the fields a seed from an older build has not got', () => {
   const older: Partial<PrerenderedMovie> = { ...entry }
   delete older.poster_color
+  delete older.collection
+  delete older.imdb_id
+  delete older.homepage
 
-  expect(fromSeed(older as PrerenderedMovie).poster_color).toBeNull()
+  const widened = fromSeed(older as PrerenderedMovie)
+
+  expect(widened.poster_color).toBeNull()
+  expect(widened.collection).toBeNull()
+  expect(widened.imdb_id).toBe('')
+  expect(widened.homepage).toBe('')
 })
 
 it('reads the films, the rows, and the genres from a seed', () => {

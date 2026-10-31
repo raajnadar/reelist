@@ -6,19 +6,23 @@ import type { ReactNode } from 'react'
 import { StyleSheet, View, type DimensionValue } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CastRow } from '../../../components/CastRow'
+import { CollectionBanner } from '../../../components/CollectionBanner'
 import { DetailActions } from '../../../components/DetailActions'
+import { DetailCrew } from '../../../components/DetailCrew'
 import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
 import { DetailHero } from '../../../components/DetailHero'
 import {
   DetailIdentity,
   DetailIdentitySkeleton,
 } from '../../../components/DetailIdentity'
+import { DetailLinks } from '../../../components/DetailLinks'
 import { DetailOverview } from '../../../components/DetailOverview'
 import { FilmTheme } from '../../../components/FilmTheme'
 import { GalleryRow } from '../../../components/GalleryRow'
 import { GenreChips } from '../../../components/GenreChips'
 import { MovieRow } from '../../../components/MovieRow'
 import { PageHead } from '@rootnative/seo/expo-router'
+import { ReviewList } from '../../../components/ReviewList'
 import { SkeletonRow } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
 import { VideoRow } from '../../../components/VideoRow'
@@ -404,11 +408,24 @@ export default function MovieScreen() {
                   <DetailOverview movie={movie} />
 
                   {/*
+                  Who made the film, under the synopsis. Two lines of names
+                  that open the person screen. Absent for a film with no
+                  director or writer on TMDB.
+                */}
+                  <DetailCrew crew={movie.crew} />
+
+                  {/*
                   The services that carry the film, after the synopsis and
                   before the rows. It renders nothing for a film nobody
                   carries, so it leaves no gap.
                 */}
                   <WatchProviders providers={movie.providers} />
+
+                  {/* The franchise, for a film that is part of one. */}
+                  <CollectionBanner collection={movie.collection} />
+
+                  {/* IMDb and the official site, for a film that has them. */}
+                  <DetailLinks movie={movie} />
                 </Stagger>
               </View>
 
@@ -419,7 +436,11 @@ export default function MovieScreen() {
               start where the text above them does instead of at the window edge.
 
               Each returns nothing for an empty list, so a film with no cast, no
-              videos, no stills, and no recommendation ends at the overview.
+              videos, no stills, no review, and no recommendation ends at the
+              overview.
+
+              The reviews are text, not a row, so they take the body padding
+              the rows do not.
             */}
               <View style={[styles.bodyCap, styles.rows]}>
                 <CastRow title="Cast" cast={movie.cast} />
@@ -433,7 +454,13 @@ export default function MovieScreen() {
                   title={movie.title}
                   images={movie.images}
                 />
+                {movie.reviews.length ? (
+                  <View style={styles.reviews}>
+                    <ReviewList movieId={movie.id} reviews={movie.reviews} />
+                  </View>
+                ) : null}
                 <MovieRow title="More like this" movies={movie.recommendations} />
+                <MovieRow title="Similar films" movies={movie.similar} />
               </View>
             </Motion.ScrollView>
           ) : null}
@@ -454,5 +481,7 @@ const styles = StyleSheet.create({
   bodyCap: { width: '100%', maxWidth: MAX_BODY_WIDTH, alignSelf: 'center' },
   // The gap the body already has, carried over the seam into the rows below.
   rows: { marginTop: 28 },
+  // The body padding, and the 24 under it that each row keeps.
+  reviews: { paddingHorizontal: 16, marginBottom: 24 },
   skeletonChips: { flexDirection: 'row', gap: 8 },
 })

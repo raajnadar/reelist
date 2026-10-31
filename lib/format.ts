@@ -79,4 +79,20 @@ export const lifeSpan = (birthday: string, deathday: string) => {
 }
 
 /** A count of films with the right noun: `1 film`, `2 films`. */
+/**
+ * The month and the year of an ISO timestamp, as `Mar 2024`, for a review
+ * date. A review is read for when it was written, not for the day, and the
+ * short form fits beside a name on a phone. `''` for an empty or unreadable
+ * stamp, so the caller prints no line.
+ */
+export const monthYear = (iso: string) => {
+  const date = new Date(iso)
+  if (!iso || Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 export const filmCount = (count: number) => (count === 1 ? '1 film' : `${count} films`)

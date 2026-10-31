@@ -1,9 +1,12 @@
 import type {
   CastMember,
+  Collection,
+  CrewMember,
   GalleryImage,
   Movie,
   MovieDetail,
   PersonDetail,
+  Review,
   Video,
 } from './types'
 
@@ -190,6 +193,70 @@ export const mockVideos: Video[] = [
   },
 ]
 
+/**
+ * The crew the screen names, in the order `lib/api.ts` sorts them: the
+ * director, then the writers. The director also wrote the screenplay, so he
+ * is in both groups, as TMDB bills him.
+ */
+export const mockCrew: CrewMember[] = [
+  {
+    id: 137427,
+    name: 'Denis Villeneuve',
+    job: 'Director',
+    role: 'director',
+    profile_path: '/zdDx9Xs93UIrJFWYApYR28J8M6b.jpg',
+  },
+  {
+    id: 137427,
+    name: 'Denis Villeneuve',
+    job: 'Screenplay',
+    role: 'writer',
+    profile_path: '/zdDx9Xs93UIrJFWYApYR28J8M6b.jpg',
+  },
+  {
+    id: 17825,
+    name: 'Jon Spaihts',
+    job: 'Screenplay',
+    role: 'writer',
+    profile_path: null,
+  },
+]
+
+/**
+ * Two reviews, in the shape the `reviews` block sends them. The second one
+ * carries no score, which is the absent form `lib/api.ts` maps to `0`.
+ */
+export const mockReviews: Review[] = [
+  {
+    id: '65e0f1a2b3c4d5e6f7a8b9c0',
+    author: 'A Film Reader',
+    rating: 9,
+    content:
+      'A sequel that improves on the first part in every way. The sandworm ride alone is worth the ticket, and the sound design shakes the room.',
+    created_at: '2024-03-02T10:15:00.000Z',
+    url: 'https://www.themoviedb.org/review/65e0f1a2b3c4d5e6f7a8b9c0',
+  },
+  {
+    id: '65e2c3d4e5f6a7b8c9d0e1f2',
+    author: 'Another Reader',
+    rating: 0,
+    content: 'Long, loud, and beautiful. The ending sets up a third part.',
+    created_at: '2024-04-05T18:40:00.000Z',
+    url: 'https://www.themoviedb.org/review/65e2c3d4e5f6a7b8c9d0e1f2',
+  },
+]
+
+/** The franchise of the detail fixture, in the shape `/collection/{id}` returns it. */
+export const mockCollection: Collection = {
+  id: 726871,
+  name: 'Dune Collection',
+  overview:
+    'The adaptation of the Frank Herbert novel in two parts, which follows Paul Atreides on the desert planet Arrakis.',
+  poster_path: '/wcVafar6Efk3YgFvh8oZQ4yHL6H.jpg',
+  backdrop_path: '/ygsmWgmeDxcvTLuw7FVXMcnVPVo.jpg',
+  parts: [mockMovies[0]],
+}
+
 export const mockMovieDetail: MovieDetail = {
   ...mockMovies[0],
   genres: [
@@ -206,7 +273,18 @@ export const mockMovieDetail: MovieDetail = {
   // The recommendation row reads plain `Movie` entries, so it reuses the list
   // fixtures rather than repeating them.
   recommendations: mockMovies.slice(1, 4),
+  similar: mockMovies.slice(2, 5),
   images: mockImages,
+  crew: mockCrew,
+  reviews: mockReviews,
+  collection: {
+    id: mockCollection.id,
+    name: mockCollection.name,
+    poster_path: mockCollection.poster_path,
+    backdrop_path: mockCollection.backdrop_path,
+  },
+  imdb_id: 'tt15239678',
+  homepage: 'https://www.dunemovie.com',
   providers: {
     IN: {
       link: 'https://www.themoviedb.org/movie/693134/watch?locale=IN',

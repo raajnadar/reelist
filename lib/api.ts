@@ -2,12 +2,16 @@ import { EMPTY_FILTERS, toDiscoverParams, type DiscoverFilters } from './discove
 import { fetchPosterColor, tmdbFetch } from './tmdb'
 import type {
   CastMember,
+  Collection,
+  CollectionLink,
+  CrewMember,
   GalleryImage,
   Genre,
   Movie,
   MovieDetail,
   Paged,
   PersonDetail,
+  Review,
   Video,
   WatchProvider,
   WatchProviders,
@@ -47,16 +51,16 @@ const toMovie = (raw: Record<string, unknown>): Movie => ({
 /**
  * The sub-resources the detail request asks TMDB to include in its answer.
  *
- * This string must stay identical to the one allowed value in
+ * This string must stay identical to one allowed value in
  * `ALLOWED_PARAM_VALUES` in `proxy/api/tmdb.ts`. The proxy checks this
- * parameter by value, because TMDB would answer `reviews`, `images`, or
- * `watch/providers` here too and the path allowlist alone would not stop it.
+ * parameter by value, because TMDB would answer `keywords` or `lists` here too
+ * and the path allowlist alone would not stop it.
  *
  * A mismatch fails silently: the proxy drops the parameter, TMDB answers with a
- * plain detail response, and the cast row, the trailer button, and the
- * recommendation row all go absent with no error to report.
+ * plain detail response, and the cast row, the trailer button, and every other
+ * appended section go absent with no error to report.
  */
-const APPEND = 'credits,videos,recommendations,images,watch/providers'
+const APPEND = 'credits,videos,recommendations,images,watch/providers,reviews,similar'
 
 /**
  * Which languages the `images` block may carry.
@@ -96,6 +100,106 @@ const toCastMember = (raw: Record<string, unknown>): CastMember => ({
   character: (raw.character as string) ?? '',
   profile_path: (raw.profile_path as string | null) ?? null,
 })
+
+/**
+ * The crew the screen names: the directors and the writers.
+ *
+ * TMDB lists the whole crew, which runs to hundreds of people on a large film,
+ * and the screen names the two groups a reader looks for. The `Writing`
+ * department holds every writing credit: `Screenplay`, `Story`, `Novel`,
+ * `Characters`. One person often holds two of them on one film, and a reader
+ * expects one name with both credits, so the entries are merged by person and
+ * the jobs are joined.
+ *
+ * Directors first, then the writers, each group in the order TMDB bills them.
+ * The cap keeps a film with a writing room of ten to the first names.
+ */
+const MAX_CREW = 8
+
+const crewRole = (raw: Record<string, unknown>): CrewMember['role'] | null => {
+  if (raw.job === 'Director') return 'director'
+  if (raw.department === 'Writing') return 'writer'
+  return null
+}
+
+const pickCrew = (raws: Record<string, unknown>[]): CrewMember[] => {
+  const byPerson = new Map<string, CrewMember>()
+  for (const raw of raws) {
+    const role = crewRole(raw)
+    if (!role) continue
+    const key = `${role}:${raw.id as number}`
+    const job = (raw.job as string) ?? ''
+    const known = byPerson.get(key)
+    if (known) {
+      if (job && !known.job.split(', ').includes(job)) known.job = `${known.job}, ${job}`
+      continue
+    }
+    byPerson.set(key, {
+      id: raw.id as number,
+      name: (raw.name as string) ?? '',
+      job,
+      role,
+      profile_path: (raw.profile_path as string | null) ?? null,
+    })
+  }
+  const crew = [...byPerson.values()]
+  return [
+    ...crew.filter((m) => m.role === 'director'),
+    ...crew.filter((m) => m.role === 'writer'),
+  ].slice(0, MAX_CREW)
+}
+
+/**
+ * The most reviews the section shows. A review runs to several paragraphs,
+ * and three is as many as a reader scrolls through under a film.
+ */
+const MAX_REVIEWS = 3
+
+/**
+ * One review from the `reviews` block.
+ *
+ * The author's score is nested under `author_details`, and it is `null` for a
+ * review with no score, which maps to the `0` sentinel `ratingLabel` already
+ * reads as "do not print this".
+ */
+const toReview = (raw: Record<string, unknown>): Review => {
+  const details = (raw.author_details as { rating?: number | null } | undefined) ?? {}
+  return {
+    id: (raw.id as string) ?? '',
+    author: (raw.author as string) ?? '',
+    rating: details.rating ?? 0,
+    content: (raw.content as string) ?? '',
+    created_at: (raw.created_at as string) ?? '',
+    url: (raw.url as string) ?? '',
+  }
+}
+
+/**
+ * The reviews the section shows. A review with no text is dropped, because it
+ * would draw a name above nothing. TMDB sends the list oldest first, and that
+ * order is kept: the first reviews of a film are the ones its page is known by.
+ */
+const pickReviews = (raws: Record<string, unknown>[]): Review[] =>
+  raws
+    .map(toReview)
+    .filter((review) => review.content.trim() !== '')
+    .slice(0, MAX_REVIEWS)
+
+/**
+ * The franchise named in `belongs_to_collection`, or null. TMDB sends `null`
+ * for a film that stands alone, and the field is absent on the list endpoints.
+ */
+const toCollectionLink = (raw: unknown): CollectionLink | null => {
+  if (!raw || typeof raw !== 'object') return null
+  const link = raw as Record<string, unknown>
+  if (typeof link.id !== 'number') return null
+  return {
+    id: link.id,
+    name: (link.name as string) ?? '',
+    poster_path: (link.poster_path as string | null) ?? null,
+    backdrop_path: (link.backdrop_path as string | null) ?? null,
+  }
+}
 
 /**
  * One still from the `images` block.
@@ -277,15 +381,18 @@ const toWatchProviders = (
  * `""`. They map to an empty array and the `0` / `""` sentinels `lib/format.ts`
  * already reads as "do not print this".
  *
- * The last four arrive because the request carries `append_to_response`, which
- * nests each sub-resource under its own key. TMDB omits a block whose film has
+ * The appended blocks arrive because the request carries `append_to_response`,
+ * which nests each sub-resource under its own key. TMDB omits a block whose film has
  * nothing in it, so each read needs the `?? {}` guard before the field below it.
  * A film with no cast is common — an announced film has none — and reaching
  * into an absent block would throw where an empty row is the right answer.
  *
- * `recommendations` arrives as a full paged envelope. It goes through `toPaged`
- * and keeps only the results, because the screen shows one row rather than a
- * grid it can page through.
+ * `recommendations` and `similar` arrive as full paged envelopes. Each goes
+ * through `toPaged` and keeps only the results, because the screen shows one
+ * row rather than a grid it can page through.
+ *
+ * `imdb_id`, `homepage`, and `belongs_to_collection` are plain detail fields,
+ * and TMDB sends `null` for each one it does not hold.
  *
  * `posterColor` does not come from TMDB. The proxy calculates it from the
  * poster, and `getMovie` passes it in.
@@ -294,9 +401,15 @@ const toMovieDetail = (
   raw: Record<string, unknown>,
   posterColor: string | null,
 ): MovieDetail => {
-  const credits = (raw.credits as { cast?: Record<string, unknown>[] }) ?? {}
+  const credits =
+    (raw.credits as {
+      cast?: Record<string, unknown>[]
+      crew?: Record<string, unknown>[]
+    }) ?? {}
   const videos = (raw.videos as { results?: Record<string, unknown>[] }) ?? {}
   const recommendations = (raw.recommendations as RawPaged) ?? {}
+  const similar = (raw.similar as RawPaged) ?? {}
+  const reviews = (raw.reviews as { results?: Record<string, unknown>[] }) ?? {}
   const images = (raw.images as { backdrops?: Record<string, unknown>[] }) ?? {}
   const providers = (raw['watch/providers'] as Record<string, unknown>) ?? {}
   // Before the cap, so a long list of clips cannot push the trailer out.
@@ -318,8 +431,14 @@ const toMovieDetail = (
     trailer: pickTrailer(playable),
     videos: pickVideos(playable),
     recommendations: toPaged(recommendations).results,
+    similar: toPaged(similar).results,
     images: pickImages(images.backdrops ?? []),
     providers: toWatchProviders(providers),
+    crew: pickCrew(credits.crew ?? []),
+    reviews: pickReviews(reviews.results ?? []),
+    collection: toCollectionLink(raw.belongs_to_collection),
+    imdb_id: (raw.imdb_id as string | null) ?? '',
+    homepage: (raw.homepage as string | null) ?? '',
   }
 }
 
@@ -553,6 +672,40 @@ export const getPopularByLanguage = async (language: string): Promise<Paged> =>
  * person screen separates "no such person" from "the request failed", and only
  * one of the two is worth offering a retry for.
  */
+/**
+ * Oldest first, with the undated films last.
+ *
+ * A franchise reads in release order: the first film, then its sequels. An
+ * announced part carries the empty date sentinel and goes to the end, where a
+ * film that does not exist yet belongs.
+ */
+const byOldest = (a: Movie, b: Movie): number => {
+  if (!a.release_date) return b.release_date ? 1 : 0
+  if (!b.release_date) return -1
+  return a.release_date.localeCompare(b.release_date)
+}
+
+const toCollection = (raw: Record<string, unknown>): Collection => ({
+  id: raw.id as number,
+  name: (raw.name as string) ?? '',
+  overview: (raw.overview as string) ?? '',
+  poster_path: (raw.poster_path as string | null) ?? null,
+  backdrop_path: (raw.backdrop_path as string | null) ?? null,
+  parts: ((raw.parts as Record<string, unknown>[] | undefined) ?? [])
+    .map(toMovie)
+    .sort(byOldest),
+})
+
+/** One franchise and its films. Null for an id TMDB has no collection for. */
+export const getCollection = async (id: number): Promise<Collection | null> => {
+  try {
+    return toCollection(await tmdbFetch<Record<string, unknown>>(`/collection/${id}`))
+  } catch (e) {
+    if (e instanceof Error && 'status' in e && e.status === 404) return null
+    throw e
+  }
+}
+
 export const getPerson = async (id: number): Promise<PersonDetail | null> => {
   try {
     return toPersonDetail(

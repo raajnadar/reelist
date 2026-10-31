@@ -13,9 +13,9 @@ import {
   posterUrl,
   profileUrl,
 } from './images'
-import { genreUrl, movieUrl, personUrl, shareTitle } from './share'
+import { collectionUrl, genreUrl, movieUrl, personUrl, shareTitle } from './share'
 import { SITE_URL, site } from './site'
-import type { MovieDetail, PersonDetail } from './types'
+import type { Collection, MovieDetail, PersonDetail } from './types'
 
 /** The most performers the film's structured data names. */
 const ACTOR_LIMIT = 10
@@ -80,6 +80,7 @@ export const movieMeta = (movie: MovieDetail): PageMeta => {
   const backdrop = backdropUrl(movie.backdrop_path)
   const poster = posterUrl(movie.poster_path, 'w500')
   const genre = movie.genres[0]
+  const director = movie.crew.find((member) => member.role === 'director')
   return {
     title: shareTitle(movie),
     description: movie.overview || movie.tagline || `${movie.title} on Reelist.`,
@@ -99,6 +100,9 @@ export const movieMeta = (movie: MovieDetail): PageMeta => {
         actors: movie.cast
           .slice(0, ACTOR_LIMIT)
           .map((member) => ({ name: member.name, url: personUrl(member.id) })),
+        director: director
+          ? { name: director.name, url: personUrl(director.id) }
+          : undefined,
         // TMDB rates from 0 to 10, not on the schema.org default of 1 to 5.
         rating: {
           ratingValue: movie.vote_average,
@@ -138,6 +142,22 @@ export const personMeta = (person: PersonDetail): PageMeta => {
       }),
       trail({ name: person.name, url: personUrl(person.id) }),
     ],
+  }
+}
+
+export const collectionMeta = (collection: Collection): PageMeta => {
+  const backdrop = backdropUrl(collection.backdrop_path)
+  const poster = posterUrl(collection.poster_path, 'w500')
+  return {
+    title: collection.name,
+    description:
+      collection.overview ||
+      `Every film in the ${collection.name}, in release order, on Reelist.`,
+    url: collectionUrl(collection.id),
+    image: backdrop ?? poster,
+    imageSize: backdrop ? BACKDROP_W780 : POSTER_W500,
+    type: 'website',
+    jsonLd: [trail({ name: collection.name, url: collectionUrl(collection.id) })],
   }
 }
 

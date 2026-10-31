@@ -67,8 +67,73 @@ export type MovieDetail = Movie & {
   /** Every video the player can open, in the order the row draws them. */
   videos: Video[]
   recommendations: Movie[]
+  /** The films TMDB lists as similar by keyword and genre, which is a different list from `recommendations`. */
+  similar: Movie[]
   images: GalleryImage[]
   providers: Record<string, WatchProviders>
+  /** The directors and the writers, out of the whole crew. See `pickCrew` in lib/api.ts. */
+  crew: CrewMember[]
+  reviews: Review[]
+  /** The franchise the film is part of, or null for a film that stands alone. */
+  collection: CollectionLink | null
+  /** The IMDb title id, as `tt0137523`. `''` when TMDB holds none. */
+  imdb_id: string
+  /** The official site. `''` when TMDB holds none. */
+  homepage: string
+}
+
+/**
+ * One director or writer, from the `crew` list of the `credits` block.
+ *
+ * `job` is the credit as TMDB names it: `Director`, `Screenplay`, `Story`,
+ * `Novel`. One person with two credits on the same film is one entry, and the
+ * jobs are joined with a comma. `role` is the group the screen prints the
+ * person under.
+ */
+export type CrewMember = {
+  id: number
+  name: string
+  job: string
+  role: 'director' | 'writer'
+  profile_path: string | null
+}
+
+/**
+ * One review, from the `reviews` block.
+ *
+ * `id` is a string, like a video id. `rating` is the author's own score from 0
+ * to 10, and `0` when the author gave none, which follows the `vote_average`
+ * convention. `created_at` is an ISO timestamp. `url` is the review on TMDB.
+ */
+export type Review = {
+  id: string
+  author: string
+  rating: number
+  content: string
+  created_at: string
+  url: string
+}
+
+/**
+ * The franchise a film belongs to, as the detail response names it in
+ * `belongs_to_collection`. The parts are not in it; the collection screen asks
+ * for them.
+ */
+export type CollectionLink = {
+  id: number
+  name: string
+  poster_path: string | null
+  backdrop_path: string | null
+}
+
+/**
+ * One franchise, as `/collection/{id}` returns it. `parts` are plain `Movie`
+ * values in release order, oldest first, so the grid draws them with the card
+ * every other list uses.
+ */
+export type Collection = CollectionLink & {
+  overview: string
+  parts: Movie[]
 }
 
 /**

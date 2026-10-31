@@ -1,4 +1,5 @@
 import {
+  getCollection,
   getGenres,
   getMovie,
   getMoviesByGenre,
@@ -206,13 +207,14 @@ describe('the appended blocks', () => {
     known_for_department: 'Acting',
   }
 
-  it('asks TMDB for all five blocks in one request', async () => {
+  it('asks TMDB for all seven blocks in one request', async () => {
     tmdbFetch.mockResolvedValue(rawMovie)
 
     await getMovie(550)
 
     expect(tmdbFetch).toHaveBeenCalledWith('/movie/550', {
-      append_to_response: 'credits,videos,recommendations,images,watch/providers',
+      append_to_response:
+        'credits,videos,recommendations,images,watch/providers,reviews,similar',
       include_image_language: 'en,null',
     })
   })
@@ -229,7 +231,7 @@ describe('the appended blocks', () => {
     await getMovie(550)
 
     expect(tmdbFetch.mock.calls[0][1].append_to_response).toBe(
-      'credits,videos,recommendations,images,watch/providers',
+      'credits,videos,recommendations,images,watch/providers,reviews,similar',
     )
   })
 
@@ -263,17 +265,22 @@ describe('the appended blocks', () => {
     })
 
     // The crew is in the same block and is far longer than the cast. None of it
-    // may reach the row.
-    it('drops the crew', async () => {
+    // may reach the cast row; the directors and the writers go to `crew`.
+    it('keeps the crew out of the cast', async () => {
       tmdbFetch.mockResolvedValue({
         ...rawMovie,
-        credits: { cast: [rawCast], crew: [{ id: 7467, name: 'David Fincher' }] },
+        credits: {
+          cast: [rawCast],
+          crew: [
+            { id: 7467, name: 'David Fincher', job: 'Director', department: 'Directing' },
+          ],
+        },
       })
 
       const movie = await getMovie(550)
 
       expect(movie?.cast).toHaveLength(1)
-      expect(movie).not.toHaveProperty('crew')
+      expect(movie?.crew).toHaveLength(1)
     })
 
     // An announced film has no cast yet, and TMDB omits the whole block. Reading
@@ -702,6 +709,234 @@ describe('the appended blocks', () => {
     })
   })
 
+  describe('the crew', () => {
+    const rawCrew = (id: number, name: string, department: string, job: string) => ({
+      id,
+      name,
+      department,
+      job,
+      profile_path: null,
+      credit_id: `credit-${id}-${job}`,
+    })
+
+    it('keeps the directors and the writers, directors first', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        credits: {
+          crew: [
+            rawCrew(2, 'Jim Uhls', 'Writing', 'Screenplay'),
+            rawCrew(3, 'Chuck Palahniuk', 'Writing', 'Novel'),
+            rawCrew(7467, 'David Fincher', 'Directing', 'Director'),
+            rawCrew(9, 'A Grip', 'Camera', 'Key Grip'),
+          ],
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.crew).toEqual([
+        {
+          id: 7467,
+          name: 'David Fincher',
+          job: 'Director',
+          role: 'director',
+          profile_path: null,
+        },
+        {
+          id: 2,
+          name: 'Jim Uhls',
+          job: 'Screenplay',
+          role: 'writer',
+          profile_path: null,
+        },
+        {
+          id: 3,
+          name: 'Chuck Palahniuk',
+          job: 'Novel',
+          role: 'writer',
+          profile_path: null,
+        },
+      ])
+    })
+
+    // One writer with two credits is one name with both, as a reader expects.
+    // The same person as a director is a separate entry in the other group.
+    it('merges the writing credits of one person', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        credits: {
+          crew: [
+            rawCrew(1, 'Denis Villeneuve', 'Directing', 'Director'),
+            rawCrew(1, 'Denis Villeneuve', 'Writing', 'Screenplay'),
+            rawCrew(1, 'Denis Villeneuve', 'Writing', 'Story'),
+          ],
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.crew.map((m) => [m.role, m.job])).toEqual([
+        ['director', 'Director'],
+        ['writer', 'Screenplay, Story'],
+      ])
+    })
+
+    it('shows at most eight', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        credits: {
+          crew: Array.from({ length: 12 }, (_, i) =>
+            rawCrew(100 + i, `Writer ${i}`, 'Writing', 'Screenplay'),
+          ),
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.crew).toHaveLength(8)
+    })
+
+    it('maps an absent crew list to an empty list', async () => {
+      tmdbFetch.mockResolvedValue({ ...rawMovie, credits: { cast: [] } })
+
+      await expect(getMovie(550)).resolves.toMatchObject({ crew: [] })
+    })
+  })
+
+  describe('the reviews', () => {
+    const rawReview = (id: string, content: string, rating: number | null = 8) => ({
+      id,
+      author: 'A Reader',
+      author_details: { name: 'A Reader', username: 'reader', avatar_path: null, rating },
+      content,
+      created_at: '2024-03-02T10:15:00.000Z',
+      updated_at: '2024-03-02T10:15:00.000Z',
+      url: `https://www.themoviedb.org/review/${id}`,
+    })
+
+    it('maps each review to the fields the card reads', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        reviews: { page: 1, results: [rawReview('r1', 'Good.')], total_pages: 1 },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.reviews).toEqual([
+        {
+          id: 'r1',
+          author: 'A Reader',
+          rating: 8,
+          content: 'Good.',
+          created_at: '2024-03-02T10:15:00.000Z',
+          url: 'https://www.themoviedb.org/review/r1',
+        },
+      ])
+    })
+
+    // TMDB sends `rating: null` for a review with no score. The card reads `0`
+    // as "no score", the same as `vote_average`.
+    it('maps a null score to 0', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        reviews: { results: [rawReview('r1', 'Good.', null)] },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.reviews[0].rating).toBe(0)
+    })
+
+    it('drops a review with no text, and shows at most three', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        reviews: {
+          results: [
+            rawReview('r1', 'One.'),
+            rawReview('r2', '   '),
+            rawReview('r3', 'Three.'),
+            rawReview('r4', 'Four.'),
+            rawReview('r5', 'Five.'),
+          ],
+        },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.reviews.map((r) => r.id)).toEqual(['r1', 'r3', 'r4'])
+    })
+
+    it('maps an absent reviews block to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ reviews: [] })
+    })
+  })
+
+  describe('the similar films', () => {
+    it('maps the results to Movie and drops the paging', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        similar: { results: [rawMovie], page: 1, total_pages: 3 },
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.similar).toHaveLength(1)
+      expect(movie?.similar[0]).not.toHaveProperty('belongs_to_collection')
+    })
+
+    it('maps an absent similar block to an empty list', async () => {
+      tmdbFetch.mockResolvedValue(rawMovie)
+
+      await expect(getMovie(550)).resolves.toMatchObject({ similar: [] })
+    })
+  })
+
+  describe('the franchise and the links', () => {
+    it('maps the collection the film belongs to', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        belongs_to_collection: {
+          id: 10,
+          name: 'Star Wars Collection',
+          poster_path: '/c.jpg',
+          backdrop_path: null,
+        },
+        imdb_id: 'tt0137523',
+        homepage: 'https://www.foxmovies.com/movies/fight-club',
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.collection).toEqual({
+        id: 10,
+        name: 'Star Wars Collection',
+        poster_path: '/c.jpg',
+        backdrop_path: null,
+      })
+      expect(movie?.imdb_id).toBe('tt0137523')
+      expect(movie?.homepage).toBe('https://www.foxmovies.com/movies/fight-club')
+    })
+
+    // TMDB sends `null` for all three on a film that stands alone with no
+    // pages elsewhere.
+    it('maps the null forms to no collection and empty links', async () => {
+      tmdbFetch.mockResolvedValue({
+        ...rawMovie,
+        belongs_to_collection: null,
+        imdb_id: null,
+        homepage: null,
+      })
+
+      const movie = await getMovie(550)
+
+      expect(movie?.collection).toBeNull()
+      expect(movie?.imdb_id).toBe('')
+      expect(movie?.homepage).toBe('')
+    })
+  })
+
   describe('the recommendations', () => {
     // The block is a full paged envelope. The row shows one page and cannot
     // page, so only the results survive.
@@ -740,6 +975,70 @@ describe('getMovie', () => {
     tmdbFetch.mockRejectedValue(new TmdbError('Invalid API key', 401))
 
     await expect(getMovie(550)).rejects.toThrow('Invalid API key')
+  })
+})
+
+describe('getCollection', () => {
+  const rawCollection = {
+    id: 10,
+    name: 'Star Wars Collection',
+    overview: 'A galaxy far, far away.',
+    poster_path: '/c.jpg',
+    backdrop_path: '/b.jpg',
+    parts: [
+      { ...rawMovie, id: 3, title: 'Third', release_date: '2005-05-19' },
+      { ...rawMovie, id: 4, title: 'Announced', release_date: '' },
+      { ...rawMovie, id: 1, title: 'First', release_date: '1977-05-25' },
+      { ...rawMovie, id: 2, title: 'Second', release_date: '1980-05-20' },
+    ],
+  }
+
+  it('asks for the collection by its id', async () => {
+    tmdbFetch.mockResolvedValue(rawCollection)
+
+    await getCollection(10)
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/collection/10')
+  })
+
+  // A franchise reads in release order, and a part with no date yet goes last.
+  it('maps the fields and sorts the parts oldest first, undated last', async () => {
+    tmdbFetch.mockResolvedValue(rawCollection)
+
+    const collection = await getCollection(10)
+
+    expect(collection).toMatchObject({
+      id: 10,
+      name: 'Star Wars Collection',
+      overview: 'A galaxy far, far away.',
+      poster_path: '/c.jpg',
+      backdrop_path: '/b.jpg',
+    })
+    expect(collection?.parts.map((m) => m.title)).toEqual([
+      'First',
+      'Second',
+      'Third',
+      'Announced',
+    ])
+    expect(collection?.parts[0]).not.toHaveProperty('belongs_to_collection')
+  })
+
+  it('maps an absent parts list to an empty list', async () => {
+    tmdbFetch.mockResolvedValue({ ...rawCollection, parts: undefined })
+
+    await expect(getCollection(10)).resolves.toMatchObject({ parts: [] })
+  })
+
+  it('returns null for a collection that does not exist', async () => {
+    tmdbFetch.mockRejectedValue(new TmdbError('Not found', 404))
+
+    await expect(getCollection(999999)).resolves.toBeNull()
+  })
+
+  it('rethrows a failure that is not a 404', async () => {
+    tmdbFetch.mockRejectedValue(new TmdbError('Server error', 500))
+
+    await expect(getCollection(10)).rejects.toThrow('Server error')
   })
 })
 

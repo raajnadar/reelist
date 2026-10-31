@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createMaterialTheme } from '@rootnative/core/create-theme'
-import { fireEvent, waitFor } from '@testing-library/react-native'
-import { Dimensions, Share, StyleSheet } from 'react-native'
+import { fireEvent, waitFor, within } from '@testing-library/react-native'
+import { Dimensions, Linking, Share, StyleSheet } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import MovieScreen from '../../../app/(main)/movie/[id]'
@@ -611,6 +611,166 @@ describe('the recommendation row', () => {
 
     expect(await screen.findByText(noRecs.overview)).toBeTruthy()
     expect(screen.queryByText('More like this')).toBeNull()
+  })
+})
+
+describe('the crew', () => {
+  it('names the director and the writers, and opens the person on a press', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('Director')).toBeTruthy()
+    expect(screen.getByText('Writers')).toBeTruthy()
+    // The director also wrote the screenplay, so his name is on both lines.
+    expect(screen.getAllByText('Denis Villeneuve')).toHaveLength(2)
+
+    fireEvent.press(screen.getByText('Jon Spaihts'))
+
+    expect(mockPush).toHaveBeenCalledWith('/person/17825')
+  })
+
+  it('is absent for a film with no director or writer', async () => {
+    const noCrew = { ...movie, crew: [] }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noCrew.id) })
+    getMovie.mockResolvedValue(noCrew)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(noCrew.overview)).toBeTruthy()
+    expect(screen.queryByTestId('detail-crew')).toBeNull()
+  })
+})
+
+describe('the collection banner', () => {
+  it('names the franchise and opens the collection screen', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByTestId('collection-banner'))
+
+    expect(screen.getByText('Dune Collection')).toBeTruthy()
+    expect(mockPush).toHaveBeenCalledWith('/collection/726871')
+  })
+
+  it('is absent for a film that stands alone', async () => {
+    const alone = { ...movie, collection: null }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(alone.id) })
+    getMovie.mockResolvedValue(alone)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(alone.overview)).toBeTruthy()
+    expect(screen.queryByTestId('collection-banner')).toBeNull()
+  })
+})
+
+describe('the external links', () => {
+  const openSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined)
+
+  afterEach(() => {
+    openSpy.mockClear()
+  })
+
+  // The Link mock sends an href with a scheme to `Linking.openURL`, as the
+  // real `Link` does on native.
+  it('opens IMDb and the official site in the browser', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    fireEvent.press(await screen.findByText('IMDb'))
+    expect(openSpy).toHaveBeenCalledWith('https://www.imdb.com/title/tt15239678/')
+
+    fireEvent.press(screen.getByText('Official site'))
+    expect(openSpy).toHaveBeenCalledWith('https://www.dunemovie.com')
+  })
+
+  it('is absent for a film with neither', async () => {
+    const noLinks = { ...movie, imdb_id: '', homepage: '' }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noLinks.id) })
+    getMovie.mockResolvedValue(noLinks)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(noLinks.overview)).toBeTruthy()
+    expect(screen.queryByTestId('detail-links')).toBeNull()
+  })
+})
+
+describe('the reviews', () => {
+  it('shows each reviewer, the score, and the text', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('Reviews')).toBeTruthy()
+    expect(screen.getByText('A Film Reader')).toBeTruthy()
+    expect(screen.getByText('★ 9.0')).toBeTruthy()
+    expect(screen.getByText('Mar 2024')).toBeTruthy()
+    expect(screen.getByText('Apr 2024')).toBeTruthy()
+    expect(screen.getByText(movie.reviews[0].content)).toBeTruthy()
+    // The second reviewer gave no score, so that card draws no badge.
+    const cards = screen.getAllByTestId('review-card')
+    expect(cards).toHaveLength(2)
+    expect(within(cards[1]).queryByText(/^★ /)).toBeNull()
+  })
+
+  // The text is clipped until the reader opens it. The press is the whole
+  // card, and the line under the text says what the press does.
+  it('opens a review in place', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    const [card] = await screen.findAllByTestId('review-card')
+    expect(screen.getByText(movie.reviews[0].content).props.numberOfLines).toBe(5)
+
+    fireEvent.press(card)
+
+    expect(screen.getByText(movie.reviews[0].content).props.numberOfLines).toBeUndefined()
+    expect(screen.getByText('Show less')).toBeTruthy()
+  })
+
+  it('is absent for a film with no review', async () => {
+    const noReviews = { ...movie, reviews: [] }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(noReviews.id) })
+    getMovie.mockResolvedValue(noReviews)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(noReviews.overview)).toBeTruthy()
+    expect(screen.queryByText('Reviews')).toBeNull()
+  })
+})
+
+describe('the similar films row', () => {
+  it('shows the films TMDB lists as similar', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText('Similar films')).toBeTruthy()
+    // The Dark Knight is in the similar list only, not in the recommendations.
+    expect(screen.getByText('The Dark Knight')).toBeTruthy()
+  })
+
+  it('is absent for a film with no similar films', async () => {
+    const none = { ...movie, similar: [] }
+    mockUseLocalSearchParams.mockReturnValue({ id: String(none.id) })
+    getMovie.mockResolvedValue(none)
+
+    const screen = renderWithProviders(<MovieScreen />)
+
+    expect(await screen.findByText(none.overview)).toBeTruthy()
+    expect(screen.queryByText('Similar films')).toBeNull()
   })
 })
 
