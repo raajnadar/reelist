@@ -11,7 +11,6 @@ import { DiscoverFilterRow } from '../../../components/DiscoverFilterRow'
 import { MovieCard } from '../../../components/MovieCard'
 import { PullToRefresh } from '../../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { NoindexHead } from '../../../components/NoindexHead'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
 import { getGenres, getMoviesByGenre } from '../../../lib/api'
@@ -300,7 +299,7 @@ export default function GenreScreen() {
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {/* A missing genre gets `noindex`, for the reason the film screen gives. */}
       {failure?.kind === 'missing' ? (
-        <NoindexHead title={REPORTS.missing.title} />
+        <PageHead title={REPORTS.missing.title} noindex />
       ) : validId && name ? (
         <PageHead {...genreMeta(genreId, name)} />
       ) : null}

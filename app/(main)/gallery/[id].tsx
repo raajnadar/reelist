@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, View } from 'react-native'
 import { GalleryViewer } from '../../../components/GalleryViewer'
 import { StateMessage } from '../../../components/StateMessage'
-import { NoindexHead } from '../../../components/NoindexHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../../../lib/head'
 import { getMovie } from '../../../lib/api'
 import { missingFailure, type Failure } from '../../../lib/errors'
@@ -66,7 +66,7 @@ export default function GalleryScreen() {
 
   return (
     <View style={styles.screen}>
-      <NoindexHead title={movie ? `${movie.title} gallery` : 'Gallery'} />
+      <PageHead title={movie ? `${movie.title} gallery` : 'Gallery'} noindex />
       {/*
         `fullScreenModal` and a fade, the same as the trailer: a sheet would
         round the corners over the picture and show the film behind its top
@@ -136,8 +136,6 @@ export default function GalleryScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Clipped, for the reason the trailer screen gives: the focus ring of the
-  // close button draws past the bar.
-  screen: { flex: 1, backgroundColor: STAGE, overflow: 'hidden' },
+  screen: { flex: 1, backgroundColor: STAGE },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 })

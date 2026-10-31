@@ -11,7 +11,7 @@ import { GlassLayer } from '../components/GlassLayer'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
-import { NoindexHead } from '../components/NoindexHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../lib/head'
 import { haptic } from '../lib/haptics'
 import { searchMovies } from '../lib/api'
@@ -198,7 +198,7 @@ export default function SearchScreen() {
       ]}
       role={landmark}
     >
-      <NoindexHead title="Search" />
+      <PageHead title="Search" noindex />
       {/*
         The field is the sheet's title, and a field is not a heading. A screen
         reader still needs one to name the sheet, so it gets one that only a

@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
 import { MovieCard } from '../../../components/MovieCard'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { NoindexHead } from '../../../components/NoindexHead'
 import { PersonProfile, PersonProfileSkeleton } from '../../../components/PersonProfile'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
@@ -139,7 +138,7 @@ export default function PersonScreen() {
         A missing person gets `noindex`, for the reason the film screen gives.
       */}
       {failure?.kind === 'missing' ? (
-        <NoindexHead title={REPORTS.missing.title} />
+        <PageHead title={REPORTS.missing.title} noindex />
       ) : person ? (
         <PageHead {...personMeta(person)} />
       ) : null}

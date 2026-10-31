@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
-import { NoindexHead } from '../../components/NoindexHead'
+import { PageHead } from '@rootnative/seo/expo-router'
 import { filmCount } from '../../lib/format'
 import { metadataFor, noindexMeta } from '../../lib/head'
 import { haptic } from '../../lib/haptics'
@@ -291,7 +291,7 @@ export default function WatchlistScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <NoindexHead title="Watchlist" />
+      <PageHead title="Watchlist" noindex />
       <AppBar
         title={
           selecting
@@ -446,11 +446,7 @@ export default function WatchlistScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Clipped: the focus ring of an icon button draws 5 past its box, and the
-  // bar pads it by 4. In select mode the last action sits in that gutter, so
-  // on the web the ring widened the page by a pixel and the browser answered
-  // with a sideways scroll.
-  screen: { flex: 1, overflow: 'hidden' },
+  screen: { flex: 1 },
   fill: { flex: 1 },
   actions: { flexDirection: 'row' },
   progress: { gap: 8, paddingTop: 16 },
