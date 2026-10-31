@@ -5,8 +5,10 @@ import { Dimensions, Share, StyleSheet } from 'react-native'
 import { renderWithProviders } from '../../../lib/test-utils'
 import { mockMovieDetail } from '../../../lib/mock'
 import MovieScreen from '../../../app/(main)/movie/[id]'
+import { DetailHero } from '../../../components/DetailHero'
 import { MissingProxyUrlError } from '../../../lib/config'
 import { movieUrl } from '../../../lib/share'
+import { ContentWidthContext } from '../../../lib/useContentWidth'
 import { parseStored, STORAGE_KEY } from '../../../lib/watchlist'
 import { lightTheme } from '../../../theme'
 import { haptic } from '../../../lib/haptics'
@@ -653,5 +655,37 @@ describe('on a wide window', () => {
 
     expect(await screen.findByText(noPoster.overview)).toBeTruthy()
     expect(screen.queryByTestId('detail-poster')).toBeNull()
+  })
+})
+
+describe('beside a rail', () => {
+  beforeEach(() => {
+    jest.spyOn(Dimensions, 'get').mockReturnValue({
+      width: 700,
+      height: 1000,
+      scale: 2,
+      fontScale: 1,
+    } as never)
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  // The backdrop spans the 620 the rail leaves, not the 700 window. A height
+  // from the window drew the hero 48 taller than its own width asks for.
+  it('sizes the hero from the content width', async () => {
+    mockUseLocalSearchParams.mockReturnValue({ id: String(movie.id) })
+    getMovie.mockResolvedValue(movie)
+
+    const screen = renderWithProviders(
+      <ContentWidthContext.Provider value={620}>
+        <MovieScreen />
+      </ContentWidthContext.Provider>,
+    )
+
+    expect(await screen.findByText(movie.overview)).toBeTruthy()
+    // The medium aspect of 0.6, under the cap of 0.55 of the window height.
+    expect(screen.UNSAFE_getByType(DetailHero).props.height).toBeCloseTo(620 * 0.6)
   })
 })

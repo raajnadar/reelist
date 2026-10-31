@@ -36,6 +36,7 @@ import {
   type PrerenderedMovie,
 } from '../../../lib/prerender'
 import type { MovieDetail } from '../../../lib/types'
+import { useContentWidth } from '../../../lib/useContentWidth'
 import { usePrerendered } from '../../../lib/usePrerendered'
 import { useResource } from '../../../lib/useResource'
 
@@ -76,7 +77,7 @@ export async function generateMetadata(_request: unknown, params: { id: string }
 const MAX_BODY_WIDTH = 1100
 
 /**
- * The backdrop height, as a fraction of the window width.
+ * The backdrop height, as a fraction of the content width.
  *
  * A phone gets a frame taller than the 16:9 source, cropped at the sides,
  * because a 16:9 strip on a 390pt window is 219pt — a band rather than a
@@ -212,7 +213,9 @@ export default function MovieScreen() {
       : (detail.failure ??
         (!loading ? missingFailure('TMDB has no movie with that id.') : null))
 
-  const { width, height } = useWindowDimensions()
+  const { width: windowWidth, height } = useWindowDimensions()
+  // The backdrop spans the content beside a rail or a drawer, not the window.
+  const width = useContentWidth()
 
   /**
    * The wide arrangement, from `expanded` up.
@@ -224,7 +227,7 @@ export default function MovieScreen() {
 
   const heroAspect = useBreakpointValue(HERO_ASPECT)
   const heroHeight = Math.min(width * heroAspect, height * HERO_HEIGHT_SHARE)
-  const heroFrame = width > 0 ? heroHeight : SERVER_HERO_HEIGHT
+  const heroFrame = windowWidth > 0 ? heroHeight : SERVER_HERO_HEIGHT
 
   const posterWidth = wide ? 200 : 112
 
