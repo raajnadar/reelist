@@ -1,13 +1,7 @@
 import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
-// The bar drives its own interpolated styles rather than an `animate` prop, so
-// it needs Reanimated's animated primitives. A `Motion.View` carrying only
-// `style` has no motion prop, takes the library's zero-cost plain path, and
-// renders a host that cannot read an animated style — the fade would silently
-// do nothing. This subpath is the documented interop for exactly that case.
-import { Animated } from '@rootnative/inertia/reanimated'
+import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -75,7 +69,7 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
     // transparent part of the bar. A plain View would swallow every touch
     // across the top of the screen.
     <View style={[styles.header, { paddingTop: insets.top }]}>
-      <Animated.View
+      <Motion.View
         style={[
           styles.barBackground,
           { backgroundColor: theme.colors.surface },
@@ -85,7 +79,7 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
 
       <View style={styles.bar}>
         <View style={styles.backSlot}>
-          <Animated.View
+          <Motion.View
             style={[
               styles.disc,
               { backgroundColor: theme.colors.surfaceContainerHighest },
@@ -111,7 +105,7 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
           and a plain Text drops an animated style without reporting it.
         */}
         <Typography
-          as={Animated.Text}
+          as={Motion.Text}
           variant="titleMedium"
           numberOfLines={1}
           style={[styles.title, titleStyle]}

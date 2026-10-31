@@ -83,12 +83,6 @@ export const transitions = {
   reveal: { type: 'timing', duration: 200, delay: 260 },
 
   /**
-   * The skeleton shimmer. One sweep of the placeholder highlight; the caller
-   * adds `repeat: 'infinite'`.
-   */
-  shimmer: { type: 'timing', duration: 1100 },
-
-  /**
    * A dragged surface let go short of the point that would dismiss it, on its
    * way back to rest. Stiff and well damped: the surface should arrive where
    * the finger left it without a bounce, or the drag reads as loose.

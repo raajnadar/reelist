@@ -2,7 +2,6 @@ import { Chip } from '@rootnative/components/chip'
 import { Icon } from '@rootnative/components/icon'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, useScroll } from '@rootnative/inertia'
-import { Animated } from '@rootnative/inertia/reanimated'
 import { Link } from 'expo-router'
 import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -136,12 +135,12 @@ export function GenreChips({
           </Motion.View>
         )}
       />
-      <Animated.View style={[styles.fade, styles.start, startFade]}>
+      <Motion.View style={[styles.fade, styles.start, startFade]}>
         <Scrim color={theme.colors.background} stops={FADE_OUT} axis="horizontal" />
-      </Animated.View>
-      <Animated.View style={[styles.fade, styles.end, endFade]}>
+      </Motion.View>
+      <Motion.View style={[styles.fade, styles.end, endFade]}>
         <Scrim color={theme.colors.background} stops={FADE_IN} axis="horizontal" />
-      </Animated.View>
+      </Motion.View>
     </View>
   )
 }

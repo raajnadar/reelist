@@ -8,10 +8,10 @@ import {
   useInterpolatedStyle,
   useMotionValue,
   useScroll,
+  useTranslateStyle,
   type SharedValue,
   type TransitionConfig,
 } from '@rootnative/inertia'
-import { useAnimatedStyle } from '@rootnative/inertia/reanimated'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
@@ -602,9 +602,7 @@ function Page({
     { inputRange: [(index - 1) * width, index * width, (index + 1) * width] },
   )
 
-  const pan = useAnimatedStyle(() => ({
-    transform: [{ translateX: panX.value }, { translateY: panY.value }],
-  }))
+  const pan = useTranslateStyle(panX, panY)
 
   /**
    * One tap or two. A second tap inside the window cancels the first, so a

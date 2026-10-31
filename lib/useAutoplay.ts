@@ -1,8 +1,7 @@
-import { resolveTransition, useMotionValue } from '@rootnative/inertia'
+import { useAnimator, useMotionValue, useShouldReduceMotion } from '@rootnative/inertia'
 import { cancelAnimation } from '@rootnative/inertia/reanimated'
 import { useIsFocused } from 'expo-router'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
-import { useReducedMotion } from 'react-native-reanimated'
 import { AUTOPLAY_MS, transitions } from './motion'
 
 /**
@@ -24,7 +23,7 @@ import { AUTOPLAY_MS, transitions } from './motion'
  * fill of the active dot. It stops when the wait stops.
  */
 export function useAutoplay(available: boolean, active: number, advance: () => void) {
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = useShouldReduceMotion()
   const onTop = useIsFocused()
   const [paused, setPaused] = useState(false)
   const [pointer, setPointer] = useState(false)
@@ -37,6 +36,7 @@ export function useAutoplay(available: boolean, active: number, advance: () => v
   const tick = useEffectEvent(advance)
 
   const progress = useMotionValue(0)
+  const animate = useAnimator()
   // The milliseconds of the current wait that ran before the last hold.
   const elapsed = useRef(0)
 
@@ -53,17 +53,14 @@ export function useAutoplay(available: boolean, active: number, advance: () => v
     const startedAt = Date.now()
     // The timer moves the carousel, and the fill only shows it. Both start
     // here with the same time left, so the fill is full when the timer fires.
-    // The cast: the result is an animation, which a shared value takes in
-    // place of a number, the same as the value `withTiming` returns.
-    const fill = resolveTransition({ ...transitions.autoplay, duration: remaining }, 1)
-    progress.set(fill as number)
+    animate(progress, 1, { ...transitions.autoplay, duration: remaining })
     const timer = setTimeout(() => tick(), remaining)
     return () => {
       clearTimeout(timer)
       cancelAnimation(progress)
       elapsed.current = Math.min(elapsed.current + Date.now() - startedAt, AUTOPLAY_MS)
     }
-  }, [running, active, progress])
+  }, [running, active, progress, animate])
 
   return {
     enabled,

@@ -1,7 +1,6 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
-import { Animated } from '@rootnative/inertia/reanimated'
+import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { StyleSheet, View } from 'react-native'
 import { centredLines } from '../lib/centredLines'
 import { metaLine } from '../lib/format'
@@ -87,7 +86,7 @@ function CaptionLayer({
   )
 
   return (
-    <Animated.View
+    <Motion.View
       aria-hidden={hidden}
       style={[styles.lines, styles.layer, snap > 0 ? style : null]}
     >
@@ -109,7 +108,7 @@ function CaptionLayer({
       >
         {movie.overview}
       </Typography>
-    </Animated.View>
+    </Motion.View>
   )
 }
 

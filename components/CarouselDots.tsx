@@ -1,6 +1,10 @@
 import { useTheme } from '@rootnative/core'
-import { useInterpolatedStyle, useTransform, type SharedValue } from '@rootnative/inertia'
-import { Animated } from '@rootnative/inertia/reanimated'
+import {
+  Motion,
+  useInterpolatedStyle,
+  useTransform,
+  type SharedValue,
+} from '@rootnative/inertia'
 import { StyleSheet, View } from 'react-native'
 
 const DOT = 6
@@ -86,15 +90,15 @@ function Dot({
   const fill = { backgroundColor: theme.colors.primary }
 
   return (
-    <Animated.View style={[styles.dot, dotStyle]}>
-      <Animated.View style={[styles.layer, fadeStyle]}>
+    <Motion.View style={[styles.dot, dotStyle]}>
+      <Motion.View style={[styles.layer, fadeStyle]}>
         {wait ? (
           <WaitFill wait={wait} color={fill} />
         ) : (
           <View style={[styles.layer, fill]} />
         )}
-      </Animated.View>
-    </Animated.View>
+      </Motion.View>
+    </Motion.View>
   )
 }
 
@@ -108,7 +112,7 @@ function WaitFill({
 }) {
   const style = useInterpolatedStyle(wait, { scaleX: [0, 1] })
 
-  return <Animated.View style={[styles.layer, styles.fromLeft, color, style]} />
+  return <Motion.View style={[styles.layer, styles.fromLeft, color, style]} />
 }
 
 const styles = StyleSheet.create({

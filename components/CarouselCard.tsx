@@ -8,7 +8,6 @@ import {
   useTransform,
   type SharedValue,
 } from '@rootnative/inertia'
-import { Animated } from '@rootnative/inertia/reanimated'
 import { Link } from 'expo-router'
 import { memo } from 'react'
 import { Platform, Pressable, StyleSheet, View, type DimensionValue } from 'react-native'
@@ -240,7 +239,7 @@ export const CarouselCard = memo(function CarouselCard({
               is not on the card itself: the card clips its corners with
               `overflow: hidden`, and on iOS that clips the shadow with them.
             */}
-            <Animated.View style={[styles.lift, liftStyle]} />
+            <Motion.View style={[styles.lift, liftStyle]} />
             <View
               style={[
                 styles.card,
@@ -248,7 +247,7 @@ export const CarouselCard = memo(function CarouselCard({
               ]}
             >
               {uri ? (
-                <Animated.View style={[StyleSheet.absoluteFill, parallaxStyle]}>
+                <Motion.View style={[StyleSheet.absoluteFill, parallaxStyle]}>
                   <RemoteImage
                     testID="carousel-poster"
                     uri={uri}
@@ -262,13 +261,13 @@ export const CarouselCard = memo(function CarouselCard({
                     size={POSTER_W500}
                     style={styles.picture}
                   />
-                </Animated.View>
+                </Motion.View>
               ) : (
                 <NoPoster />
               )}
-              <Animated.View style={[styles.shade, shadeStyle]} />
+              <Motion.View style={[styles.shade, shadeStyle]} />
             </View>
-            <Animated.View
+            <Motion.View
               style={[styles.ring, { borderColor: theme.colors.secondary }, ringStyle]}
             />
           </Motion.Pressable>

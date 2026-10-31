@@ -12,9 +12,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { BUTTON_SIZE } from '../lib/buttonSize'
-
-/** Milliseconds between the badge, the text, and the action. */
-const STAGGER_INTERVAL = 60
+import { STAGGER_INTERVAL } from '../lib/motion'
 
 const BADGE_SIZE = 72
 const ICON_SIZE = 32

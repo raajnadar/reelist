@@ -1,6 +1,5 @@
 import { useTheme } from '@rootnative/core'
-import { useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
-import { Animated } from '@rootnative/inertia/reanimated'
+import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { Image } from 'expo-image'
 import { StyleSheet, View } from 'react-native'
 import { posterUrl } from '../lib/images'
@@ -113,7 +112,7 @@ function BackdropLayer({
   if (!uri) return null
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, style]}>
+    <Motion.View style={[StyleSheet.absoluteFill, style]}>
       <Image
         source={{ uri }}
         style={styles.picture}
@@ -122,7 +121,7 @@ function BackdropLayer({
         transition={FADE_MS}
         cachePolicy="memory-disk"
       />
-    </Animated.View>
+    </Motion.View>
   )
 }
 
