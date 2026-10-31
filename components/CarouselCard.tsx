@@ -2,6 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import {
   Motion,
+  useGesture,
   useInterpolatedStyle,
   useShadow,
   useTransform,
@@ -9,11 +10,13 @@ import {
 } from '@rootnative/inertia'
 import { Animated } from '@rootnative/inertia/reanimated'
 import { Link } from 'expo-router'
-import { Pressable, StyleSheet, View, type DimensionValue } from 'react-native'
+import { memo } from 'react'
+import { Platform, Pressable, StyleSheet, View, type DimensionValue } from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
 import { POSTER_W500, posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
+import type { KeyDownEvent } from '../lib/useWebKey'
 
 /**
  * Ceiling on the centered card's width. The carousel sizes the card from the
@@ -93,6 +96,16 @@ export const CAROUSEL_SHADOW_ROOM = 40
  */
 const keepOpen = () => {}
 
+/** The focus ring of the library's `Card`: its width, and its gap to the edge. */
+const RING_WIDTH = 3
+const RING_OFFSET = 2
+const RING_OUTSET = RING_OFFSET + RING_WIDTH
+
+const ARROW_STEPS: Record<string, -1 | 1> = { ArrowLeft: -1, ArrowRight: 1 }
+
+/** The element of a card. On the web it is the anchor. */
+export type CardElement = { focus: (options?: FocusOptions) => void }
+
 type Props = {
   movie: Movie
   /** The slot in the loop, not the film: each film has a slot in every copy. */
@@ -104,9 +117,29 @@ type Props = {
   snap: number
   /** Told true while a finger or a pointer is down on the card, then false. */
   onHold?: (holding: boolean) => void
+  /** True for the centred card. On the web it is the only card in the tab order. */
+  current?: boolean
+  /** Told -1 or 1 when the reader presses the left or right arrow key on the card. */
+  onArrowKey?: (direction: -1 | 1) => void
+  /** Told the element of the card when it mounts, and null when it unmounts. */
+  onElement?: (index: number, element: CardElement | null) => void
 }
 
-export function CarouselCard({ movie, index, scrollX, width, snap, onHold }: Props) {
+/*
+  Memo, because the list renders each card again when the centred card
+  changes. Only the two cards whose `current` changed then do the work.
+*/
+export const CarouselCard = memo(function CarouselCard({
+  movie,
+  index,
+  scrollX,
+  width,
+  snap,
+  onHold,
+  current = false,
+  onArrowKey,
+  onElement,
+}: Props) {
   const theme = useTheme()
   const uri = posterUrl(movie.poster_path, 'w500')
 
@@ -150,6 +183,24 @@ export function CarouselCard({ movie, index, scrollX, width, snap, onHold }: Pro
     { inputRange: transformRange },
   )
 
+  // The card is not a library `Card`, so it draws the ring of one itself.
+  const { focusVisible, handlers: focusHandlers } = useGesture({ focusVisible: 'hover' })
+  const ringStyle = useInterpolatedStyle(focusVisible, { opacity: [0, 1] })
+
+  const onKeyDown = (event: KeyDownEvent) => {
+    const { key = '', repeat, altKey, ctrlKey, metaKey } = event.nativeEvent
+    const direction = ARROW_STEPS[key]
+    // A held key counts once. With a modifier the key is a browser shortcut,
+    // such as Alt and the left arrow for back.
+    if (!direction || repeat || altKey || ctrlKey || metaKey) return
+    // Without this the browser scrolls the list as well.
+    event.preventDefault?.()
+    onArrowKey?.(direction)
+  }
+  // Native has no key events, and its keyboard focus is left as it was.
+  const keyProps =
+    Platform.OS === 'web' ? ({ tabIndex: current ? 0 : -1, onKeyDown } as const) : {}
+
   return (
     <View style={[styles.slot, { width }]}>
       <Motion.View style={scaleStyle}>
@@ -167,6 +218,7 @@ export function CarouselCard({ movie, index, scrollX, width, snap, onHold }: Pro
         */}
         <Link href={`/movie/${movie.id}`} asChild>
           <Motion.Pressable
+            ref={(element: CardElement | null) => onElement?.(index, element)}
             accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
             gesture={{
               hovered: { scale: 1.03 },
@@ -176,6 +228,9 @@ export function CarouselCard({ movie, index, scrollX, width, snap, onHold }: Pro
             onPressIn={() => onHold?.(true)}
             onPressOut={() => onHold?.(false)}
             onLongPress={keepOpen}
+            onFocus={focusHandlers.onFocus}
+            onBlur={focusHandlers.onBlur}
+            {...keyProps}
             style={styles.press}
           >
             {/*
@@ -213,12 +268,15 @@ export function CarouselCard({ movie, index, scrollX, width, snap, onHold }: Pro
               )}
               <Animated.View style={[styles.shade, shadeStyle]} />
             </View>
+            <Animated.View
+              style={[styles.ring, { borderColor: theme.colors.secondary }, ringStyle]}
+            />
           </Motion.Pressable>
         </Link>
       </Motion.View>
     </View>
   )
-}
+})
 
 /**
  * The centred card as the static web page draws it, until hydration ends.
@@ -280,7 +338,10 @@ const fill = { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 } as c
 
 const styles = StyleSheet.create({
   slot: { marginRight: CAROUSEL_SPACING },
-  press: { borderRadius: 20 },
+  // On the web the browser draws a ring of its own as an outline, beside the
+  // drawn ring. The width alone does not remove it: Chrome draws it with
+  // `outline-style: auto`, which ignores the width.
+  press: { borderRadius: 20, outlineStyle: 'solid', outlineWidth: 0 },
   // The radius matches the card's, so the shadow follows the rounded corners.
   lift: { ...fill, borderRadius: 20, pointerEvents: 'none' },
   card: { width: '100%', aspectRatio: 2 / 3, borderRadius: 20, overflow: 'hidden' },
@@ -289,4 +350,16 @@ const styles = StyleSheet.create({
   picture: { width: '100%', height: '100%' },
   fallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   shade: { ...fill, backgroundColor: '#000', pointerEvents: 'none' },
+  // Outside the card, so the card's clip does not cut it. The corner grows by
+  // the same distance as the edge, so the ring stays even all the way round.
+  ring: {
+    position: 'absolute',
+    top: -RING_OUTSET,
+    bottom: -RING_OUTSET,
+    left: -RING_OUTSET,
+    right: -RING_OUTSET,
+    borderWidth: RING_WIDTH,
+    borderRadius: 20 + RING_OUTSET,
+    pointerEvents: 'none',
+  },
 })

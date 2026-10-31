@@ -18,14 +18,9 @@ import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
 import { POSTER_W342, posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
+import type { KeyDownEvent } from '../lib/useWebKey'
 
 export const CARD_WIDTH = 160
-
-/** What react-native-web hands `onKeyDown`. Native never calls it. */
-type KeyDownEvent = {
-  nativeEvent: { key?: string; repeat?: boolean }
-  preventDefault?: () => void
-}
 
 type Props = {
   movie: Movie

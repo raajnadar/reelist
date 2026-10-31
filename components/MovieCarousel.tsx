@@ -19,6 +19,7 @@ import { CarouselBackdrop } from './CarouselBackdrop'
 import { CarouselCaption } from './CarouselCaption'
 import {
   CarouselCard,
+  type CardElement,
   CAROUSEL_MAX_CARD_WIDTH,
   CAROUSEL_MIN_CARD_WIDTH,
   CAROUSEL_PEEK,
@@ -142,6 +143,30 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   const autoplay = useAutoplay(count > 1, active, () => step(1))
 
   /*
+    On the web only the centred card is a tab stop. Each card is a link, and
+    the list mounts the next cards as the focus moves along, so a Tab walk
+    passed thousands of links and never reached the controls or the rows
+    below. The arrow keys on the card move the list instead, and the focus
+    goes to the film they choose at once, so Enter opens that film.
+  */
+  const cards = useRef(new Map<number, CardElement>())
+  const onCardElement = useCallback((index: number, element: CardElement | null) => {
+    if (element) cards.current.set(index, element)
+    else cards.current.delete(index)
+  }, [])
+  const stepRef = useRef(step)
+  useEffect(() => {
+    stepRef.current = step
+  })
+  const onArrowKey = useCallback((direction: -1 | 1) => {
+    stepRef.current(direction)
+    const slot = target.current
+    // The step scrolls the card to the center. Without `preventScroll` the
+    // browser scrolls it into view as well, at once.
+    if (slot !== null) cards.current.get(slot)?.focus({ preventScroll: true })
+  }, [])
+
+  /*
     A swipe that lands on another film ticks once, when `active` crosses
     over. The arrows and the autoplay move the list too, so the tick waits
     for a drag, and a drag that settles back on the same film clears the
@@ -203,9 +228,12 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         width={cardWidth}
         snap={snap}
         onHold={onCardHold}
+        current={index === active}
+        onArrowKey={onArrowKey}
+        onElement={onCardElement}
       />
     ),
-    [scrollX, cardWidth, snap, onCardHold],
+    [scrollX, cardWidth, snap, onCardHold, active, onArrowKey, onCardElement],
   )
 
   // The offset leaves out the list's padding on purpose. The list's own

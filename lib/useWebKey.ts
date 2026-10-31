@@ -2,6 +2,18 @@ import { useIsFocused } from 'expo-router'
 import { useEffect, useEffectEvent } from 'react'
 import { Platform } from 'react-native'
 
+/** What react-native-web hands `onKeyDown`. Native never calls it. */
+export type KeyDownEvent = {
+  nativeEvent: {
+    key?: string
+    repeat?: boolean
+    altKey?: boolean
+    ctrlKey?: boolean
+    metaKey?: boolean
+  }
+  preventDefault?: () => void
+}
+
 type Options = {
   /** False turns the key off, for example outside the mode the key ends. */
   active?: boolean
