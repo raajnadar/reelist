@@ -1,3 +1,4 @@
+import { Card } from '@rootnative/components/card'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import {
@@ -9,7 +10,7 @@ import {
 } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useRef } from 'react'
-import { FlatList, Pressable, StyleSheet, View, type ViewInstance } from 'react-native'
+import { FlatList, StyleSheet, View, type ViewInstance } from 'react-native'
 import { backdropUrl } from '../lib/images'
 import { cascadeWindow, LIFT_SPACE } from '../lib/motion'
 import type { GalleryImage } from '../lib/types'
@@ -109,7 +110,6 @@ function Still({
   title: string
   progress: SharedValue<number>
 }) {
-  const theme = useTheme()
   const router = useRouter()
 
   const entrance = useInterpolatedStyle(
@@ -138,31 +138,27 @@ function Still({
           underneath with its scroll position intact — the same reason the
           trailer is a route.
         */}
-        <Pressable
+        <Card
           testID="gallery-still"
-          accessibilityRole="imagebutton"
+          variant="filled"
+          style={styles.card}
           accessibilityLabel={`Still ${index + 1} of ${count}`}
           onPress={() => router.push(`/gallery/${movieId}?at=${index}`)}
-          style={[
-            styles.frame,
-            {
-              borderRadius: theme.shape.cornerMedium,
-              backgroundColor: theme.colors.surfaceVariant,
-            },
-          ]}
         >
-          {/*
-            `w780`, the size the masthead uses, so a still that is also the
-            film's backdrop is decoded once. The viewer's filmstrip reuses the
-            same URL for the same reason.
-          */}
-          <RemoteImage
-            uri={backdropUrl(image.file_path) ?? ''}
-            alt={`${title} still ${index + 1} of ${count}`}
-            recyclingKey={image.file_path}
-            style={styles.picture}
-          />
-        </Pressable>
+          <Card.Media aspectRatio={STILL_ASPECT}>
+            {/*
+              `w780`, the size the masthead uses, so a still that is also the
+              film's backdrop is decoded once. The viewer's filmstrip reuses the
+              same URL for the same reason.
+            */}
+            <RemoteImage
+              uri={backdropUrl(image.file_path) ?? ''}
+              alt={`${title} still ${index + 1} of ${count}`}
+              recyclingKey={image.file_path}
+              style={styles.picture}
+            />
+          </Card.Media>
+        </Card>
       </Motion.View>
     </Motion.View>
   )
@@ -181,8 +177,6 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingVertical: LIFT_SPACE },
   separator: { width: 12 },
   slot: { width: STILL_WIDTH },
-  // Clips the picture to the corner. The image itself carries no radius so
-  // the corner and the press state stay on one element.
-  frame: { width: STILL_WIDTH, aspectRatio: STILL_ASPECT, overflow: 'hidden' },
+  card: { width: STILL_WIDTH },
   picture: { width: '100%', height: '100%' },
 })

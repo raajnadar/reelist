@@ -1,6 +1,11 @@
+import { AppBar } from '@rootnative/components/appbar'
 import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
-import { useBreakpoint, useWindowDimensions } from '@rootnative/core'
+import {
+  defaultTopAppBarTokens,
+  useBreakpoint,
+  useWindowDimensions,
+} from '@rootnative/core'
 import {
   Motion,
   Presence,
@@ -31,8 +36,11 @@ import { ON_STAGE, STAGE } from '../lib/stage'
 import type { GalleryImage } from '../lib/types'
 import { RemoteImage } from './RemoteImage'
 
-/** The height of the control row over the pictures. */
-const BAR_HEIGHT = 56
+/** The height of the app bar over the pictures. */
+const BAR_HEIGHT = defaultTopAppBarTokens.smallContainerHeight
+
+/** The height of the filmstrip row under the pictures. */
+const STRIP_HEIGHT = 56
 
 /**
  * How far a still has to be dragged down, or up, before letting go closes the
@@ -148,7 +156,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
 
   // The room the pictures have between the two chrome rows. A still is sized
   // to fit it, so the zoom bounds below are measured against it as well.
-  const stageHeight = height - insets.top - insets.bottom - 2 * BAR_HEIGHT
+  const stageHeight = height - insets.top - insets.bottom - BAR_HEIGHT - STRIP_HEIGHT
 
   /**
    * How far the zoomed still may pan before its edge would leave the page.
@@ -457,7 +465,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
             // so a still fitted to the stage is never covered by the bar.
             style={{
               marginTop: insets.top + BAR_HEIGHT,
-              marginBottom: insets.bottom + BAR_HEIGHT,
+              marginBottom: insets.bottom + STRIP_HEIGHT,
             }}
           />
         </Motion.View>
@@ -477,24 +485,22 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
           transition="hover"
           pointerEvents={chrome ? 'box-none' : 'none'}
         >
-          <View style={styles.bar}>
-            <IconButton
-              icon="close"
-              variant="standard"
-              iconColor={ON_STAGE}
-              accessibilityLabel="Close the gallery"
-              onPress={close}
-            />
-            <Typography
-              variant="titleMedium"
-              level={1}
-              numberOfLines={1}
-              style={styles.title}
-            >
-              {title}
-            </Typography>
-            <Counter index={index} count={count} />
-          </View>
+          <AppBar
+            title={title}
+            // No fill: the backdrop behind the bar clears while the still is
+            // pulled, and a black bar would stay behind as a band.
+            containerColor="transparent"
+            contentColor={ON_STAGE}
+            leading={
+              <IconButton
+                icon="close"
+                variant="standard"
+                accessibilityLabel="Close the gallery"
+                onPress={close}
+              />
+            }
+            trailing={<Counter index={index} count={count} />}
+          />
 
           <View style={styles.middle} pointerEvents="box-none">
             {roomy ? (
@@ -559,11 +565,15 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
 /**
  * One page of the pager.
  *
- * Three nested motion layers, each for a transform the others cannot share:
- * the page itself scales, fades, and lags with the scroll; the pan layer moves
- * the zoomed still; the zoom layer grows it. Reanimated composes one
- * `transform` array per element, so a layer per transform is the only way to
- * drive the three from three sources.
+ * Four nested motion layers, each for a transform the others cannot share:
+ * the page itself scales and fades with the scroll; the lag layer slides the
+ * still inside it; the pan layer moves the zoomed still; the zoom layer grows
+ * it. Reanimated composes one `transform` array per element, so a layer per
+ * transform is the only way to drive the four from four sources.
+ *
+ * The lag is not on the page, because the page is the clip. A page that moves
+ * takes its clip with it, and the next page then showed over the edge of the
+ * one in front while the pager was at rest.
  */
 function Page({
   image,
@@ -592,14 +602,19 @@ function Page({
   onTap: () => void
   onDoubleTap: (x: number, y: number) => void
 }) {
+  const inputRange = [(index - 1) * width, index * width, (index + 1) * width]
   const depth = useInterpolatedStyle(
     scrollX,
     {
       scale: [NEIGHBOUR_SCALE, 1, NEIGHBOUR_SCALE],
       opacity: [NEIGHBOUR_OPACITY, 1, NEIGHBOUR_OPACITY],
-      translateX: [-width * PARALLAX, 0, width * PARALLAX],
     },
-    { inputRange: [(index - 1) * width, index * width, (index + 1) * width] },
+    { inputRange },
+  )
+  const lag = useInterpolatedStyle(
+    scrollX,
+    { translateX: [-width * PARALLAX, 0, width * PARALLAX] },
+    { inputRange },
   )
 
   const pan = useTranslateStyle(panX, panY)
@@ -631,35 +646,37 @@ function Page({
 
   return (
     <Motion.View style={[styles.page, { width, height: stageHeight }, depth]}>
-      <Pressable
-        testID="gallery-page"
-        accessibilityRole="image"
-        accessibilityLabel={`Still ${index + 1} of ${count}`}
-        accessibilityHint="Double tap to zoom"
-        onPress={press}
-        style={styles.fill}
-      >
-        <Motion.View style={[styles.centre, pan]}>
-          <Motion.View
-            animate={{ scale: zoomed ? ZOOM : 1 }}
-            transition="zoom"
-            style={{ width: fitted, aspectRatio: image.aspect_ratio }}
-          >
-            {/*
+      <Motion.View style={[styles.fill, lag]}>
+        <Pressable
+          testID="gallery-page"
+          accessibilityRole="image"
+          accessibilityLabel={`Still ${index + 1} of ${count}`}
+          accessibilityHint="Double tap to zoom"
+          onPress={press}
+          style={styles.fill}
+        >
+          <Motion.View style={[styles.centre, pan]}>
+            <Motion.View
+              animate={{ scale: zoomed ? ZOOM : 1 }}
+              transition="zoom"
+              style={{ width: fitted, aspectRatio: image.aspect_ratio }}
+            >
+              {/*
               `contain` is the default fit here through the frame's own shape:
               the box already has the still's ratio, so `cover` in RemoteImage
               crops nothing.
             */}
-            <RemoteImage
-              uri={backdropUrl(image.file_path, 'w1280') ?? ''}
-              alt={`${title} still ${index + 1} of ${count}`}
-              recyclingKey={image.file_path}
-              priority="high"
-              style={styles.fill}
-            />
+              <RemoteImage
+                uri={backdropUrl(image.file_path, 'w1280') ?? ''}
+                alt={`${title} still ${index + 1} of ${count}`}
+                recyclingKey={image.file_path}
+                priority="high"
+                style={styles.fill}
+              />
+            </Motion.View>
           </Motion.View>
-        </Motion.View>
-      </Pressable>
+        </Pressable>
+      </Motion.View>
     </Motion.View>
   )
 }
@@ -767,17 +784,7 @@ const styles = StyleSheet.create({
   page: { overflow: 'hidden' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   chrome: { ...StyleSheet.absoluteFill },
-  bar: {
-    height: BAR_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    gap: 4,
-  },
-  // See the trailer screen for why the line height is dropped: it puts the
-  // title on the same centreline as the close button.
-  title: { flex: 1, flexBasis: 0, color: ON_STAGE, lineHeight: undefined },
-  stripBar: { height: BAR_HEIGHT, justifyContent: 'center' },
+  stripBar: { height: STRIP_HEIGHT, justifyContent: 'center' },
   middle: {
     flex: 1,
     flexDirection: 'row',
@@ -791,6 +798,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
+  // No line height. iOS puts the leading of `labelLarge` above the glyphs, so
+  // the number draws low in its box. Without it the box hugs the text, and the
+  // slot centres what the reader sees.
   counterText: { lineHeight: undefined },
   stripContent: { alignItems: 'center' },
   thumbSlot: { width: THUMB_WIDTH + THUMB_GAP, alignItems: 'center' },

@@ -1,8 +1,10 @@
+import { Button } from '@rootnative/components/button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { Linking, Pressable, StyleSheet, View } from 'react-native'
+import { BUTTON_SIZE } from '../lib/buttonSize'
 import { centredLines } from '../lib/centredLines'
 import { logoUrl } from '../lib/images'
 import { regionName, useRegion } from '../lib/region'
@@ -69,18 +71,15 @@ export function WatchProviders({ providers }: { providers: Record<string, Provid
         <Typography variant="titleMediumEmphasized" level={2}>
           Where to watch
         </Typography>
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          variant="text"
+          size={BUTTON_SIZE.inline}
           accessibilityLabel={`Region: ${name}. Change`}
           accessibilityHint="Opens the settings"
           onPress={() => router.push('/about')}
-          hitSlop={8}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Typography variant="labelMedium" color={theme.colors.primary}>
-            {name}
-          </Typography>
-        </Pressable>
+          {name}
+        </Button>
       </View>
 
       {here ? (

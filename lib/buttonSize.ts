@@ -11,7 +11,8 @@ import type { ButtonProps } from '@rootnative/components/button'
 export const BUTTON_SIZE = {
   /**
    * 40 dp. A button among other content: the film actions, the share button,
-   * "Show more" on a biography, and the links on the about screen.
+   * the region beside "Where to watch", "Show more" on a biography, and the
+   * links on the about and privacy screens.
    */
   inline: 'small',
   /**

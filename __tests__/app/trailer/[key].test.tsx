@@ -87,23 +87,6 @@ describe('a link that names a video', () => {
   })
 
   /**
-   * The title sits on the centreline of the close button beside it.
-   *
-   * `titleMedium` carries 24 points of line height against a 16 point font,
-   * which is leading for a paragraph. iOS puts all of it above the glyphs, so
-   * the text draws low inside a box that the row has centred correctly — the
-   * two then read as misaligned. The screen drops the line height for this one
-   * line, and this holds it dropped.
-   */
-  it('gives the title no paragraph line height', () => {
-    const screen = renderWithProviders(<TrailerScreen />)
-
-    const { lineHeight } = StyleSheet.flatten(screen.getByText('Dune').props.style)
-
-    expect(lineHeight).toBeUndefined()
-  })
-
-  /**
    * The frame keeps 16:9 and fits inside the window.
    *
    * The test metrics are a 390 x 844 phone with a 47 top inset and a 34 bottom
@@ -151,8 +134,8 @@ describe('a link that names a video', () => {
 
     const { width, height } = frameOf(renderWithProviders(<TrailerScreen />))
 
-    // 900 less the two insets and the bar above the video.
-    const stage = 900 - 47 - 34 - 56
+    // 900 less the two insets and the 64 app bar above the video.
+    const stage = 900 - 47 - 34 - 64
 
     expect(height).toBeCloseTo(stage)
     expect(width).toBeCloseTo(stage * (16 / 9))

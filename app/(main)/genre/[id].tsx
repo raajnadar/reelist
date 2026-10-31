@@ -1,11 +1,12 @@
 import { AppBar } from '@rootnative/components/appbar'
+import { LoadingIndicator } from '@rootnative/components/loading-indicator'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../../../lib/language'
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DiscoverFilterRow } from '../../../components/DiscoverFilterRow'
 import { MovieCard } from '../../../components/MovieCard'
@@ -389,7 +390,7 @@ function GenreScreen() {
               ListFooterComponent={
                 loadingMore ? (
                   <View style={styles.footer}>
-                    <ActivityIndicator color={theme.colors.primary} />
+                    <LoadingIndicator accessibilityLabel="Loading more films" />
                   </View>
                 ) : undefined
               }
@@ -438,5 +439,5 @@ const styles = StyleSheet.create({
   // The horizontal inset comes from the content width; see gridInset.
   list: { paddingTop: GRID_GAP, gap: GRID_GAP },
   column: { gap: GRID_GAP },
-  footer: { paddingVertical: 20 },
+  footer: { paddingVertical: 20, alignItems: 'center' },
 })

@@ -1,10 +1,12 @@
 import { AppBar } from '@rootnative/components/appbar'
+import { Button } from '@rootnative/components/button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { Link, useRouter, type Href } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { BUTTON_SIZE } from '../../lib/buttonSize'
 import { metadataFor, privacyMeta } from '../../lib/head'
 import { NEW_TAB } from '../../lib/share'
 
@@ -211,15 +213,14 @@ export default function PrivacyScreen() {
               )}
               {part.sources?.map((source) => (
                 <Link key={source.label} href={source.url} asChild>
-                  <Pressable
-                    accessibilityRole="link"
+                  <Button
+                    variant="text"
+                    size={BUTTON_SIZE.inline}
                     hrefAttrs={NEW_TAB}
                     style={styles.source}
                   >
-                    <Typography variant="labelLarge" color={theme.colors.primary}>
-                      {source.label}
-                    </Typography>
-                  </Pressable>
+                    {source.label}
+                  </Button>
                 </Link>
               ))}
             </View>
@@ -240,5 +241,5 @@ const styles = StyleSheet.create({
   list: { marginTop: 10, gap: 6 },
   item: { flexDirection: 'row', gap: 8 },
   itemText: { flex: 1 },
-  source: { alignSelf: 'flex-start', paddingVertical: 8, marginTop: 4 },
+  source: { marginTop: 4 },
 })

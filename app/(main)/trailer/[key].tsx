@@ -1,6 +1,6 @@
+import { AppBar } from '@rootnative/components/appbar'
 import { IconButton } from '@rootnative/components/icon-button'
-import { Typography } from '@rootnative/components/typography'
-import { useWindowDimensions } from '@rootnative/core'
+import { defaultTopAppBarTokens, useWindowDimensions } from '@rootnative/core'
 import { openURL } from 'expo-linking'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -29,8 +29,8 @@ export const generateMetadata = () => metadataFor(noindexMeta('Trailer'))
  * is the whole of what the player needs, so this screen has no loading state.
  */
 
-/** The height of the control row over the video. */
-const BAR_HEIGHT = 56
+/** The height of the app bar over the video. */
+const BAR_HEIGHT = defaultTopAppBarTokens.smallContainerHeight
 
 /** The shape of the frame YouTube fills. */
 const ASPECT = 16 / 9
@@ -83,42 +83,36 @@ export default function TrailerScreen() {
       */}
       <StatusBar style="light" />
 
-      <View style={styles.bar}>
-        <IconButton
-          icon="close"
-          variant="standard"
-          iconColor={ON_STAGE}
-          accessibilityLabel="Close the trailer"
-          onPress={close}
-        />
-
-        <Typography
-          variant="titleMedium"
-          level={1}
-          numberOfLines={1}
-          style={styles.title}
-        >
-          {title ?? 'Trailer'}
-        </Typography>
-
-        {/*
-          Always present, and not a fallback that appears after a failure. A
-          video the studio blocked from embedding still loads and still plays
-          nothing, and the app cannot tell that state apart from a slow start.
-          See lib/youtube.ts.
-        */}
-        {key ? (
+      <AppBar
+        title={title ?? 'Trailer'}
+        containerColor={STAGE}
+        contentColor={ON_STAGE}
+        leading={
           <IconButton
-            icon="open-in-new"
+            icon="close"
             variant="standard"
-            iconColor={ON_STAGE}
-            accessibilityLabel="Open in YouTube"
-            // A rejected promise means no installed app opens a YouTube link.
-            // There is nothing better to do than stay on the player.
-            onPress={() => void openURL(watchUrl(key)).catch(() => {})}
+            accessibilityLabel="Close the trailer"
+            onPress={close}
           />
-        ) : null}
-      </View>
+        }
+        // Always present, and not a fallback that appears after a failure. A
+        // video the studio blocked from embedding still loads and still plays
+        // nothing, and the app cannot tell that state apart from a slow start.
+        // See lib/youtube.ts.
+        actions={
+          key
+            ? [
+                {
+                  icon: 'open-in-new',
+                  accessibilityLabel: 'Open in YouTube',
+                  // A rejected promise means no installed app opens a YouTube
+                  // link. There is nothing better to do than stay on the player.
+                  onPress: () => void openURL(watchUrl(key)).catch(() => {}),
+                },
+              ]
+            : undefined
+        }
+      />
 
       <View style={styles.stage}>
         {key ? (
@@ -144,23 +138,5 @@ export default function TrailerScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: STAGE },
-  bar: {
-    height: BAR_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    gap: 4,
-  },
-  // `flexBasis: 0` with the grow, so a long film title ellipsizes instead of
-  // pushing the YouTube button off the row.
-  //
-  // `lineHeight: undefined` drops the one the variant carries, and it is what
-  // puts the title on the same centreline as the close button. MD3 gives
-  // titleMedium 24 points of line height against a 16 point font, which is
-  // leading for a paragraph. iOS puts all of that space above the glyphs
-  // rather than around them, so the text draws low inside its own box while
-  // `alignItems: 'center'` centres the box itself. Without a line height the
-  // box hugs the text, and the row centres what a reader actually sees.
-  title: { flex: 1, flexBasis: 0, color: ON_STAGE, lineHeight: undefined },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 })
