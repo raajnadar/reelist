@@ -32,6 +32,7 @@ export const metadataFor = (meta: PageMeta): PageMetadata => toMetadata(site, me
 export const noindexMeta = (title: string): PageMeta => ({ title, noindex: true })
 
 const HOME_URL = `${SITE_URL}/`
+const EXPLORE_URL = `${SITE_URL}/explore`
 const PRIVACY_URL = `${SITE_URL}/privacy`
 
 /** The path from the home page to one page, as a search result shows it. */
@@ -51,6 +52,15 @@ export const homeMeta: PageMeta = {
       searchUrlTemplate: `${SITE_URL}/search?q={search_term_string}`,
     }),
   ],
+}
+
+export const exploreMeta: PageMeta = {
+  title: 'Explore films',
+  description:
+    'See the films in cinemas now and the ones that open soon, and browse every genre from action to western.',
+  url: EXPLORE_URL,
+  type: 'website',
+  jsonLd: [trail({ name: 'Explore', url: EXPLORE_URL })],
 }
 
 /**

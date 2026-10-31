@@ -51,6 +51,8 @@ describe('the allowlist', () => {
     '/trending/movie/week',
     '/movie/popular',
     '/movie/top_rated',
+    '/movie/now_playing',
+    '/movie/upcoming',
     '/search/movie',
     '/movie/550',
     '/person/1082047',
@@ -151,6 +153,15 @@ describe('the key', () => {
     await get(`path=%2Fdiscover%2Fmovie&${encodeURIComponent(name)}=${value}`)
 
     expect(upstreamUrl().searchParams.get(name)).toBe(value)
+  })
+
+  // The explore screen sends the country with the cinema lists. A dropped
+  // `region` answers the US list under a heading that names the reader's
+  // country.
+  it('forwards the region of the cinema lists', async () => {
+    await get('path=%2Fmovie%2Fnow_playing&region=IN')
+
+    expect(upstreamUrl().searchParams.get('region')).toBe('IN')
   })
 
   // `with_genres` is now on the list, so it must still be dropped where it

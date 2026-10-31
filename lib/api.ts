@@ -437,6 +437,21 @@ export const getTopRated = async (): Promise<Paged> =>
   toPaged(await tmdbFetch<RawPaged>('/movie/top_rated'))
 
 /**
+ * The films in the cinemas of one country now, and the ones that open there
+ * soon, for the explore screen.
+ *
+ * `region` is the ISO 3166-1 code the watch providers already use, so the two
+ * lists follow the same setting as "Where to watch". TMDB answers the US list
+ * for a request with no region, which is why the parameter is never left out.
+ * Each row shows one page and cannot page, so only the first is asked for.
+ */
+export const getNowPlaying = async (region: string): Promise<Paged> =>
+  toPaged(await tmdbFetch<RawPaged>('/movie/now_playing', { region, page: '1' }))
+
+export const getUpcoming = async (region: string): Promise<Paged> =>
+  toPaged(await tmdbFetch<RawPaged>('/movie/upcoming', { region, page: '1' }))
+
+/**
  * Returns null for a film that does not exist, rather than throwing. The detail
  * screen already separates "no such film" from "the request failed", and it
  * prints a different message for each.

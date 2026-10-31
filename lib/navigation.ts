@@ -9,7 +9,7 @@ import type { Href } from 'expo-router'
  * resting glyph and `selectedIcon` its filled pair, as MD3 draws them.
  */
 export type Destination = {
-  value: 'home' | 'search' | 'watchlist'
+  value: 'home' | 'explore' | 'search' | 'watchlist'
   label: string
   icon: string
   selectedIcon: string
@@ -18,6 +18,13 @@ export type Destination = {
 
 export const DESTINATIONS: Destination[] = [
   { value: 'home', label: 'Home', icon: 'home-outline', selectedIcon: 'home', href: '/' },
+  {
+    value: 'explore',
+    label: 'Explore',
+    icon: 'compass-outline',
+    selectedIcon: 'compass',
+    href: '/explore',
+  },
   {
     value: 'search',
     label: 'Search',
@@ -35,7 +42,7 @@ export const DESTINATIONS: Destination[] = [
 ]
 
 /**
- * The links at the end of the drawer. The bar and the rail keep to the three
+ * The links at the end of the drawer. The bar and the rail keep to the four
  * destinations, so there the settings stay in the home header, and the
  * privacy policy in the settings.
  */
@@ -74,7 +81,7 @@ export type NavigationKind = 'bar' | 'rail' | 'drawer'
  *
  * MD3 allows the drawer from `large` (1200 dp). The rail stays until
  * `extraLarge` here: a 13 inch laptop is 1440 dp wide, and a 360 dp panel
- * takes a quarter of it from the film rows for three destinations.
+ * takes a quarter of it from the film rows for four destinations.
  */
 export function navigationKind(breakpoint: Breakpoint): NavigationKind {
   switch (breakpoint) {
@@ -98,7 +105,7 @@ export function activeDestination(pathname: string): Destination['value'] | unde
 }
 
 /**
- * The drawer item the reader is on. The drawer holds more than the three
+ * The drawer item the reader is on. The drawer holds more than the four
  * destinations, so the settings and the privacy policy light an item of their
  * own there.
  */

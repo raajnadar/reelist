@@ -12,6 +12,7 @@ describe('stackRouteName', () => {
   })
 
   it('names every other static path after its file', () => {
+    expect(stackRouteName('/explore')).toBe('explore')
     expect(stackRouteName('/watchlist')).toBe('watchlist')
     expect(stackRouteName('/privacy')).toBe('privacy')
   })
@@ -40,6 +41,7 @@ describe('navigationKind', () => {
 describe('activeDestination', () => {
   it('names the destination the path is on', () => {
     expect(activeDestination('/')).toBe('home')
+    expect(activeDestination('/explore')).toBe('explore')
     expect(activeDestination('/search')).toBe('search')
     expect(activeDestination('/watchlist')).toBe('watchlist')
   })
@@ -55,6 +57,7 @@ describe('activeDestination', () => {
 describe('activeDrawerItem', () => {
   it('names a destination, or a link at the end of the drawer', () => {
     expect(activeDrawerItem('/')).toBe('home')
+    expect(activeDrawerItem('/explore')).toBe('explore')
     expect(activeDrawerItem('/watchlist')).toBe('watchlist')
     expect(activeDrawerItem('/about')).toBe('settings')
     expect(activeDrawerItem('/privacy')).toBe('privacy')

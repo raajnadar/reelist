@@ -38,6 +38,8 @@ const ALLOWED_EXACT = new Set([
   '/trending/movie/week',
   '/movie/popular',
   '/movie/top_rated',
+  '/movie/now_playing',
+  '/movie/upcoming',
   '/search/movie',
   '/genre/movie/list',
   '/discover/movie',
@@ -69,6 +71,9 @@ const ALLOWED_PARAMS = new Set([
   'with_original_language',
   'with_runtime.gte',
   'with_runtime.lte',
+  // The country for the cinema lists on the explore screen. A plain value
+  // that names no path, so the name check is enough.
+  'region',
 ])
 
 /**

@@ -2,9 +2,11 @@ import {
   getGenres,
   getMovie,
   getMoviesByGenre,
+  getNowPlaying,
   getPerson,
   getPopularByLanguage,
   getTrending,
+  getUpcoming,
   searchMovies,
 } from './api'
 import { TmdbError } from './tmdb'
@@ -903,6 +905,34 @@ describe('getPopularByLanguage', () => {
       page: '1',
     })
     expect(paged.results[0].title).toBe('Fight Club')
+  })
+})
+
+describe('the cinema lists', () => {
+  // The region must reach TMDB, or the explore screen shows the US cinemas
+  // under a heading that names the reader's country. The name must stay
+  // identical to the one `proxy/api/tmdb.ts` allows.
+  it('asks for the films in the cinemas of the region', async () => {
+    tmdbFetch.mockResolvedValue({ results: [rawMovie] })
+
+    const paged = await getNowPlaying('IN')
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/movie/now_playing', {
+      region: 'IN',
+      page: '1',
+    })
+    expect(paged.results[0].title).toBe('Fight Club')
+  })
+
+  it('asks for the films that open in the region soon', async () => {
+    tmdbFetch.mockResolvedValue({ results: [rawMovie] })
+
+    await getUpcoming('GB')
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/movie/upcoming', {
+      region: 'GB',
+      page: '1',
+    })
   })
 })
 
