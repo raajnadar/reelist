@@ -43,6 +43,18 @@ jest.mock('expo-linking', () => ({ openURL: jest.fn() }))
 
 const { openURL } = jest.requireMock('expo-linking')
 
+// Picture-in-picture is a native module that only an Android store build
+// has. The mock stands in for a build that has it; the block at the end
+// covers a build that has not.
+jest.mock('../../../lib/pip', () => ({
+  pipSupported: true,
+  setAutoEnterPip: jest.fn(),
+  enterPip: jest.fn(),
+  useInPip: jest.fn(() => false),
+}))
+
+const pip = jest.requireMock('../../../lib/pip')
+
 const KEY = 'Way9Dexny3w'
 
 // Renders the screen and hands back the props of the video surface.
@@ -84,6 +96,61 @@ describe('a link that names a video', () => {
     const screen = renderWithProviders(<TrailerScreen />)
 
     expect(screen.getByText('Dune')).toBeTruthy()
+  })
+
+  describe('picture-in-picture', () => {
+    // The flag is on the whole activity. On while the trailer has the focus,
+    // and off again when the screen goes, or a swipe home from the film page
+    // would shrink that page.
+    it('turns the auto-enter flag on with the title, and off on unmount', () => {
+      const screen = renderWithProviders(<TrailerScreen />)
+
+      expect(pip.setAutoEnterPip).toHaveBeenLastCalledWith(true, 'Dune')
+
+      screen.unmount()
+
+      expect(pip.setAutoEnterPip).toHaveBeenLastCalledWith(false)
+    })
+
+    it('offers a button that enters the small window', () => {
+      const screen = renderWithProviders(<TrailerScreen />)
+
+      fireEvent.press(screen.getByLabelText('Watch in a small window'))
+
+      expect(pip.enterPip).toHaveBeenCalledWith('Dune')
+    })
+
+    // The system cuts the window to 16:9, so the video fills it. The bar
+    // would take a third of a window that small.
+    it('drops the bar and fills the window while in the small window', () => {
+      pip.useInPip.mockReturnValue(true)
+      jest
+        .spyOn(Dimensions, 'get')
+        .mockReturnValue({ width: 320, height: 180, scale: 2, fontScale: 1 } as never)
+
+      const screen = renderWithProviders(<TrailerScreen />)
+
+      expect(screen.queryByText('Dune')).toBeNull()
+      expect(screen.queryByLabelText('Close the trailer')).toBeNull()
+      const frame = StyleSheet.flatten(screen.getByTestId('trailer-player').props.style)
+      expect(frame.width).toBe(320)
+      expect(frame.height).toBe(180)
+
+      pip.useInPip.mockReturnValue(false)
+    })
+
+    // Expo Go, iOS, the web, and a store build from before the module. No
+    // button, and no call that could reach a module that is not there.
+    it('has no button and sets no flag on a build without the module', () => {
+      pip.pipSupported = false
+
+      const screen = renderWithProviders(<TrailerScreen />)
+
+      expect(screen.queryByLabelText('Watch in a small window')).toBeNull()
+      expect(pip.setAutoEnterPip).not.toHaveBeenCalled()
+
+      pip.pipSupported = true
+    })
   })
 
   /**

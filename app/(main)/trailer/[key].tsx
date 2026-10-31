@@ -2,14 +2,16 @@ import { AppBar } from '@rootnative/components/appbar'
 import { IconButton } from '@rootnative/components/icon-button'
 import { defaultTopAppBarTokens, useWindowDimensions } from '@rootnative/core'
 import { openURL } from 'expo-linking'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StateMessage } from '../../../components/StateMessage'
 import { TrailerPlayer } from '../../../components/TrailerPlayer'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../../../lib/head'
+import { enterPip, pipSupported, setAutoEnterPip, useInPip } from '../../../lib/pip'
 import { ON_STAGE, STAGE } from '../../../lib/stage'
 import { useWebKey } from '../../../lib/useWebKey'
 import { watchUrl } from '../../../lib/youtube'
@@ -55,6 +57,22 @@ export default function TrailerScreen() {
   useWebKey('Escape', close)
 
   /**
+   * Picture-in-picture, on an Android build that has the module.
+   *
+   * A swipe home while this screen has the focus shrinks the video to a
+   * corner instead of leaving it. The flag is on the activity, so it goes off
+   * the moment the screen loses the focus, or a swipe home from the film page
+   * would shrink that page. See lib/pip.ts.
+   */
+  const focused = useIsFocused()
+  const inPip = useInPip()
+  useEffect(() => {
+    if (!pipSupported || !key) return
+    setAutoEnterPip(focused, title)
+    return () => setAutoEnterPip(false)
+  }, [focused, key, title])
+
+  /**
    * The largest 16:9 frame the window holds.
    *
    * The width is the limit on a phone held upright, and the remaining height is
@@ -66,8 +84,18 @@ export default function TrailerScreen() {
   const playerWidth = Math.min(width, stageHeight * ASPECT)
   const playerHeight = playerWidth / ASPECT
 
+  /**
+   * In the small window there is no bar and no inset: the video takes the
+   * whole window, which the system cut to 16:9. The bar below is `null` and
+   * not removed from the tree, so the player keeps its place among the
+   * children and the web view is not mounted again, which would restart the
+   * video.
+   */
+  const frame = inPip ? { width, height } : { width: playerWidth, height: playerHeight }
+  const paddingTop = inPip ? 0 : insets.top
+
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={[styles.screen, { paddingTop }]}>
       <PageHead title={title ? `${title} trailer` : 'Trailer'} noindex />
       {/*
         `fullScreenModal` rather than `modal`: the iOS sheet leaves the screen
@@ -83,40 +111,55 @@ export default function TrailerScreen() {
       */}
       <StatusBar style="light" />
 
-      <AppBar
-        title={title ?? 'Trailer'}
-        containerColor={STAGE}
-        contentColor={ON_STAGE}
-        leading={
-          <IconButton
-            icon="close"
-            variant="standard"
-            accessibilityLabel="Close the trailer"
-            onPress={close}
-          />
-        }
-        // Always present, and not a fallback that appears after a failure. A
-        // video the studio blocked from embedding still loads and still plays
-        // nothing, and the app cannot tell that state apart from a slow start.
-        // See lib/youtube.ts.
-        actions={
-          key
-            ? [
-                {
-                  icon: 'open-in-new',
-                  accessibilityLabel: 'Open in YouTube',
-                  // A rejected promise means no installed app opens a YouTube
-                  // link. There is nothing better to do than stay on the player.
-                  onPress: () => void openURL(watchUrl(key)).catch(() => {}),
-                },
-              ]
-            : undefined
-        }
-      />
+      {inPip ? null : (
+        <AppBar
+          title={title ?? 'Trailer'}
+          containerColor={STAGE}
+          contentColor={ON_STAGE}
+          leading={
+            <IconButton
+              icon="close"
+              variant="standard"
+              accessibilityLabel="Close the trailer"
+              onPress={close}
+            />
+          }
+          // The YouTube button is always present, and not a fallback that
+          // appears after a failure. A video the studio blocked from embedding
+          // still loads and still plays nothing, and the app cannot tell that
+          // state apart from a slow start. See lib/youtube.ts.
+          //
+          // The PiP button is the way into the small window on Android 8 to
+          // 11, which do not enter it on a swipe home. It is there on 12 and
+          // later too, for a reader who wants the window without leaving.
+          actions={
+            key
+              ? [
+                  ...(pipSupported
+                    ? [
+                        {
+                          icon: 'picture-in-picture-bottom-right',
+                          accessibilityLabel: 'Watch in a small window',
+                          onPress: () => enterPip(title),
+                        },
+                      ]
+                    : []),
+                  {
+                    icon: 'open-in-new',
+                    accessibilityLabel: 'Open in YouTube',
+                    // A rejected promise means no installed app opens a YouTube
+                    // link. There is nothing better to do than stay on the player.
+                    onPress: () => void openURL(watchUrl(key)).catch(() => {}),
+                  },
+                ]
+              : undefined
+          }
+        />
+      )}
 
       <View style={styles.stage}>
         {key ? (
-          <TrailerPlayer videoKey={key} width={playerWidth} height={playerHeight} />
+          <TrailerPlayer videoKey={key} width={frame.width} height={frame.height} />
         ) : (
           /* A deep link with no key in it. There is no request to retry and no
              video to name, so the only action is the way out. */

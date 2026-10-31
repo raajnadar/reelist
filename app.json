@@ -48,6 +48,7 @@
     },
     "plugins": [
       "expo-router",
+      ["expo-pip", {}],
       "expo-font",
       "expo-image",
       "expo-localization",
