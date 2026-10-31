@@ -1,3 +1,7 @@
+import type { ReactTestInstance } from 'react-test-renderer'
+import { renderWithProviders } from '../lib/test-utils'
+import type { Movie } from '../lib/types'
+import { ContentWidthContext } from '../lib/useContentWidth'
 import {
   CAROUSEL_MAX_CARD_WIDTH,
   CAROUSEL_MIN_CARD_WIDTH,
@@ -5,7 +9,18 @@ import {
   CAROUSEL_POSTER_SHARE,
   CAROUSEL_SPACING,
 } from './CarouselCard'
-import { carouselGeometry as geometry, loopLayout } from './MovieCarousel'
+import { carouselGeometry as geometry, loopLayout, MovieCarousel } from './MovieCarousel'
+
+const mockWindow = { width: 1440, height: 900, scale: 1, fontScale: 1 }
+
+jest.mock('@rootnative/core', () => ({
+  ...jest.requireActual('@rootnative/core'),
+  useWindowDimensions: () => mockWindow,
+}))
+
+jest.mock('expo-router', () =>
+  jest.requireActual('../lib/test-utils').expoRouterMock(() => ({ push: jest.fn() })),
+)
 
 // MovieCarousel states its geometry rules in comments: slot `n` is centred at
 // scroll `n * snap`, the card leaves a peek of the next one, and the poster
@@ -111,5 +126,40 @@ describe('carousel loop', () => {
 
   it('does not loop one film', () => {
     expect(loopLayout(1)).toEqual({ total: 1, start: 0 })
+  })
+})
+
+describe('carousel layout', () => {
+  const movies: Movie[] = [550, 680].map((id) => ({
+    id,
+    title: `Film ${id}`,
+    poster_path: `/${id}.jpg`,
+    backdrop_path: null,
+    vote_average: 8,
+    release_date: '1999-10-15',
+    overview: '',
+  }))
+
+  /** The left inset of the list, which puts slot 0 under the list centre. */
+  function insetBeside(contentWidth: number | null) {
+    const screen = renderWithProviders(
+      <ContentWidthContext.Provider value={contentWidth}>
+        <MovieCarousel title="Trending" movies={movies} />
+      </ContentWidthContext.Provider>,
+    )
+    const list = screen.UNSAFE_root.find(
+      (node: ReactTestInstance) => node.props.contentContainerStyle?.paddingLeft != null,
+    )
+    return list.props.contentContainerStyle.paddingLeft as number
+  }
+
+  // Beside a rail or a drawer the list is narrower than the window. A
+  // geometry from the window put the centred card right of the list centre.
+  it('centres the card in the content beside a rail', () => {
+    expect(insetBeside(1360)).toBe(geometry(1360, mockWindow.height).centerPadding)
+  })
+
+  it('centres the card in the window before the content has laid out', () => {
+    expect(insetBeside(null)).toBe(geometry(1440, mockWindow.height).centerPadding)
   })
 })

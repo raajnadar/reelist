@@ -15,6 +15,7 @@ import { haptic } from '../lib/haptics'
 import type { Movie } from '../lib/types'
 import { useActiveSlot } from '../lib/useActiveSlot'
 import { useAutoplay } from '../lib/useAutoplay'
+import { useContentWidth } from '../lib/useContentWidth'
 import { CarouselBackdrop } from './CarouselBackdrop'
 import { CarouselCaption } from './CarouselCaption'
 import {
@@ -52,7 +53,7 @@ const WINDOW_SIZE = 5
 const keyExtractor = (_movie: Movie, index: number) => String(index)
 
 /**
- * The carousel geometry for a given window.
+ * The carousel geometry for the width the list spans and the window height.
  *
  * This is exported so a test can assert the invariants below against the code
  * that actually ships. Inline arithmetic here would leave the test recomputing
@@ -86,7 +87,9 @@ export function carouselGeometry(width: number, height: number) {
 /**
  * The `cardWidth` of `carouselGeometry` as CSS, for the still card of the
  * static web page. The server has no window to measure, but the browser has.
- * `dvh` because react-native-web measures the visual viewport.
+ * `vw` is the content width here: until hydration ends the navigation is the
+ * bottom bar, never the rail or the drawer. `dvh` because react-native-web
+ * measures the visual viewport.
  */
 export const STILL_CARD_WIDTH =
   `min(calc(100vw - ${2 * (CAROUSEL_PEEK + CAROUSEL_SPACING)}px), max(${CAROUSEL_MIN_CARD_WIDTH}px, min(${CAROUSEL_MAX_CARD_WIDTH}px, calc(100dvh * ${CAROUSEL_POSTER_SHARE} * 2 / 3))))` as DimensionValue
@@ -101,7 +104,10 @@ export function loopLayout(count: number) {
 }
 
 export function MovieCarousel({ title, movies }: { title: string; movies: Movie[] }) {
-  const { width, height } = useWindowDimensions()
+  const { width: windowWidth, height } = useWindowDimensions()
+  // The list spans the content, not the window. Beside a rail or a drawer, a
+  // geometry from the window put the centred card right of the list centre.
+  const width = useContentWidth()
   const listRef = useRef<FlatList<Movie>>(null)
 
   // scrollX updates on the UI thread, so every card and every layer
@@ -252,7 +258,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   // between an empty and a populated row.
   if (!count) return null
 
-  const arrows = Platform.OS === 'web' && width >= ARROWS_MIN_WIDTH && count > 1
+  const arrows = Platform.OS === 'web' && windowWidth >= ARROWS_MIN_WIDTH && count > 1
 
   return (
     <View style={styles.wrapper} {...autoplay.holdHandlers}>

@@ -1,8 +1,8 @@
-import { useWindowDimensions } from '@rootnative/core'
 import { Skeleton as SkeletonBlock } from '@rootnative/components/skeleton'
 import { StyleSheet, View } from 'react-native'
 import { GRID_GAP, gridInset, posterColumns } from '../lib/grid'
 import { LIFT_SPACE } from '../lib/motion'
+import { useContentWidth } from '../lib/useContentWidth'
 import { CARD_WIDTH } from './MovieCard'
 
 /**
@@ -70,7 +70,7 @@ export function skeletonCardCount(width: number) {
  * the row overflows by design instead of counting exactly.
  */
 export function SkeletonRow({ count }: { count?: number }) {
-  const { width } = useWindowDimensions()
+  const width = useContentWidth()
   const cards = count ?? skeletonCardCount(width)
 
   return (
