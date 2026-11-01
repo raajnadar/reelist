@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { AppNavigation } from '../../components/AppNavigation'
+import { GlassTarget } from '../../components/GlassLayer'
 import { OfflineBanner } from '../../components/OfflineBanner'
 
 /**
@@ -12,21 +13,27 @@ import { OfflineBanner } from '../../components/OfflineBanner'
  */
 export default function MainLayout() {
   return (
-    // Outside `<main>`: the navigation is its own landmark, and the page
-    // content is what the main one holds.
-    <AppNavigation>
+    // Around the navigation too, so the search glass blurs the bar as well as
+    // the page on Android.
+    <GlassTarget>
       {/*
-        One `<main>` for each page of the web export. A crawler and a screen
-        reader find the page content by this landmark, and
-        `rootnative-seo audit` fails a page that has none. The menus and the
-        snackbars stay outside it, in the portal layer.
+        Outside `<main>`: the navigation is its own landmark, and the page
+        content is what the main one holds.
       */}
-      <View role="main" style={styles.main}>
-        <Stack screenOptions={{ headerShown: false }} />
-      </View>
-      {/* A status landmark of its own, under the page. */}
-      <OfflineBanner />
-    </AppNavigation>
+      <AppNavigation>
+        {/*
+          One `<main>` for each page of the web export. A crawler and a screen
+          reader find the page content by this landmark, and
+          `rootnative-seo audit` fails a page that has none. The menus and the
+          snackbars stay outside it, in the portal layer.
+        */}
+        <View role="main" style={styles.main}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
+        {/* A status landmark of its own, under the page. */}
+        <OfflineBanner />
+      </AppNavigation>
+    </GlassTarget>
   )
 }
 

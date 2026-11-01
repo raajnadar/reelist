@@ -218,6 +218,7 @@ function SearchScreen() {
       {/*
         `box-none` on the column and the frame: a press between the field and
         the results, or beside the field, has to reach the glass and dismiss.
+        The messages under the field set `passThrough` for the same reason.
       */}
       <View style={styles.column}>
         <View style={styles.frame}>
@@ -377,6 +378,7 @@ function SearchScreen() {
                 actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
                 actionIcon="refresh"
                 onAction={failure.kind === 'transient' ? search.reload : undefined}
+                passThrough
               />
             ) : results.length ? (
               <Motion.View
@@ -427,6 +429,7 @@ function SearchScreen() {
                 actionLabel="Clear search"
                 actionIcon="close"
                 onAction={clear}
+                passThrough
               />
             ) : (
               <StateMessage
@@ -435,6 +438,7 @@ function SearchScreen() {
                 icon="movie-open-outline"
                 title="Search for a movie"
                 body="Type a title above. The results appear as you type."
+                passThrough
               />
             )}
           </Presence>

@@ -1,4 +1,6 @@
 import { fireEvent } from '@testing-library/react-native'
+import type { ReactTestInstance } from 'react-test-renderer'
+import { StyleSheet } from 'react-native'
 import { renderWithProviders } from '../lib/test-utils'
 import { StateMessage } from './StateMessage'
 
@@ -90,4 +92,57 @@ it('makes the title a heading only when given a level', () => {
     <StateMessage icon="link-off" title="Movie not found" titleLevel={1} />,
   )
   expect(heading.getByRole('header', { name: 'Movie not found' })).toBeTruthy()
+})
+
+/** False when the element or a view around it refuses presses. */
+function takesPresses(element: ReactTestInstance) {
+  for (let node: ReactTestInstance | null = element; node; node = node.parent) {
+    if (StyleSheet.flatten(node.props.style)?.pointerEvents === 'none') return false
+  }
+  return true
+}
+
+describe('with passThrough', () => {
+  const render = (onAction = jest.fn()) =>
+    renderWithProviders(
+      <StateMessage
+        testID="message"
+        icon="movie-search-outline"
+        title="No matches"
+        body="Try a shorter title."
+        actionLabel="Clear search"
+        onAction={onAction}
+        passThrough
+      />,
+    )
+
+  // The search sheet draws this block on its glass. A press on the block has
+  // to reach the glass, which closes the sheet.
+  it('lets a press on the block reach the view below', () => {
+    const screen = render()
+
+    expect(
+      StyleSheet.flatten(screen.getByTestId('message').props.style).pointerEvents,
+    ).toBe('box-none')
+    expect(takesPresses(screen.getByText('No matches'))).toBe(false)
+    expect(takesPresses(screen.getByText('Try a shorter title.'))).toBe(false)
+  })
+
+  it('keeps the action pressable', () => {
+    const onAction = jest.fn()
+    const screen = render(onAction)
+
+    expect(takesPresses(screen.getByRole('button'))).toBe(true)
+    fireEvent.press(screen.getByText('Clear search'))
+    expect(onAction).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Without it, the text stays selectable on the web.
+it('takes presses on the text by default', () => {
+  const screen = renderWithProviders(
+    <StateMessage icon="cog-outline" title="Setup needed" body="Set the proxy URL." />,
+  )
+
+  expect(takesPresses(screen.getByText('Set the proxy URL.'))).toBe(true)
 })

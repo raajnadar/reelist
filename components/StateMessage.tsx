@@ -58,6 +58,15 @@ type Props = {
    * as a pill over the button that opened it.
    */
   actionRef?: RefObject<ViewInstance | null>
+  /**
+   * Lets a press on the block reach the view below it. Only the action still
+   * takes a press. The search sheet sets it: the block sits on the glass, and
+   * a press on the glass closes the sheet.
+   *
+   * Off by default. On the web, `pointer-events: none` also stops a reader
+   * from selecting the text, and the setup message is text to copy.
+   */
+  passThrough?: boolean
   style?: StyleProp<ViewStyle>
   testID?: string
 }
@@ -83,6 +92,7 @@ export function StateMessage({
   actionIcon,
   onAction,
   actionRef,
+  passThrough = false,
   style,
   testID,
 }: Props) {
@@ -105,7 +115,7 @@ export function StateMessage({
       testID={testID}
       exit={{ opacity: 0 }}
       transition="exit"
-      style={[styles.root, style]}
+      style={[styles.root, passThrough && styles.passRoot, style]}
     >
       {/*
         `<Stagger>` owns the cascade, so no block below carries a delay of its
@@ -124,6 +134,7 @@ export function StateMessage({
           transition="enter"
           style={[
             styles.badge,
+            passThrough && styles.passPart,
             { backgroundColor: badge.container, borderRadius: theme.shape.cornerFull },
           ]}
         >
@@ -136,7 +147,7 @@ export function StateMessage({
           initial={{ opacity: 0, translateY: 12 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition="enter"
-          style={styles.text}
+          style={[styles.text, passThrough && styles.passPart]}
         >
           <Typography
             variant="titleMediumEmphasized"
@@ -212,6 +223,10 @@ const styles = StyleSheet.create({
   // The 16 the container already gives, plus 8: an action needs more room above
   // it than the sentence it answers.
   action: { marginTop: 8 },
+  // See `passThrough`. The root lets a press fall to the view below, and the
+  // badge and the text take none themselves. The action keeps its press.
+  passRoot: { pointerEvents: 'box-none' },
+  passPart: { pointerEvents: 'none' },
 })
 
 export type { Props as StateMessageProps }

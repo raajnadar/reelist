@@ -342,6 +342,18 @@ it('closes on Escape typed in the field', () => {
   expect(mockBack).toHaveBeenCalledTimes(1)
 })
 
+// The prompt fills the room under the field. Without this, a press on it
+// stopped there, and the glass under it never closed the sheet.
+it('lets a press on the prompt reach the glass', () => {
+  const screen = renderWithProviders(<SearchScreen />)
+
+  const style = Object.assign(
+    {},
+    ...[screen.getByTestId('search-prompt').props.style].flat(9),
+  ) as { pointerEvents?: string }
+  expect(style.pointerEvents).toBe('box-none')
+})
+
 it('offers no clear icon while the box is empty', () => {
   const screen = renderWithProviders(<SearchScreen />)
 
