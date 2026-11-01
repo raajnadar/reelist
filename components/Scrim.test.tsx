@@ -1,6 +1,6 @@
-import { render } from '@testing-library/react-native'
-import { View } from 'react-native'
-import { Rect, Stop } from 'react-native-svg'
+import { fireEvent, render } from '@testing-library/react-native'
+import { Platform, View } from 'react-native'
+import Svg, { Rect, Stop } from 'react-native-svg'
 import { Scrim } from './Scrim'
 
 /**
@@ -56,4 +56,47 @@ it('renders one stop per entry', () => {
   )
 
   expect(tree.UNSAFE_getAllByType(Stop)).toHaveLength(3)
+})
+
+describe('a change of size', () => {
+  const layout = (width: number, height: number) => ({
+    nativeEvent: { layout: { x: 0, y: 0, width, height } },
+  })
+  const measured = (tree: ReturnType<typeof render>) =>
+    tree.UNSAFE_root.findAll((node) => typeof node.props.onLayout === 'function')[0]
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  // On Android the Svg kept the size of its first layout, so after a rotation
+  // the gradient covered only part of the picture under it.
+  it('draws the gradient again at the new size', () => {
+    const tree = render(<Scrim color="#000000" stops={stops} />)
+    fireEvent(measured(tree), 'layout', layout(411, 300))
+    const before = tree.UNSAFE_getByType(Svg).instance
+
+    fireEvent(measured(tree), 'layout', layout(731, 300))
+
+    expect(tree.UNSAFE_getByType(Svg).instance).not.toBe(before)
+  })
+
+  // The first layout and a repeat of the same size cost no second mount.
+  it('keeps the drawing while the size stays the same', () => {
+    const tree = render(<Scrim color="#000000" stops={stops} />)
+    const first = tree.UNSAFE_getByType(Svg).instance
+
+    fireEvent(measured(tree), 'layout', layout(411, 300))
+    fireEvent(measured(tree), 'layout', layout(411, 300))
+
+    expect(tree.UNSAFE_getByType(Svg).instance).toBe(first)
+  })
+
+  // The web scales an `<svg>` with CSS, so it needs no measure.
+  it('does not measure on the web', () => {
+    jest.replaceProperty(Platform, 'OS', 'web')
+    const tree = render(<Scrim color="#000000" stops={stops} />)
+
+    expect(measured(tree)).toBeUndefined()
+  })
 })

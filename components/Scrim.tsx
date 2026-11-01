@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Platform, StyleSheet, View, type LayoutChangeEvent } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { useSvgId } from '../lib/useSvgId'
 
@@ -41,6 +42,23 @@ export function Scrim({
   // See lib/useSvgId.ts.
   const gradientId = useSvgId(`scrim-${axis}-${color}-${stops.join('-')}`)
 
+  // On Android, `react-native-svg` keeps the size of the first layout. After a
+  // rotation the gradient still covered the old width or height, and the
+  // picture under it showed past a hard edge. A new key draws the Svg again
+  // at each new size. The first layout keeps the first key, so a scrim that
+  // never changes size mounts once. Native only: the web scales an `<svg>`
+  // with CSS.
+  const lastSize = useRef<string | null>(null)
+  const [drawing, setDrawing] = useState(0)
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout
+    const size = `${Math.round(width)}x${Math.round(height)}`
+    if (lastSize.current !== null && lastSize.current !== size) {
+      setDrawing((value) => value + 1)
+    }
+    lastSize.current = size
+  }
+
   // The position lives on a View, not on the Svg. On web `react-native-svg`
   // hands the style to the raw `<svg>` element as an array, which React DOM
   // drops, so an absolute style on the Svg has no effect there: the element
@@ -48,8 +66,8 @@ export function Scrim({
   // gradient paints only that corner of the frame. The 100% size is set as
   // props for the same reason.
   return (
-    <View style={styles.scrim}>
-      <Svg width="100%" height="100%">
+    <View style={styles.scrim} onLayout={Platform.OS === 'web' ? undefined : onLayout}>
+      <Svg key={drawing} width="100%" height="100%">
         <Defs>
           {/* One end point moves along the axis: y for top to bottom, x for
               left to right. */}

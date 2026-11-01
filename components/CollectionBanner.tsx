@@ -51,7 +51,12 @@ export function CollectionBanner({ collection }: { collection: CollectionLink | 
           variant="filled"
           accessibilityLabel={`Part of the ${collection.name}. Opens the collection`}
           testID="collection-banner"
-          style={[styles.card, { backgroundColor: theme.colors.secondaryContainer }]}
+          // One object, not an array: in a development build, `Link asChild`
+          // throws on an array style in its direct child.
+          style={StyleSheet.flatten([
+            styles.card,
+            { backgroundColor: theme.colors.secondaryContainer },
+          ])}
         >
           {uri ? (
             <>

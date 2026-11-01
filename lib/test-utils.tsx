@@ -39,6 +39,9 @@ type LinkMockProps = {
  * with `dismissTo` calls `router.dismissTo` instead, as the real one does. An
  * href with a scheme goes to `Linking.openURL`, as the real `Link` sends it.
  * The long press props go on to the child, as the real `Link` passes them.
+ * An `asChild` link throws on an array style in its child, as the real one
+ * does in a development build. A store build skips that check, so only Expo
+ * Go showed the error.
  *
  * `router` is a function, because a mock factory runs when the module is
  * first required, which is before the `mockPush` at the top of a test file is
@@ -49,13 +52,12 @@ type LinkMockProps = {
 export function expoRouterMock<
   R extends { push: (href: string) => void; dismissTo?: (href: string) => void },
 >(router: () => R) {
-  function Link({
-    href,
-    dismissTo,
-    asChild: _asChild,
-    children,
-    ...rest
-  }: LinkMockProps) {
+  function Link({ href, dismissTo, asChild, children, ...rest }: LinkMockProps) {
+    if (asChild && Array.isArray((children.props as { style?: unknown }).style)) {
+      throw new Error(
+        '[expo-router]: You are passing an array of styles to a child of <Slot>.',
+      )
+    }
     return cloneElement(children, {
       ...rest,
       onPress: (event?: unknown) => {
