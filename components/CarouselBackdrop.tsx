@@ -1,8 +1,10 @@
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
+import { Picture } from '@rootnative/seo/expo-image'
 import { Image } from 'expo-image'
-import { StyleSheet, View } from 'react-native'
-import { posterUrl } from '../lib/images'
+import { useEffect, useState } from 'react'
+import { Platform, StyleSheet, View } from 'react-native'
+import { POSTER_W500, posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
 import { nearSlots } from '../lib/useActiveSlot'
 import { Scrim, type ScrimStop } from './Scrim'
@@ -71,10 +73,23 @@ type Props = {
  */
 export function CarouselBackdrop({ movies, scrollX, snap, active, total }: Props) {
   const theme = useTheme()
+  const [centreLoaded, setCentreLoaded] = useState(false)
+  const [stillGone, setStillGone] = useState(false)
+
+  // The still leaves after the live layer has dissolved in over it, so the
+  // colour never dips to the page colour between the two.
+  useEffect(() => {
+    if (!centreLoaded) return
+    const timer = setTimeout(() => setStillGone(true), FADE_MS)
+    return () => clearTimeout(timer)
+  }, [centreLoaded])
+
+  const still = Platform.OS === 'web' && !stillGone
 
   return (
     <View aria-hidden style={styles.root}>
       <View style={styles.frame}>
+        {still ? <BackdropStill movie={movies[0]} /> : null}
         {nearSlots(active, total).map((slot) => (
           <BackdropLayer
             key={slot}
@@ -82,6 +97,9 @@ export function CarouselBackdrop({ movies, scrollX, snap, active, total }: Props
             slot={slot}
             scrollX={scrollX}
             snap={snap}
+            onLoad={
+              slot === active && !stillGone ? () => setCentreLoaded(true) : undefined
+            }
           />
         ))}
       </View>
@@ -90,16 +108,47 @@ export function CarouselBackdrop({ movies, scrollX, snap, active, total }: Props
   )
 }
 
+/**
+ * The layer of the first film as the static web page holds it.
+ *
+ * expo-image mounts its picture in an effect, so the export writes no layer
+ * and the browser paints the first one only after the script has run. That
+ * layer is the largest element of the home page, so it was the Largest
+ * Contentful Paint, seconds after the first paint. A plain `<img>` is in the
+ * page HTML and paints with it. The file is the poster of the still card, so
+ * the browser downloads it once. The blur is CSS: the `<img>` of `Picture` is
+ * a DOM element, so the style is a DOM style.
+ */
+function BackdropStill({ movie }: { movie: Movie }) {
+  const uri = posterUrl(movie.poster_path, 'w500')
+
+  if (!uri) return null
+
+  return (
+    <Picture
+      testID="carousel-backdrop-still"
+      source={uri}
+      alt=""
+      width={POSTER_W500.width}
+      height={POSTER_W500.height}
+      loading="eager"
+      style={[styles.picture, styles.stillPicture]}
+    />
+  )
+}
+
 function BackdropLayer({
   movie,
   slot,
   scrollX,
   snap,
+  onLoad,
 }: {
   movie: Movie
   slot: number
   scrollX: SharedValue<number>
   snap: number
+  onLoad?: () => void
 }) {
   const center = slot * snap
   const style = useInterpolatedStyle(
@@ -120,6 +169,7 @@ function BackdropLayer({
         blurRadius={BLUR}
         transition={FADE_MS}
         cachePolicy="memory-disk"
+        onLoad={onLoad}
       />
     </Motion.View>
   )
@@ -154,5 +204,11 @@ const styles = StyleSheet.create({
     bottom: '-15%',
     left: '-15%',
     right: '-15%',
+  },
+  // The insets size the `<img>`, not the file size that `Picture` sets.
+  stillPicture: {
+    width: undefined,
+    height: undefined,
+    filter: `blur(${BLUR}px)`,
   },
 })

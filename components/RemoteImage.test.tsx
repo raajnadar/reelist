@@ -105,6 +105,7 @@ describe('on the web', () => {
       width: 500,
       height: 750,
       loading: 'eager',
+      fetchPriority: 'high',
     })
     // The style has to reset the file size, or a `flex: 1` picture does not
     // stretch and an aspect ratio does nothing. A raw img also has none of the

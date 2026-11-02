@@ -1,4 +1,4 @@
-import type { ButtonProps } from '@rootnative/components/button'
+import type { ButtonSize } from '@rootnative/components/button'
 
 /**
  * One Button size for each role in the app.
@@ -20,6 +20,4 @@ export const BUTTON_SIZE = {
    * on the screen and the only way forward, so it gets the larger target.
    */
   state: 'medium',
-  // TODO(raajnadar): use `ButtonSize` when @rootnative/components exports it.
-  // DX feedback R25.
-} as const satisfies Record<string, NonNullable<ButtonProps['size']>>
+} as const satisfies Record<string, ButtonSize>

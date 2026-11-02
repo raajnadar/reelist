@@ -93,6 +93,7 @@ export function RemoteImage({
         height={size.height}
         contentFit="cover"
         loading={priority === 'high' ? 'eager' : 'lazy'}
+        fetchPriority={priority === 'high' ? 'high' : undefined}
         style={[WEB_FLUID, { backgroundColor: theme.colors.surfaceVariant }, style]}
       />
     )

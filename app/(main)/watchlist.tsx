@@ -343,11 +343,6 @@ function WatchlistScreen() {
             style={styles.fill}
           >
             <Tabs
-              // A new inset moves each tab without a change of size. On the web
-              // a tab measures itself only on a change of size, so the indicator
-              // stayed at the old place, 48 left of the label at 1440. The key
-              // mounts the row again, and each tab measures again.
-              key={inset}
               items={TABS}
               value={tab}
               onValueChange={changeTab}
