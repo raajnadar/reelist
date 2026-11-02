@@ -1,6 +1,5 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { Divider } from '@rootnative/components/divider'
-import { IconButton } from '@rootnative/components/icon-button'
 import { Menu } from '@rootnative/components/menu'
 import { LinearProgress } from '@rootnative/components/progress'
 import { useSnackbar } from '@rootnative/components/snackbar'
@@ -15,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
+import { TooltipIconButton } from '../../components/TooltipIconButton'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { filmCount } from '../../lib/format'
 import { metadataFor, noindexMeta } from '../../lib/head'
@@ -231,20 +231,20 @@ function WatchlistScreen() {
 
   const selectActions = (
     <View style={styles.actions}>
-      <IconButton
+      <TooltipIconButton
         icon={allPicked ? 'select-off' : 'select-all'}
         variant="standard"
         accessibilityLabel={allPicked ? 'Select none' : 'Select all'}
         onPress={toggleAll}
       />
-      <IconButton
+      <TooltipIconButton
         icon={tab === 'toWatch' ? 'eye-check-outline' : 'eye-off-outline'}
         variant="standard"
         accessibilityLabel={tab === 'toWatch' ? 'Mark as watched' : 'Mark as not watched'}
         disabled={!picked.length}
         onPress={markPicked}
       />
-      <IconButton
+      <TooltipIconButton
         icon="delete-outline"
         variant="standard"
         accessibilityLabel="Remove from watchlist"
@@ -258,7 +258,7 @@ function WatchlistScreen() {
     <Menu
       align="end"
       anchor={
-        <IconButton
+        <TooltipIconButton
           icon="dots-vertical"
           variant="standard"
           accessibilityLabel="Watchlist options"
@@ -309,7 +309,7 @@ function WatchlistScreen() {
         insetTop
         leading={
           selecting ? (
-            <IconButton
+            <TooltipIconButton
               icon="close"
               variant="standard"
               accessibilityLabel="Stop selecting"

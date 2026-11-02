@@ -1,5 +1,4 @@
 import { AppBar } from '@rootnative/components/appbar'
-import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import {
   defaultTopAppBarTokens,
@@ -35,6 +34,7 @@ import { haptic } from '../lib/haptics'
 import { ON_STAGE, STAGE } from '../lib/stage'
 import type { GalleryImage } from '../lib/types'
 import { RemoteImage } from './RemoteImage'
+import { TooltipIconButton } from './TooltipIconButton'
 
 /** The height of the app bar over the pictures. */
 const BAR_HEIGHT = defaultTopAppBarTokens.smallContainerHeight
@@ -492,7 +492,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
             containerColor="transparent"
             contentColor={ON_STAGE}
             leading={
-              <IconButton
+              <TooltipIconButton
                 icon="close"
                 variant="standard"
                 accessibilityLabel="Close the gallery"
@@ -505,7 +505,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
           <View style={styles.middle} pointerEvents="box-none">
             {roomy ? (
               <>
-                <IconButton
+                <TooltipIconButton
                   icon="chevron-left"
                   variant="tonal"
                   size="medium"
@@ -513,7 +513,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
                   disabled={index === 0}
                   onPress={() => goTo(index - 1)}
                 />
-                <IconButton
+                <TooltipIconButton
                   icon="chevron-right"
                   variant="tonal"
                   size="medium"

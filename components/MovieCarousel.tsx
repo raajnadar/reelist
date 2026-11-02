@@ -1,4 +1,3 @@
-import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import { useWindowDimensions } from '@rootnative/core'
 import { Motion, useScroll } from '@rootnative/inertia'
@@ -30,6 +29,7 @@ import {
   CarouselStill,
 } from './CarouselCard'
 import { CarouselDots } from './CarouselDots'
+import { TooltipIconButton } from './TooltipIconButton'
 
 /**
  * The narrowest web window that shows the previous and next buttons. A mouse
@@ -313,14 +313,14 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         )}
         {arrows ? (
           <View style={styles.arrows}>
-            <IconButton
+            <TooltipIconButton
               icon="chevron-left"
               variant="tonal"
               size="medium"
               accessibilityLabel="Previous film"
               onPress={() => step(-1)}
             />
-            <IconButton
+            <TooltipIconButton
               icon="chevron-right"
               variant="tonal"
               size="medium"
@@ -350,7 +350,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
                 progress={autoplay.enabled ? autoplay.progress : null}
               />
               {autoplay.enabled ? (
-                <IconButton
+                <TooltipIconButton
                   icon={autoplay.paused ? 'play' : 'pause'}
                   variant="standard"
                   size="extraSmall"
@@ -358,7 +358,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
                     autoplay.paused ? 'Play the carousel' : 'Pause the carousel'
                   }
                   onPress={autoplay.togglePaused}
-                  style={styles.pause}
+                  anchorStyle={styles.pause}
                 />
               ) : null}
             </View>

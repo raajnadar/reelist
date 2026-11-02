@@ -1,5 +1,5 @@
 import { Icon } from '@rootnative/components/icon'
-import { IconButton } from '@rootnative/components/icon-button'
+import { PortalHost } from '@rootnative/components/portal'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
@@ -11,6 +11,7 @@ import { GlassLayer } from '../components/GlassLayer'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { TooltipIconButton } from '../components/TooltipIconButton'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../lib/head'
 import { haptic } from '../lib/haptics'
@@ -61,6 +62,13 @@ const PILL_SHADOW = '0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0
  * line the eye cannot follow, and the grid below it is centred anyway.
  */
 const FIELD_MAX_WIDTH = 560
+
+/**
+ * The portal host of the sheet, for the tooltips of its buttons. The sheet is a
+ * `transparentModal`, and on iOS the root host is under the modal, so a tooltip
+ * there is out of view.
+ */
+const SEARCH_HOST = 'search'
 
 /**
  * How each kind of failure is presented. The action is bound inside the screen:
@@ -327,18 +335,20 @@ function SearchScreen() {
                 screen give a screen reader no way to tell them apart.
               */}
               {query ? (
-                <IconButton
+                <TooltipIconButton
                   icon="close-circle"
                   variant="standard"
                   accessibilityLabel="Clear the search box"
+                  hostName={SEARCH_HOST}
                   onPress={clear}
                 />
               ) : null}
-              <IconButton
+              <TooltipIconButton
                 icon="close"
                 variant="standard"
                 accessibilityLabel="Close search"
                 testID="search-close"
+                hostName={SEARCH_HOST}
                 onPress={dismiss}
               />
             </Motion.View>
@@ -444,6 +454,8 @@ function SearchScreen() {
           </Presence>
         </Motion.View>
       </View>
+
+      <PortalHost name={SEARCH_HOST} />
     </View>
   )
 }

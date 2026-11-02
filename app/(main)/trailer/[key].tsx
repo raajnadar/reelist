@@ -1,5 +1,4 @@
 import { AppBar } from '@rootnative/components/appbar'
-import { IconButton } from '@rootnative/components/icon-button'
 import { defaultTopAppBarTokens, useWindowDimensions } from '@rootnative/core'
 import { openURL } from 'expo-linking'
 import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
@@ -9,6 +8,7 @@ import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StateMessage } from '../../../components/StateMessage'
 import { TrailerPlayer } from '../../../components/TrailerPlayer'
+import { TooltipIconButton } from '../../../components/TooltipIconButton'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../../../lib/head'
 import { enterPip, pipSupported, setAutoEnterPip, useInPip } from '../../../lib/pip'
@@ -117,7 +117,7 @@ export default function TrailerScreen() {
           containerColor={STAGE}
           contentColor={ON_STAGE}
           leading={
-            <IconButton
+            <TooltipIconButton
               icon="close"
               variant="standard"
               accessibilityLabel="Close the trailer"

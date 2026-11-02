@@ -1,9 +1,9 @@
-import { IconButton } from '@rootnative/components/icon-button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, useInterpolatedStyle, type SharedValue } from '@rootnative/inertia'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { TooltipIconButton } from './TooltipIconButton'
 
 /** The MD3 small app bar height, under the status bar inset. */
 export const HEADER_HEIGHT = 56
@@ -91,7 +91,7 @@ export function DetailHeader({ title, scrollY, revealAt, onBack }: Props) {
             `onSurface` at every scroll position, which is correct against both
             the disc and the filled bar, so no colour has to animate.
           */}
-          <IconButton
+          <TooltipIconButton
             icon="arrow-left"
             variant="standard"
             iconColor={theme.colors.onSurface}
