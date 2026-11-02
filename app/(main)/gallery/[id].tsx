@@ -79,13 +79,6 @@ export default function GalleryScreen() {
 
       <Presence>
         {loading ? (
-          /*
-            A `Motion.View` with an `exit`, not a plain View. `Presence` keeps
-            a departing child until every motion element inside it releases,
-            and a child with none is never released: on a cold open of the
-            address, the spinner stayed for good and took half the window
-            from the viewer under it.
-          */
           <Motion.View
             key="loading"
             exit={{ opacity: 0 }}
