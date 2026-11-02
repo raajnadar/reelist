@@ -24,6 +24,18 @@ const generated = createMaterialTheme(SEED, SCHEME_OPTIONS)
  */
 const muted = createMaterialTheme(SEED, { ...SCHEME_OPTIONS, variant: 'tonalSpot' })
 
+/**
+ * The navigation bar, rail, and drawer keep the red tint that the neutral
+ * surfaces drop. The page is neutral, so the tint separates the navigation
+ * from the page without a dividing line.
+ */
+const tinted = createMaterialTheme(SEED, { variant: 'tonalSpot' })
+
+export const NAVIGATION_CONTAINER = {
+  light: tinted.lightTheme.colors.surfaceContainer,
+  dark: tinted.darkTheme.colors.surfaceContainer,
+} as const
+
 const secondaryRoles = (colors: Theme['colors']): Partial<Theme['colors']> =>
   Object.fromEntries(Object.entries(colors).filter(([role]) => /secondary/i.test(role)))
 

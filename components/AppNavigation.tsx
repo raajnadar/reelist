@@ -1,20 +1,28 @@
 import { Icon } from '@rootnative/components/icon'
-import { NavigationBar } from '@rootnative/components/navigation-bar'
 import { NavigationDrawer } from '@rootnative/components/navigation-drawer'
 import { NavigationRail } from '@rootnative/components/navigation-rail'
 import { useSnackbarOffset } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
 import {
   useBreakpoint,
-  useTheme,
+  useThemeMode,
   type IconRenderProps,
   type IconSource,
 } from '@rootnative/core'
+import { Presence, useMotionValue } from '@rootnative/inertia'
 import { useNavigation, usePathname, useRoute, useRouter } from 'expo-router'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native'
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from './BrandMark'
+import {
+  FLOATING_BAR_ABOVE_GAP,
+  FLOATING_BAR_GAP,
+  FLOATING_BAR_HEIGHT,
+  FloatingNavigationBar,
+} from './FloatingNavigationBar'
+import { OfflineBanner } from './OfflineBanner'
+import { BarShrinkContext } from '../lib/floatingBar'
 import { filmCount } from '../lib/format'
 import {
   activeDestination,
@@ -29,16 +37,31 @@ import {
 import { ContentWidthContext } from '../lib/useContentWidth'
 import { useHydrating } from '../lib/useHydrating'
 import { useKeyboardShrinksWindow } from '../lib/useKeyboardShrinksWindow'
+import { useOnline } from '../lib/network'
+import { useScreenReader } from '../lib/useScreenReader'
 import { useSearchLaunch } from '../lib/useSearchLaunch'
 import { useWebKey } from '../lib/useWebKey'
 import { isWatched, useWatchlist } from '../lib/watchlist'
+import { NAVIGATION_CONTAINER } from '../theme'
 
 /**
- * The MD3 navigation bar height, before the bottom inset the bar adds itself.
- * The library exports no constant for it, and the snackbar needs the number to
- * clear the bar.
+ * The tallest bottom inset that holds only a gesture handle: the iOS home
+ * indicator (34) or the Android gesture bar (about 24). The handle is a thin
+ * line low in the inset, so the floating bar can sit over the inset and still
+ * clear it. A taller inset holds the Android three-button bar.
  */
-const BAR_HEIGHT = 80
+const HANDLE_INSET_MAX = 40
+
+/**
+ * The distance from the bottom edge of the window to the floating bar: the
+ * same gap as at its sides. Over a three-button bar, the same gap above the
+ * buttons, which must stay clear.
+ */
+function barBottomFor(insetBottom: number) {
+  return insetBottom > HANDLE_INSET_MAX
+    ? insetBottom + FLOATING_BAR_GAP
+    : FLOATING_BAR_GAP
+}
 
 type Item = Omit<Destination, 'icon'> & {
   icon: IconSource
@@ -49,8 +72,8 @@ type Item = Omit<Destination, 'icon'> & {
 /**
  * The app's navigation, around every screen of the `(main)` group.
  *
- * One `useBreakpoint` call picks the component: a `NavigationBar` under the
- * screen on a phone, a `NavigationRail` beside it on a tablet or a laptop,
+ * One `useBreakpoint` call picks the component: a `FloatingNavigationBar` over
+ * the screen on a phone, a `NavigationRail` beside it on a tablet or a laptop,
  * and a standard `NavigationDrawer` beside it on a wide monitor.
  * All three take the same destinations from lib/navigation.ts, and all three
  * light the one the reader is on. The drawer has room for more: at its end it
@@ -69,7 +92,7 @@ type Item = Omit<Destination, 'icon'> & {
  * arrives on the next frame. See the breakpoints note in the core docs.
  */
 export function AppNavigation({ children }: { children: ReactNode }) {
-  const theme = useTheme()
+  const { scheme } = useThemeMode()
   const kind = navigationKind(useBreakpoint())
   const pathname = usePathname()
   const router = useRouter()
@@ -91,23 +114,58 @@ export function AppNavigation({ children }: { children: ReactNode }) {
   // A watched film is done, so the badge counts only the films still to watch.
   const toWatch = useWatchlist().movies.filter((m) => !isWatched(m)).length
 
+  const barBottom = barBottomFor(insets.bottom)
+
+  /**
+   * The offline notice floats above the bar on a phone, and at the bottom of
+   * the page beside a rail or a drawer. Its text can wrap on a narrow window,
+   * so its height is measured, not fixed. The room it takes joins the room of
+   * the bar below.
+   */
+  const offline = !useOnline() && !hidden
+  const [noticeHeight, setNoticeHeight] = useState(0)
+  const onNoticeLayout = (event: LayoutChangeEvent) =>
+    setNoticeHeight(event.nativeEvent.layout.height)
+  const noticeRoom = offline
+    ? noticeHeight + (bar ? FLOATING_BAR_ABOVE_GAP : FLOATING_BAR_GAP)
+    : 0
+
   /**
    * The snackbar layer draws over the whole window, so on a phone it has to
    * rise above the bar. The layer already adds the bottom inset and its own
-   * margin, so the bar's height is the whole offset. Zero on the other
-   * layouts: the rail and the drawer take no room from the bottom edge.
+   * margin, so the offset is the rest of the room the full bar takes, and the
+   * room of the offline notice. Beside the rail and the drawer, only the
+   * notice takes room from the bottom edge.
    */
-  useSnackbarOffset(bar ? BAR_HEIGHT : 0)
+  useSnackbarOffset(
+    (bar ? barBottom - insets.bottom + FLOATING_BAR_HEIGHT : 0) + noticeRoom,
+  )
 
   /**
-   * The bar takes the bottom inset, so the screens above it no longer sit on
-   * the home indicator. They pad their lists by `insets.bottom`, and without
-   * this override each list would end with the inset twice.
+   * The bar and the notice float over the screens, so their content runs
+   * under them. The screens pad their lists by `insets.bottom`, so a bottom
+   * inset that holds the full bar and the notice lets the last row scroll
+   * clear of both. The full bar, not the small one: a list that changed its
+   * padding as the bar shrank would jump.
    */
-  const screenInsets = useMemo(
-    () => (bar ? { ...insets, bottom: 0 } : insets),
-    [bar, insets],
-  )
+  const screenInsets = useMemo(() => {
+    const bottom = (bar ? barBottom + FLOATING_BAR_HEIGHT : insets.bottom) + noticeRoom
+    return bottom === insets.bottom ? insets : { ...insets, bottom }
+  }, [bar, barBottom, insets, noticeRoom])
+
+  /**
+   * The size the bar moves to, which the screens write as they scroll. See
+   * lib/floatingBar.ts. A new page starts with the full bar, whatever the last
+   * page left it at. Under a screen reader the bar keeps its full size: the
+   * reader moves through the items by swipes, and a label that comes and goes
+   * under the focus is confusing.
+   */
+  const shrink = useMotionValue(0)
+  const screenReader = useScreenReader()
+  useEffect(() => {
+    shrink.set(0)
+  }, [pathname, screenReader, shrink])
+  const shrinkTarget = bar && !screenReader ? shrink : null
 
   /**
    * The width the rail or the drawer leaves for the page, for the poster
@@ -192,6 +250,8 @@ export function AppNavigation({ children }: { children: ReactNode }) {
    */
   const value = active ?? ''
 
+  const container = NAVIGATION_CONTAINER[scheme]
+
   let side: ReactNode = null
   if (!hidden && kind === 'rail') {
     side = (
@@ -199,14 +259,16 @@ export function AppNavigation({ children }: { children: ReactNode }) {
       // status bar on its side of the window. The inset goes on a wrapper:
       // a `paddingTop` on the rail itself replaces the rail's own vertical
       // padding, and on the web, where the inset is 0, the first item then
-      // sits cut off at the top edge.
-      <View style={{ paddingTop: insets.top }}>
+      // sits cut off at the top edge. The colour goes on the wrapper too, so
+      // it runs up under the status bar.
+      <View style={{ paddingTop: insets.top, backgroundColor: container }}>
         {/* The rail pads its top by 4 dp only, so without a header the
             first item sits on the window edge. The mark is the header. */}
         <NavigationRail
           items={items}
           value={value}
           onValueChange={go}
+          containerColor={container}
           header={
             <View style={styles.railHeader}>
               <BrandMark size={28} />
@@ -225,9 +287,9 @@ export function AppNavigation({ children }: { children: ReactNode }) {
         value={value}
         onValueChange={go}
         insetTop
+        containerColor={container}
         accessibilityLabel="Main navigation"
         testID="app-navigation-drawer"
-        style={[styles.drawer, { borderColor: theme.colors.outlineVariant }]}
       >
         <View style={styles.brand}>
           <BrandMark size={28} />
@@ -260,6 +322,12 @@ export function AppNavigation({ children }: { children: ReactNode }) {
     )
   }
 
+  const notice = (
+    <Presence>
+      {offline ? <OfflineBanner key="offline" onLayout={onNoticeLayout} /> : null}
+    </Presence>
+  )
+
   /*
     One tree for every layout, with the screens always in the same place. A
     change of layout then swaps the navigation only. With a tree for each
@@ -272,13 +340,25 @@ export function AppNavigation({ children }: { children: ReactNode }) {
       {side}
       <SafeAreaInsetsContext.Provider value={screenInsets}>
         <ContentWidthContext.Provider value={contentWidth}>
-          <View
-            style={styles.content}
-            onLayout={onContentLayout}
-            testID="app-navigation-content"
-          >
-            {children}
-          </View>
+          <BarShrinkContext.Provider value={shrinkTarget}>
+            <View
+              style={styles.content}
+              onLayout={onContentLayout}
+              testID="app-navigation-content"
+            >
+              {children}
+              {bar ? null : (
+                <View
+                  style={[
+                    styles.noticeTrack,
+                    { bottom: insets.bottom + FLOATING_BAR_GAP },
+                  ]}
+                >
+                  {notice}
+                </View>
+              )}
+            </View>
+          </BarShrinkContext.Provider>
         </ContentWidthContext.Provider>
       </SafeAreaInsetsContext.Provider>
       {bar ? (
@@ -289,12 +369,15 @@ export function AppNavigation({ children }: { children: ReactNode }) {
         // React mounts the bar again with the right item lit. See
         // lib/useHydrating.ts. The rail and the drawer mount fresh after the
         // server's bar and need none of this.
-        <NavigationBar
+        <FloatingNavigationBar
           key={hydrating ? 'hydrating' : 'client'}
           items={items}
           value={value}
           onValueChange={go}
-          insetBottom
+          shrink={shrink}
+          containerColor={container}
+          bottom={barBottom}
+          above={notice}
           accessibilityLabel="Main navigation"
           testID="app-navigation-bar"
         />
@@ -307,11 +390,18 @@ const styles = StyleSheet.create({
   frame: { flex: 1 },
   row: { flexDirection: 'row' },
   content: { flex: 1 },
+  // Over the bottom of the page, with the gap of the floating bar. Its empty
+  // sides let a touch through to the page.
+  noticeTrack: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: FLOATING_BAR_GAP,
+    pointerEvents: 'box-none',
+  },
   fill: { flex: 1 },
   railHeader: { paddingVertical: 12 },
-  // A standard drawer shares the surface colour with the page, so one hairline
-  // is what separates the two.
-  drawer: { borderRightWidth: StyleSheet.hairlineWidth },
   // 28 from the edge, where the drawer puts its own section headlines.
   brand: {
     flexDirection: 'row',

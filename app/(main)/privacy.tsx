@@ -2,11 +2,13 @@ import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
+import { Motion } from '@rootnative/inertia'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { Link, useRouter, type Href } from 'expo-router'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BUTTON_SIZE } from '../../lib/buttonSize'
+import { useBarScroll } from '../../lib/floatingBar'
 import { metadataFor, privacyMeta } from '../../lib/head'
 import { NEW_TAB } from '../../lib/share'
 
@@ -150,6 +152,7 @@ export default function PrivacyScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { onScroll } = useBarScroll()
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
@@ -163,7 +166,9 @@ export default function PrivacyScreen() {
         onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       />
 
-      <ScrollView
+      <Motion.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}
       >
         <View style={styles.column}>
@@ -226,7 +231,7 @@ export default function PrivacyScreen() {
             </View>
           ))}
         </View>
-      </ScrollView>
+      </Motion.ScrollView>
     </View>
   )
 }

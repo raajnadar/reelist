@@ -6,7 +6,7 @@ import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../../../lib/language'
-import { FlatList, StyleSheet, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DiscoverFilterRow } from '../../../components/DiscoverFilterRow'
 import { MovieCard } from '../../../components/MovieCard'
@@ -26,6 +26,7 @@ import {
 } from '../../../lib/discover'
 import { missingFailure, type FailureKind } from '../../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { useBarScroll } from '../../../lib/floatingBar'
 import { genreMeta, metadataFor, noindexMeta } from '../../../lib/head'
 import { genreEntry, loadSeed } from '../../../lib/prerender'
 import { useContentWidth } from '../../../lib/useContentWidth'
@@ -122,6 +123,7 @@ function GenreScreen() {
   const snackbar = useSnackbar()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { onScroll } = useBarScroll()
   const width = useContentWidth()
   const columns = posterColumns(width)
 
@@ -358,7 +360,7 @@ function GenreScreen() {
             animate={{ opacity: 1 }}
             style={styles.fill}
           >
-            <FlatList
+            <Motion.FlatList
               data={movies}
               // `key` forces a remount when the column count changes. FlatList
               // caches its layout per item and does not recompute on a
@@ -382,6 +384,7 @@ function GenreScreen() {
                   onRefresh={() => void refresh()}
                 />
               }
+              onScroll={onScroll}
               onEndReached={loadMore}
               // Half a screen of runway. Lower and the user reaches the end
               // before the next page lands; higher and the screen fetches

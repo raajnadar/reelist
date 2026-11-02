@@ -20,7 +20,7 @@ const REVEAL_SPAN = 90
 type Props = {
   /** Shown only once the bar has a background to sit on. */
   title: string
-  /** The scroll offset of the content below, from `useScroll`. */
+  /** The scroll offset of the content below, from `useBarScroll`. */
   scrollY: SharedValue<number>
   /** The offset at which the bar is fully opaque and the title fully shown. */
   revealAt: number

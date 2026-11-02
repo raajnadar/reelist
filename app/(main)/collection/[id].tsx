@@ -1,6 +1,6 @@
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Motion, Presence, useScroll } from '@rootnative/inertia'
+import { Motion, Presence } from '@rootnative/inertia'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
@@ -15,6 +15,7 @@ import { getCollection } from '../../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
 import { filmCount } from '../../../lib/format'
 import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { useBarScroll } from '../../../lib/floatingBar'
 import { collectionMeta, metadataFor, noindexMeta } from '../../../lib/head'
 import { BACKDROP_W780, backdropUrl } from '../../../lib/images'
 import type { Collection } from '../../../lib/types'
@@ -100,7 +101,7 @@ export default function CollectionScreen() {
         ? missingFailure('TMDB has no collection with that id.')
         : null))
 
-  const { scrollY, onScroll } = useScroll()
+  const { scrollY, onScroll } = useBarScroll()
   const headerSpace = insets.top + HEADER_HEIGHT
   const heroHeight = Math.min(width * HERO_ASPECT, HERO_MAX_HEIGHT)
 

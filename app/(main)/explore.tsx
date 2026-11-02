@@ -12,6 +12,7 @@ import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
 import { getGenres, getNowPlaying, getUpcoming } from '../../lib/api'
 import { type FailureKind } from '../../lib/errors'
+import { useBarScroll } from '../../lib/floatingBar'
 import { exploreMeta, metadataFor } from '../../lib/head'
 import { regionName, useRegion } from '../../lib/region'
 import { useResource } from '../../lib/useResource'
@@ -46,6 +47,7 @@ const REPORTS: Record<
 export default function ExploreScreen() {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
+  const { onScroll } = useBarScroll()
   const { code: region } = useRegion()
 
   /**
@@ -128,6 +130,8 @@ export default function ExploreScreen() {
                 reached. See the home screen. */}
             <Motion.ScrollView
               showsVerticalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
               contentContainerStyle={[
                 styles.content,
                 { paddingBottom: insets.bottom + 16 },

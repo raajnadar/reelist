@@ -1,6 +1,6 @@
 import { Typography } from '@rootnative/components/typography'
 import { useBreakpointValue, useTheme } from '@rootnative/core'
-import { Motion, Presence, useScroll } from '@rootnative/inertia'
+import { Motion, Presence } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -13,6 +13,7 @@ import { StateMessage } from '../../../components/StateMessage'
 import { getPerson } from '../../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { useBarScroll } from '../../../lib/floatingBar'
 import { metadataFor, noindexMeta, personMeta } from '../../../lib/head'
 import type { PersonDetail } from '../../../lib/types'
 import { useContentWidth } from '../../../lib/useContentWidth'
@@ -103,7 +104,7 @@ export default function PersonScreen() {
 
   // scrollY drives the header on the UI thread, so the bar arrives during a
   // fling without a re-render per frame.
-  const { scrollY, onScroll } = useScroll()
+  const { scrollY, onScroll } = useBarScroll()
 
   // The room the floating header needs. Nothing runs under this bar — there is
   // no backdrop on a person — so every state starts below it.

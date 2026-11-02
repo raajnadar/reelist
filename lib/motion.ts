@@ -90,6 +90,13 @@ export const transitions = {
   snap: { type: 'spring', tension: 320, friction: 28 },
 
   /**
+   * The floating navigation bar shrinking while the reader scrolls down, and
+   * growing back on a scroll up. Damped, with no bounce: the bar sits at the
+   * edge of the eye, and a bounce there pulls the eye off the content.
+   */
+  resize: { type: 'spring', tension: 260, friction: 26 },
+
+  /**
    * The gallery picture growing under a double tap, and shrinking back. A
    * spring with a little give, so the zoom lands with a small settle rather
    * than a stop, which is what a pinch would feel like.

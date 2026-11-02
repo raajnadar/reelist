@@ -23,6 +23,7 @@ import {
   getTrending,
 } from '../../lib/api'
 import { type FailureKind } from '../../lib/errors'
+import { useBarScroll } from '../../lib/floatingBar'
 import { homeMeta, metadataFor } from '../../lib/head'
 import { languageName, useLanguage } from '../../lib/language'
 import { navigationKind } from '../../lib/navigation'
@@ -67,6 +68,7 @@ export default function HomeScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { onScroll } = useBarScroll()
   const navigation = navigationKind(useBreakpoint())
   const { code: language } = useLanguage()
 
@@ -270,6 +272,8 @@ export default function HomeScreen() {
             */}
             <Motion.ScrollView
               showsVerticalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
               contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
               refreshControl={
                 <PullToRefresh

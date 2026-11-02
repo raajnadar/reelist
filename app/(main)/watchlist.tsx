@@ -9,7 +9,7 @@ import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useIsFocused, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { BackHandler, FlatList, Platform, StyleSheet, View } from 'react-native'
+import { BackHandler, Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
@@ -17,6 +17,7 @@ import { StateMessage } from '../../components/StateMessage'
 import { TooltipIconButton } from '../../components/TooltipIconButton'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { filmCount } from '../../lib/format'
+import { useBarScroll } from '../../lib/floatingBar'
 import { metadataFor, noindexMeta } from '../../lib/head'
 import { haptic } from '../../lib/haptics'
 import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
@@ -74,6 +75,7 @@ function WatchlistScreen() {
   const theme = useTheme()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { onScroll } = useBarScroll()
   const width = useContentWidth()
   const columns = posterColumns(width)
   const inset = gridInset(width)
@@ -361,7 +363,7 @@ function WatchlistScreen() {
             </View>
 
             {shown.length ? (
-              <FlatList
+              <Motion.FlatList
                 data={shown}
                 // `key` forces a remount when the column count changes. FlatList
                 // caches its layout per item and does not recompute on a
@@ -396,6 +398,7 @@ function WatchlistScreen() {
                   },
                 ]}
                 showsVerticalScrollIndicator={false}
+                onScroll={onScroll}
               />
             ) : tab === 'toWatch' ? (
               <StateMessage

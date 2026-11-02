@@ -2,7 +2,6 @@ import { Stack } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { AppNavigation } from '../../components/AppNavigation'
 import { GlassTarget } from '../../components/GlassLayer'
-import { OfflineBanner } from '../../components/OfflineBanner'
 
 /**
  * Every page that has the navigation around it.
@@ -18,7 +17,8 @@ export default function MainLayout() {
     <GlassTarget>
       {/*
         Outside `<main>`: the navigation is its own landmark, and the page
-        content is what the main one holds.
+        content is what the main one holds. The offline notice is a status
+        landmark of its own, and the navigation places it.
       */}
       <AppNavigation>
         {/*
@@ -30,8 +30,6 @@ export default function MainLayout() {
         <View role="main" style={styles.main}>
           <Stack screenOptions={{ headerShown: false }} />
         </View>
-        {/* A status landmark of its own, under the page. */}
-        <OfflineBanner />
       </AppNavigation>
     </GlassTarget>
   )

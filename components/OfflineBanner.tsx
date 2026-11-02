@@ -1,53 +1,73 @@
-import { Typography } from '@rootnative/components'
+import { Icon } from '@rootnative/components/icon'
+import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { usePathname } from 'expo-router'
-import { StyleSheet, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { navigationHidden } from '../lib/navigation'
-import { useOnline } from '../lib/network'
+import { Motion } from '@rootnative/inertia'
+import { StyleSheet, type LayoutChangeEvent } from 'react-native'
+import { FLOATING_BAR_MAX_WIDTH, FLOATING_SHADOW } from './FloatingNavigationBar'
 
 /**
- * A strip under the page while the device has no connection.
+ * A card that floats over the bottom of the page while the device has no
+ * connection.
  *
- * Under the page, not over it: the pages pad their own top edge for the
- * status bar, and a strip above them would add a second gap. At the
- * bottom it sits on the navigation bar, which already takes the bottom
- * inset; beside a rail or a drawer it takes that inset itself. It steps
- * aside with the navigation on the trailer and the gallery, which fill
- * the window.
+ * AppNavigation places it: on a phone above the floating bar, as wide as
+ * the full bar, and beside a rail or a drawer at the bottom of the page. It
+ * measures the card through `onLayout`, so the lists and the snackbar clear
+ * it. It steps aside with the navigation on the trailer and the gallery,
+ * which fill the window.
  *
- * The strip is only the notice. The screens keep reporting a failed
- * request as before, and lib/useResource.ts asks again on its own once the
- * connection is back.
+ * A touch goes through the card to the page under it: the card is the
+ * notice only. The screens keep reporting a failed request as before, and
+ * lib/useResource.ts asks again on its own once the connection is back.
  */
-export function OfflineBanner() {
-  const online = useOnline()
+export function OfflineBanner({
+  onLayout,
+}: {
+  onLayout?: (event: LayoutChangeEvent) => void
+}) {
   const theme = useTheme()
-  const insets = useSafeAreaInsets()
-  const hidden = navigationHidden(usePathname())
-
-  if (online || hidden) return null
 
   return (
-    <View
+    <Motion.View
       role="status"
       accessibilityLiveRegion="polite"
       testID="offline-banner"
+      onLayout={onLayout}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition="exit"
       style={[
-        styles.strip,
+        styles.card,
         {
           backgroundColor: theme.colors.inverseSurface,
-          paddingBottom: 8 + insets.bottom,
+          borderRadius: theme.shape.cornerLarge,
         },
       ]}
     >
-      <Typography variant="labelLarge" color={theme.colors.inverseOnSurface}>
+      <Icon source="cloud-off-outline" size={20} color={theme.colors.inverseOnSurface} />
+      <Typography
+        variant="labelLarge"
+        color={theme.colors.inverseOnSurface}
+        style={styles.text}
+      >
         You are offline. Films you opened before still show.
       </Typography>
-    </View>
+    </Motion.View>
   )
 }
 
 const styles = StyleSheet.create({
-  strip: { paddingHorizontal: 16, paddingTop: 8, alignItems: 'center' },
+  card: {
+    width: '100%',
+    maxWidth: FLOATING_BAR_MAX_WIDTH,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    boxShadow: FLOATING_SHADOW,
+    pointerEvents: 'none',
+  },
+  // The text wraps beside the icon on a narrow window.
+  text: { flexShrink: 1 },
 })

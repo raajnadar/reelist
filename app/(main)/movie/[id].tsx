@@ -1,6 +1,6 @@
 import { Skeleton } from '@rootnative/components/skeleton'
 import { useBreakpointValue, useTheme, useWindowDimensions } from '@rootnative/core'
-import { Motion, Presence, Stagger, useScroll } from '@rootnative/inertia'
+import { Motion, Presence, Stagger } from '@rootnative/inertia'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type DimensionValue } from 'react-native'
@@ -29,6 +29,7 @@ import { VideoRow } from '../../../components/VideoRow'
 import { WatchProviders } from '../../../components/WatchProviders'
 import { getMovie } from '../../../lib/api'
 import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
+import { useBarScroll } from '../../../lib/floatingBar'
 import { metadataFor, movieMeta, noindexMeta } from '../../../lib/head'
 import { BACKDROP_W780, POSTER_W500, backdropUrl, posterUrl } from '../../../lib/images'
 import { STAGGER_INTERVAL } from '../../../lib/motion'
@@ -253,7 +254,7 @@ export default function MovieScreen() {
 
   // scrollY drives the header on the UI thread, so the bar arrives during a
   // fling without a re-render per frame.
-  const { scrollY, onScroll } = useScroll()
+  const { scrollY, onScroll } = useBarScroll()
 
   // The room the floating header needs, for the states that have no artwork to
   // run under it.
