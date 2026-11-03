@@ -54,6 +54,24 @@ it('reports the hold when a finger goes down and comes up', () => {
   expect(onHold).toHaveBeenLastCalledWith(false)
 })
 
+// The carousel stops only while a mouse is over a poster, not over the rest of
+// the row. A touch reports through the hold above, so its hover is left out.
+it('reports a mouse over the card, but not a touch', () => {
+  const onHover = jest.fn()
+  const { card } = renderCard({ onHover })
+  const pointer = (event: string, pointerType: string) =>
+    fireEvent(card, event, { nativeEvent: { pointerType } })
+
+  pointer('pointerEnter', 'mouse')
+  expect(onHover).toHaveBeenLastCalledWith(true)
+  pointer('pointerLeave', 'mouse')
+  expect(onHover).toHaveBeenLastCalledWith(false)
+
+  pointer('pointerEnter', 'touch')
+  pointer('pointerLeave', 'touch')
+  expect(onHover).toHaveBeenCalledTimes(2)
+})
+
 // The long-press handler that keeps a reader on the home screen after a hold
 // must not take the tap with it.
 it('opens the film on a tap', () => {

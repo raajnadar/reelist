@@ -10,7 +10,15 @@ import {
 } from '@rootnative/inertia'
 import { Link } from 'expo-router'
 import { memo } from 'react'
-import { Platform, Pressable, StyleSheet, View, type DimensionValue } from 'react-native'
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  type DimensionValue,
+  type PointerEvent,
+  type ViewStyle,
+} from 'react-native'
 import { metaLine } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
 import { POSTER_W500, posterUrl } from '../lib/images'
@@ -102,6 +110,17 @@ const RING_OUTSET = RING_OFFSET + RING_WIDTH
 
 const ARROW_STEPS: Record<string, -1 | 1> = { ArrowLeft: -1, ArrowRight: 1 }
 
+/**
+ * On the web each slot is a CSS snap area, because react-native-web ignores
+ * `snapToInterval`. The centre of the slot snaps to the centre of the list,
+ * and one swipe moves one slot, as `disableIntervalMomentum` does on native.
+ * The React Native types do not list these properties.
+ */
+const SNAP_AREA =
+  Platform.OS === 'web'
+    ? ({ scrollSnapAlign: 'center', scrollSnapStop: 'always' } as unknown as ViewStyle)
+    : null
+
 /** The element of a card. On the web it is the anchor. */
 export type CardElement = { focus: (options?: FocusOptions) => void }
 
@@ -116,6 +135,8 @@ type Props = {
   snap: number
   /** Told true while a finger or a pointer is down on the card, then false. */
   onHold?: (holding: boolean) => void
+  /** Told true when a mouse or a pen moves over the card, and false when it leaves. */
+  onHover?: (hovering: boolean) => void
   /** True for the centred card. On the web it is the only card in the tab order. */
   current?: boolean
   /** Told -1 or 1 when the reader presses the left or right arrow key on the card. */
@@ -135,6 +156,7 @@ export const CarouselCard = memo(function CarouselCard({
   width,
   snap,
   onHold,
+  onHover,
   current = false,
   onArrowKey,
   onElement,
@@ -200,9 +222,20 @@ export const CarouselCard = memo(function CarouselCard({
   const keyProps =
     Platform.OS === 'web' ? ({ tabIndex: current ? 0 : -1, onKeyDown } as const) : {}
 
+  // A finger reports through `onHold`. A touch also enters and leaves the card,
+  // and a hover from it would hold the carousel for the length of a tap.
+  const hover = (hovering: boolean) => (event: PointerEvent) => {
+    if (event.nativeEvent.pointerType !== 'touch') onHover?.(hovering)
+  }
+
   return (
-    <View style={[styles.slot, { width }]}>
-      <Motion.View style={scaleStyle}>
+    <View style={[styles.slot, SNAP_AREA, { width }]}>
+      {/* The hover is on the scaled view, so it covers the poster as drawn. */}
+      <Motion.View
+        style={scaleStyle}
+        onPointerEnter={hover(true)}
+        onPointerLeave={hover(false)}
+      >
         {/*
           The press scale lives on its own Motion.Pressable INSIDE the
           scroll-driven wrapper, rather than on the wrapper itself. Both effects

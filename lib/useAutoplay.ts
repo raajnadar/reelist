@@ -8,12 +8,17 @@ import { AUTOPLAY_MS, transitions } from './motion'
  * Moves a carousel on by itself, one film each AUTOPLAY_MS.
  *
  * It holds while the reader uses the carousel: a finger on a card or on the
- * list, a pointer over it, or keyboard focus inside it. A hold freezes the
- * wait where it is, and the end of the hold continues it, so a reader who
- * holds a card can read its caption for as long as they like and loses none
- * of the time that was left. The pause button freezes it the same way, until
- * the reader starts it again, which WCAG 2.2.2 asks of any content that moves
- * by itself for more than five seconds.
+ * list, a mouse over a card, or keyboard focus inside it. On the web it also
+ * holds while the list moves, so a step never starts from a list that is
+ * still on its way to a film. A hold freezes the wait where it is, and the
+ * end of the hold continues it, so a reader who holds a card can read its
+ * caption for as long as they like and loses none of the time that was left.
+ * The pause button freezes it the same way, until the reader starts it
+ * again, which WCAG 2.2.2 asks of any content that moves by itself for more
+ * than five seconds.
+ *
+ * A mouse over the backdrop, the caption, or the buttons does not hold. The
+ * reader looks at the poster, so only the poster stops the carousel.
  *
  * It is off while another screen is on top, and when the system asks for
  * reduced motion. A new `active` starts a new wait, so a reader who swipes
@@ -30,9 +35,11 @@ export function useAutoplay(available: boolean, active: number, advance: () => v
   const [keyboard, setKeyboard] = useState(false)
   const [drag, setDrag] = useState(false)
   const [press, setPress] = useState(false)
+  const [moving, setMoving] = useState(false)
 
   const enabled = available && !reduceMotion
-  const running = enabled && !paused && onTop && !pointer && !keyboard && !drag && !press
+  const running =
+    enabled && !paused && onTop && !pointer && !keyboard && !drag && !press && !moving
   const tick = useEffectEvent(advance)
 
   const progress = useMotionValue(0)
@@ -69,8 +76,6 @@ export function useAutoplay(available: boolean, active: number, advance: () => v
     togglePaused: () => setPaused((value) => !value),
     /** For the view around the carousel. */
     holdHandlers: {
-      onPointerEnter: () => setPointer(true),
-      onPointerLeave: () => setPointer(false),
       // Keyboard focus only. A click focuses the button it lands on, and a
       // hold on that focus would keep the carousel still after the reader
       // pressed play, until they clicked somewhere else.
@@ -90,5 +95,9 @@ export function useAutoplay(available: boolean, active: number, advance: () => v
      * list does not render every card again when the carousel renders.
      */
     onCardHold: setPress,
+    /** For each card, the same as `onCardHold`. */
+    onCardHover: setPointer,
+    /** On the web, for the list. See useWebListScroll. */
+    onListMoving: setMoving,
   }
 }

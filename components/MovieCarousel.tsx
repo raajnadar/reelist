@@ -15,6 +15,7 @@ import type { Movie } from '../lib/types'
 import { useActiveSlot } from '../lib/useActiveSlot'
 import { useAutoplay } from '../lib/useAutoplay'
 import { useContentWidth } from '../lib/useContentWidth'
+import { releaseSnap, useWebListScroll } from '../lib/useWebListScroll'
 import { CarouselBackdrop } from './CarouselBackdrop'
 import { CarouselCaption } from './CarouselCaption'
 import {
@@ -135,6 +136,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   const step = (direction: -1 | 1) => {
     const list = listRef.current
     if (!list || count < 2) return
+    releaseSnap(list)
     let from = target.current ?? active
     // Fifty copies out, the reader is at an end. The same film in the middle
     // copy has the same cards on both sides, so the jump there cannot be seen.
@@ -147,6 +149,22 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   }
 
   const autoplay = useAutoplay(count > 1, active, () => step(1))
+
+  // The web list fires no drag events. A touch or a wheel there is the drag.
+  useWebListScroll(listRef, snap > 0, {
+    onTouch: (down) => {
+      if (down) {
+        target.current = null
+        autoplay.dragHandlers.onScrollBeginDrag()
+      } else {
+        autoplay.dragHandlers.onScrollEndDrag()
+      }
+    },
+    onWheel: () => {
+      target.current = null
+    },
+    onMoving: autoplay.onListMoving,
+  })
 
   /*
     On the web only the centred card is a tab stop. Each card is a link, and
@@ -221,10 +239,12 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
     const offset = (start + filmRef.current) * snap
     scrollX.set(offset)
     // On the first mount `initialScrollIndex` moves the list.
-    if (!mounting) listRef.current?.scrollToOffset({ offset, animated: false })
+    if (mounting) return
+    releaseSnap(listRef.current)
+    listRef.current?.scrollToOffset({ offset, animated: false })
   }, [snap, start, scrollX])
 
-  const { onCardHold } = autoplay
+  const { onCardHold, onCardHover } = autoplay
   const renderItem = useCallback(
     ({ item, index }: { item: Movie; index: number }) => (
       <CarouselCard
@@ -234,12 +254,13 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         width={cardWidth}
         snap={snap}
         onHold={onCardHold}
+        onHover={onCardHover}
         current={index === active}
         onArrowKey={onArrowKey}
         onElement={onCardElement}
       />
     ),
-    [scrollX, cardWidth, snap, onCardHold, active, onArrowKey, onCardElement],
+    [scrollX, cardWidth, snap, onCardHold, onCardHover, active, onArrowKey, onCardElement],
   )
 
   // The offset leaves out the list's padding on purpose. The list's own
