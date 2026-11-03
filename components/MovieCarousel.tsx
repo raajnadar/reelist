@@ -260,7 +260,16 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         onElement={onCardElement}
       />
     ),
-    [scrollX, cardWidth, snap, onCardHold, onCardHover, active, onArrowKey, onCardElement],
+    [
+      scrollX,
+      cardWidth,
+      snap,
+      onCardHold,
+      onCardHover,
+      active,
+      onArrowKey,
+      onCardElement,
+    ],
   )
 
   // The offset leaves out the list's padding on purpose. The list's own
