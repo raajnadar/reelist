@@ -3,6 +3,7 @@ import { Button } from '@rootnative/components/button'
 import { Chip } from '@rootnative/components/chip'
 import { Divider } from '@rootnative/components/divider'
 import { Menu } from '@rootnative/components/menu'
+import { PortalHost } from '@rootnative/components/portal'
 import { Typography } from '@rootnative/components/typography'
 import componentsPackage from '@rootnative/components/package.json'
 import { PageHead } from '@rootnative/seo/expo-router'
@@ -65,6 +66,13 @@ const MAX_HEIGHT_RATIO = 0.86
  * one thing a transparent modal was chosen to keep.
  */
 const SCRIM_OPACITY = 0.32
+
+/**
+ * The portal host of the card, for its menus. The route is a
+ * `transparentModal`, and on iOS the root host is under the modal, so a menu
+ * there is out of view.
+ */
+const ABOUT_HOST = 'about'
 
 /**
  * The three packages, and the version of each one that is running.
@@ -281,6 +289,7 @@ export default function AboutScreen() {
                 <View style={styles.chips}>
                   <Menu
                     maxHeight={320}
+                    hostName={ABOUT_HOST}
                     testID="language-menu"
                     anchor={
                       <Chip
@@ -340,6 +349,7 @@ export default function AboutScreen() {
                 <View style={styles.chips}>
                   <Menu
                     maxHeight={320}
+                    hostName={ABOUT_HOST}
                     testID="region-menu"
                     anchor={
                       <Chip
@@ -505,6 +515,8 @@ export default function AboutScreen() {
           </View>
         </Motion.ScrollView>
       </Motion.View>
+
+      <PortalHost name={ABOUT_HOST} testID="about-host" />
     </View>
   )
 }

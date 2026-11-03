@@ -1,4 +1,4 @@
-import { act, fireEvent, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, waitFor, within } from '@testing-library/react-native'
 import componentsPackage from '@rootnative/components/package.json'
 import corePackage from '@rootnative/core/package.json'
 import inertiaPackage from '@rootnative/inertia/package.json'
@@ -77,6 +77,21 @@ it('sets the country the watch providers are read for', () => {
   expect(renderRegionOnStore()).toMatchObject({ code: 'IN', chosen: true })
   // The chip, not the menu item: the menu is still leaving when this runs.
   expect(screen.getByLabelText('Region: India. Change')).toBeTruthy()
+})
+
+// On iOS a `transparentModal` route draws over the root host, so a menu there
+// opens out of view. The card has a host of its own.
+it.each([
+  ['region', 'region-device'],
+  ['language', 'language-none'],
+])('draws the %s menu in the host of the card', (menu, item) => {
+  const screen = renderWithProviders(<AboutScreen />)
+
+  act(() => {
+    fireEvent.press(screen.getByTestId(`${menu}-chip`))
+  })
+
+  expect(within(screen.getByTestId('about-host')).getByTestId(item)).toBeTruthy()
 })
 
 it('sets the language the reader wants films in first', () => {

@@ -371,7 +371,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
         />
         {count > 1 ? (
           <View style={styles.controls}>
-            <View>
+            <View style={styles.dots}>
               <CarouselDots
                 count={count}
                 scrollX={scrollX}
@@ -399,7 +399,7 @@ export function MovieCarousel({ title, movies }: { title: string; movies: Movie[
   )
 }
 
-/** The height of an `extraSmall` icon button. */
+/** The size of an `extraSmall` icon button, which is square. */
 const PAUSE_SIZE = 32
 
 const styles = StyleSheet.create({
@@ -424,15 +424,13 @@ const styles = StyleSheet.create({
   // As tall as the pause button, so the row does not change height when the
   // button is absent.
   controls: { height: PAUSE_SIZE, alignItems: 'center', justifyContent: 'center' },
+  // As tall as the pause button, so the button lines up with the dots at
+  // `top: 0`. No percentages here: iOS took `left: '100%'` from the width of
+  // the screen, not of this view, and put the button off the screen.
+  dots: { height: PAUSE_SIZE, justifyContent: 'center' },
   // Beside the dots rather than in the row with them, so the dots stay centred
   // under the caption.
-  pause: {
-    position: 'absolute',
-    left: '100%',
-    top: '50%',
-    marginLeft: 8,
-    marginTop: -PAUSE_SIZE / 2,
-  },
+  pause: { position: 'absolute', top: 0, right: -(PAUSE_SIZE + 8) },
   // Over the list, inside its vertical padding, so the buttons centre on the
   // poster. `box-none` lets a swipe between the buttons reach the list.
   arrows: {
