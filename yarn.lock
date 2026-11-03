@@ -2127,25 +2127,25 @@
     invariant "^2.2.4"
     nullthrows "^1.1.1"
 
-"@rootnative/components@0.0.0-alpha.33":
-  version "0.0.0-alpha.33"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.33.tgz#198d288f33081dae2c3262be3e67e2ccc4d03659"
-  integrity sha512-OQ7pdcFDMNs8cnhmJz/LBz2USEsrR4SU2P31ZeanpuJVrlilGAAP1Klt8Owtp2diVcHadd+YKqoAGhTkOJPY+A==
+"@rootnative/components@0.0.0-alpha.34":
+  version "0.0.0-alpha.34"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.34.tgz#d76406e2d82db2dff5da64ccd255636d79b0e043"
+  integrity sha512-xmpzHTXAtBdmrvuOc5O96Dh6w5z1RMIj2qrYK1Oq9RBMucyRSYNshp0rb1dVyTw8F+acJZhEx1lU8xNk/c3JEg==
 
-"@rootnative/core@0.0.0-alpha.33":
-  version "0.0.0-alpha.33"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.33.tgz#2d70c417a347f6a8c633b378ad730e22efd21423"
-  integrity sha512-THdpFcylYMlYfaLrvtRosFocR0PnWIBgn4JWh5D9yzIjv23rvqdseR3JVc3VyBftvuSGUB25BxP5VFWmd67Sww==
+"@rootnative/core@0.0.0-alpha.34":
+  version "0.0.0-alpha.34"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.34.tgz#4363225ad446e059e34e024cb0126a05f089e812"
+  integrity sha512-x250JrLf6m288aQE9Py/BYZanBnIr5exOE9hGfAvnvfBdo4VUhgRJBJKJazf/cpZmh8Mq1ZW4JK3F3R2DPSbmg==
 
-"@rootnative/inertia@0.0.25":
-  version "0.0.25"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.25.tgz#23da79c792021d180986fea3589ef631ea1f4163"
-  integrity sha512-6htZz9c7ObwhRTgJv9ZdTcfpc6T/oq9g1BvUC5HLEsSWhR4zsDZyQGUgsuKKfwTBPADuhmilyQacBLRXRwbrlA==
+"@rootnative/inertia@0.0.26":
+  version "0.0.26"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.26.tgz#80a825eea6b54db775da8b1f8a88d80515bddc00"
+  integrity sha512-Tzylu4aMvjOr6D/Sc4hOuCk7Y5/SUhht++sBbh4pmzSJLCWho/QcVRsXU53f5D7EKraxsnvtp5GdJWFi/xYpTg==
 
-"@rootnative/seo@0.0.0-alpha.33":
-  version "0.0.0-alpha.33"
-  resolved "https://registry.yarnpkg.com/@rootnative/seo/-/seo-0.0.0-alpha.33.tgz#65d7748fd695633047906abeeab63d2546cd7898"
-  integrity sha512-R/NIm1GvRVVka41m9UkYEdj7QSS9JKIkkQlslVj83h+wSSk1QPpgrkYYQ26cThjpDMUacw3YoufLIAd1HQJ2Dg==
+"@rootnative/seo@0.0.0-alpha.34":
+  version "0.0.0-alpha.34"
+  resolved "https://registry.yarnpkg.com/@rootnative/seo/-/seo-0.0.0-alpha.34.tgz#d16809654f40f27f3f67dcde6874dca29a62279a"
+  integrity sha512-Mpa1YieamH9nCuUvHgC6ndnIVaMz8rTZsg8aIuRQpoISnVZpmXb5clzXDiibSX9KMWu3ZGnqwPYQJt0RcZPL6A==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"

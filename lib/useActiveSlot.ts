@@ -7,8 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets'
  *
  * Every scroll-linked layer reads `scrollX` on the UI thread and needs no
  * state. This is for the choices only React can make: which layers to mount,
- * and when a button is disabled. Inertia has no hook that brings a shared
- * value back to the JS thread, so the reaction comes from Reanimated.
+ * and when a button is disabled.
  *
  * The reaction sends the index across only when it changes, so a swipe
  * renders the parent once per slot, not once per frame.
