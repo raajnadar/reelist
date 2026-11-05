@@ -35,6 +35,14 @@ const scrollNode = (list: List | null) => {
  * snaps while the reader moves it. Call `releaseSnap` before the code moves
  * the list.
  *
+ * The snap is off when the list mounts, and comes on when the list first
+ * rests. The list scrolls to `initialScrollIndex` after this effect, and
+ * mounts the slots on the left of it as it goes. WebKit re-snaps after each
+ * layout to the snap area with the index it holds, so a slot that mounts on
+ * the left moves the list to the slot before, which mounts another, and the
+ * list runs away until a touch. Chromium follows the snapped element, not
+ * its index, and never showed this.
+ *
  * `mounted` is false while the list is not on the page.
  */
 export function useWebListScroll(
@@ -49,7 +57,7 @@ export function useWebListScroll(
   useEffect(() => {
     const node = mounted ? scrollNode(list.current) : null
     if (!node) return
-    node.style.scrollSnapType = SNAP
+    node.style.scrollSnapType = 'none'
 
     let rest: ReturnType<typeof setTimeout> | undefined
     const touchStart = () => {

@@ -19,13 +19,23 @@ const fire = (node: HTMLElement, type: string) =>
     node.dispatchEvent(type.startsWith('touch') ? new TouchEvent(type) : new Event(type))
   })
 
-it('snaps the list, and lets the code turn the snap off', () => {
-  const { node, list } = setup()
+// The list scrolls to its first slot after the mount. With the snap on, WebKit
+// re-snapped on each slot that mounted, and the list ran away on iOS.
+it('snaps the list only once it first rests, and lets the code turn the snap off', () => {
+  jest.useFakeTimers()
+  const { node, list, unmount } = setup()
+  expect(node.style.scrollSnapType).toBe('none')
+
+  fire(node, 'scroll')
+  act(() => jest.advanceTimersByTime(150))
   expect(node.style.scrollSnapType).toBe('x mandatory')
 
   releaseSnap(list.current)
 
   expect(node.style.scrollSnapType).toBe('none')
+
+  unmount()
+  jest.useRealTimers()
 })
 
 // The code turns the snap off before a jump to a slot that is not mounted.
