@@ -2116,25 +2116,25 @@
     invariant "^2.2.4"
     nullthrows "^1.1.1"
 
-"@rootnative/components@0.0.0-alpha.34":
-  version "0.0.0-alpha.34"
-  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.34.tgz#d76406e2d82db2dff5da64ccd255636d79b0e043"
-  integrity sha512-xmpzHTXAtBdmrvuOc5O96Dh6w5z1RMIj2qrYK1Oq9RBMucyRSYNshp0rb1dVyTw8F+acJZhEx1lU8xNk/c3JEg==
+"@rootnative/components@0.0.0-alpha.35":
+  version "0.0.0-alpha.35"
+  resolved "https://registry.yarnpkg.com/@rootnative/components/-/components-0.0.0-alpha.35.tgz#fc05d25acd1e6a7f061ea59b5669f18362fca13f"
+  integrity sha512-ojnSSp2/wh2SSQ2fzIqtLXKnSdCf9cst0aNLrIfP6PHQBlcjYZeqgRcVHnII1tL+Q31dFpxXJvH5HS67/Ddb6w==
 
-"@rootnative/core@0.0.0-alpha.34":
-  version "0.0.0-alpha.34"
-  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.34.tgz#4363225ad446e059e34e024cb0126a05f089e812"
-  integrity sha512-x250JrLf6m288aQE9Py/BYZanBnIr5exOE9hGfAvnvfBdo4VUhgRJBJKJazf/cpZmh8Mq1ZW4JK3F3R2DPSbmg==
+"@rootnative/core@0.0.0-alpha.35":
+  version "0.0.0-alpha.35"
+  resolved "https://registry.yarnpkg.com/@rootnative/core/-/core-0.0.0-alpha.35.tgz#b548afd76fae879170b2927662065c09d4536b9c"
+  integrity sha512-IZDWNgB3rgwqTg0ZTvSmRGW5T1o8y5y2UU2s2dHTxO9IiOdPa5xOxbXOHtnfvlapM9GOcbz+GVHWyqsvIWx+jw==
 
-"@rootnative/inertia@0.0.26":
-  version "0.0.26"
-  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.26.tgz#80a825eea6b54db775da8b1f8a88d80515bddc00"
-  integrity sha512-Tzylu4aMvjOr6D/Sc4hOuCk7Y5/SUhht++sBbh4pmzSJLCWho/QcVRsXU53f5D7EKraxsnvtp5GdJWFi/xYpTg==
+"@rootnative/inertia@0.0.27":
+  version "0.0.27"
+  resolved "https://registry.yarnpkg.com/@rootnative/inertia/-/inertia-0.0.27.tgz#8e9d01a9feccc389bdec14c247683827862361e0"
+  integrity sha512-/1cd8gogwulVqzbxqYqpr4gpJvrpxld1ktLwFYIfdRNFP7Y7VoSzGFN0p5omulBqmULpJUe0JcHwlJm1z3CEBg==
 
-"@rootnative/seo@0.0.0-alpha.34":
-  version "0.0.0-alpha.34"
-  resolved "https://registry.yarnpkg.com/@rootnative/seo/-/seo-0.0.0-alpha.34.tgz#d16809654f40f27f3f67dcde6874dca29a62279a"
-  integrity sha512-Mpa1YieamH9nCuUvHgC6ndnIVaMz8rTZsg8aIuRQpoISnVZpmXb5clzXDiibSX9KMWu3ZGnqwPYQJt0RcZPL6A==
+"@rootnative/seo@0.0.0-alpha.35":
+  version "0.0.0-alpha.35"
+  resolved "https://registry.yarnpkg.com/@rootnative/seo/-/seo-0.0.0-alpha.35.tgz#13aa7f7a00ab0790174d95d78a4df4efee611c67"
+  integrity sha512-qYDJyDzIgZtR+bSPuWqXgtvxe5JbhzphtZguG7xkvsXirN2QnRFIOuYvM9C6PUEP85uQYBIJsa+wCfCuXX0bfA==
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"

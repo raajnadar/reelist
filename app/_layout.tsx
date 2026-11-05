@@ -3,7 +3,7 @@ import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider, useTheme, useThemeMode } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
-import { SeoProvider } from '@rootnative/seo/react'
+import { SeoProvider, useBrowserThemeColor } from '@rootnative/seo/react'
 import {
   DarkTheme,
   DefaultTheme,
@@ -16,7 +16,6 @@ import type { ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { UpdateSnackbar } from '../components/UpdateSnackbar'
 import { setMode, useAppearance } from '../lib/appearance'
-import { useBrowserThemeColor } from '../lib/useBrowserThemeColor'
 import { site } from '../lib/site'
 import { transitions } from '../lib/motion'
 import { darkTheme, lightTheme } from '../theme'

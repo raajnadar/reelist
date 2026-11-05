@@ -1,8 +1,8 @@
+import { useScroll } from '@rootnative/inertia'
 import { useIsFocused } from 'expo-router'
 import { createContext, useContext, useEffect } from 'react'
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import {
-  useAnimatedScrollHandler,
+  useAnimatedReaction,
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated'
@@ -60,12 +60,9 @@ export function turnBar(
  * same `scrollY` and `onScroll`, and the bar shrinks while the reader scrolls
  * the screen down and grows again on a scroll up.
  *
- * A handler of its own, not a reaction on the offset from `useScroll`: the
- * end of the content comes only with the scroll event, and Inertia keeps the
- * end it records to itself (DX feedback R45). Inertia's `useHideOnScroll` is
- * not used either. Its progress follows each point of the scroll and keeps
- * its own state, and the bar needs two sizes and a reset when the reader goes
- * to another page.
+ * Inertia's `useHideOnScroll` is not used. Its progress follows each point of
+ * the scroll and keeps its own state, and the bar needs two sizes and a reset
+ * when the reader goes to another page.
  *
  * Only the screen in front writes: the stack keeps the screens under it
  * mounted, and a fling that runs on after a push must not shrink the bar of
@@ -79,40 +76,18 @@ export function useBarScroll() {
     front.set(focused)
   }, [front, focused])
 
-  const scrollY = useSharedValue(0)
+  const { scrollY, maxScrollY, onScroll } = useScroll()
   const travel = useSharedValue(0)
 
-  const handler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      'worklet'
-      const previous = scrollY.get()
-      const offset = event.contentOffset.y
-      scrollY.set(offset)
-      if (!shrink || !front.get()) return
-      // A test event can carry the offset alone. The end is then unknown, and
-      // nothing is held.
-      const end =
-        event.contentSize && event.layoutMeasurement
-          ? Math.max(
-              0,
-              event.contentSize.height +
-                (event.contentInset?.bottom ?? 0) -
-                event.layoutMeasurement.height,
-            )
-          : Infinity
-      const turn = turnBar(previous, offset, travel.get(), end)
+  useAnimatedReaction(
+    () => scrollY.get(),
+    (offset, previous) => {
+      if (previous === null || !shrink || !front.get()) return
+      const turn = turnBar(previous, offset, travel.get(), maxScrollY.get())
       travel.set(turn.travel)
       if (turn.size !== null) shrink.set(turn.size)
     },
-  })
+  )
 
-  // The handler is a Reanimated worklet bag, not a function. The cast is the
-  // one Inertia's `useScroll` makes, so the prop types of `Motion.ScrollView`
-  // and `Motion.FlatList` accept it.
-  return {
-    scrollY,
-    onScroll: handler as unknown as (
-      event: NativeSyntheticEvent<NativeScrollEvent>,
-    ) => void,
-  }
+  return { scrollY, onScroll }
 }
