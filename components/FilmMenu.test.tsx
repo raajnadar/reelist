@@ -24,6 +24,14 @@ const { getMovie } = jest.requireMock('../lib/api')
 jest.mock('../lib/haptics', () => ({ haptic: jest.fn() }))
 const mockHaptic = haptic as jest.Mock
 
+// The native preview view is not in a test. Each test sets the platform, and
+// the flag follows it, so an iOS test gets the context menu.
+jest.mock('../lib/linkPreview', () => ({
+  get linkPreviewSupported() {
+    return jest.requireActual('react-native').Platform.OS === 'ios'
+  },
+}))
+
 const film: Movie = {
   id: mockMovieDetail.id,
   title: mockMovieDetail.title,
@@ -112,7 +120,7 @@ describe('the long press', () => {
     expect(screen.getByTestId('film-menu')).toBeTruthy()
   })
 
-  it.each(['ios', 'web'] as const)('does nothing on %s', (platform) => {
+  it.each(['ios', 'web'] as const)('opens no menu of its own on %s', (platform) => {
     setOS(platform)
     const screen = renderWithProviders(<MovieCard movie={film} />)
 
@@ -270,6 +278,88 @@ describe('the watchlist', () => {
     expect(await screen.findByText('Marked as not watched')).toBeTruthy()
     expect(mockHaptic).toHaveBeenLastCalledWith('unsave')
     await closed(screen)
+  })
+})
+
+/**
+ * iOS has the native context menu of the link, with the same actions. The
+ * mock draws the actions as menu items, see lib/test-utils.tsx. The real one
+ * opens on a press and hold, which no test can send.
+ */
+describe('the iOS context menu', () => {
+  beforeEach(() => setOS('ios'))
+
+  it('lists the actions, with a preview, and asks for nothing at mount', () => {
+    const screen = renderWithProviders(<MovieCard movie={film} />)
+
+    expect(screen.getByTestId('link-preview')).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Watch trailer' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Save to watchlist' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Share' })).toBeTruthy()
+    expect(screen.queryByRole('menuitem', { name: 'Mark as watched' })).toBeNull()
+    // A row of cards declares a menu for each one. A request per card would
+    // be a request per poster on screen.
+    expect(getMovie).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('film-menu')).toBeNull()
+  })
+
+  it('has no menu in select mode', () => {
+    const screen = renderWithProviders(
+      <MovieCard movie={film} selection={{ selected: false, onToggle: jest.fn() }} />,
+    )
+
+    expect(screen.queryByRole('menuitem')).toBeNull()
+  })
+
+  it('keeps the menu, but not the preview, in the search sheet', () => {
+    const screen = renderWithProviders(<MovieCard movie={film} dismissTo />)
+
+    expect(screen.queryByTestId('link-preview')).toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Watch trailer' })).toBeTruthy()
+  })
+
+  it('asks for the film on the trailer press, and opens the player', async () => {
+    const screen = renderWithProviders(<MovieCard movie={film} />)
+
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Watch trailer' }))
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith(trailerHref))
+    expect(getMovie).toHaveBeenCalledTimes(1)
+    expect(readCache(`movie:${film.id}`)?.value).toBe(mockMovieDetail)
+  })
+
+  it('says so for a film with no trailer', async () => {
+    getMovie.mockResolvedValue({ ...mockMovieDetail, trailer: null })
+    const screen = renderWithProviders(<MovieCard movie={film} />)
+
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Watch trailer' }))
+
+    expect(await screen.findByText('This film has no trailer')).toBeTruthy()
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('closes the search sheet as the player opens', async () => {
+    const screen = renderWithProviders(<MovieCard movie={film} dismissTo />)
+
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Watch trailer' }))
+
+    await waitFor(() => expect(mockDismissTo).toHaveBeenCalledWith(trailerHref))
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('saves the film, and then offers to remove it and mark it watched', async () => {
+    const screen = renderWithProviders(<MovieCard movie={film} />)
+
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Save to watchlist' }))
+
+    expect(mockHaptic).toHaveBeenLastCalledWith('save')
+    expect(await screen.findByText('Saved to your watchlist')).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Remove from watchlist' })).toBeTruthy()
+
+    fireEvent.press(screen.getByRole('menuitem', { name: 'Mark as watched' }))
+
+    expect(await screen.findByText('Marked as watched')).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Mark as not watched' })).toBeTruthy()
   })
 })
 

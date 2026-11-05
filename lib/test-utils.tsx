@@ -4,8 +4,14 @@ import { SnackbarProvider } from '@rootnative/components/snackbar'
 import { ThemeProvider } from '@rootnative/core'
 import { MotionConfig } from '@rootnative/inertia'
 import { render, screen } from '@testing-library/react-native'
-import { cloneElement, type ReactElement } from 'react'
-import { Linking, type PressableProps } from 'react-native'
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
+import { Linking, Pressable, Text, View, type PressableProps } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { transitions } from './motion'
 import { darkTheme, lightTheme } from '../theme'
@@ -22,12 +28,17 @@ const metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 }
 
+type Pressed = ReactElement<{ onPress?: (event?: unknown) => void }>
+
 type LinkMockProps = {
   href: string
   asChild?: boolean
   dismissTo?: boolean
-  children: ReactElement<{ onPress?: (event?: unknown) => void }>
+  children: ReactNode
 } & Pick<PressableProps, 'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction'>
+
+type TriggerProps = { children: Pressed }
+type MenuActionProps = { children: string; onPress?: () => void; disabled?: boolean }
 
 /**
  * What a test hands `jest.mock('expo-router', ...)`: a router and a `Link`.
@@ -43,6 +54,11 @@ type LinkMockProps = {
  * does in a development build. A store build skips that check, so only Expo
  * Go showed the error.
  *
+ * The iOS context menu parts are here too. The pressed child is the one in
+ * `Link.Trigger`, when there is one. `Link.Preview` is a marker view, as the
+ * real one is native. `Link.Menu` draws its actions as menu items, so a test
+ * can press one; the real one is a native menu with no tree to query.
+ *
  * `router` is a function, because a mock factory runs when the module is
  * first required, which is before the `mockPush` at the top of a test file is
  * assigned. The function is called at press time and at each `useRouter`.
@@ -52,25 +68,63 @@ type LinkMockProps = {
 export function expoRouterMock<
   R extends { push: (href: string) => void; dismissTo?: (href: string) => void },
 >(router: () => R) {
+  const Trigger = ({ children }: TriggerProps) => children
+  const Preview = () => <View testID="link-preview" />
+  const Menu = ({ children }: { children: ReactNode }) => (
+    <View role="menu" testID="link-menu">
+      {children}
+    </View>
+  )
+  const MenuAction = ({ children, onPress, disabled }: MenuActionProps) => (
+    <Pressable
+      role="menuitem"
+      accessibilityLabel={children}
+      disabled={disabled}
+      onPress={onPress}
+    >
+      <Text>{children}</Text>
+    </Pressable>
+  )
+
   function Link({ href, dismissTo, asChild, children, ...rest }: LinkMockProps) {
-    if (asChild && Array.isArray((children.props as { style?: unknown }).style)) {
+    const parts = Children.toArray(children).filter(isValidElement)
+    const trigger = parts.find((part) => part.type === Trigger) as
+      ReactElement<TriggerProps> | undefined
+    const pressed = (trigger ? trigger.props.children : parts[0]) as Pressed
+    const siblings = parts.filter((part) => part !== trigger && part !== pressed)
+
+    if (asChild && Array.isArray((pressed.props as { style?: unknown }).style)) {
       throw new Error(
         '[expo-router]: You are passing an array of styles to a child of <Slot>.',
       )
     }
-    return cloneElement(children, {
+    const link = cloneElement(pressed, {
       ...rest,
       onPress: (event?: unknown) => {
-        children.props.onPress?.(event)
+        pressed.props.onPress?.(event)
         if (/^[a-z][a-z\d+.-]*:/i.test(href)) void Linking.openURL(href)
         else if (dismissTo) router().dismissTo?.(href)
         else router().push(href)
       },
     })
+    return siblings.length === 0 ? (
+      link
+    ) : (
+      <>
+        {link}
+        {siblings}
+      </>
+    )
   }
 
   // A rendered screen is the screen on top, so the home carousel autoplays.
-  return { useRouter: router, Link, useIsFocused: () => true }
+  return {
+    useRouter: router,
+    Link: Object.assign(Link, { Trigger, Preview, Menu, MenuAction }),
+    useIsFocused: () => true,
+    // A rendered screen is the screen itself, not an iOS peek of it.
+    useIsPreview: () => false,
+  }
 }
 
 /** The providers alone, for a `renderRouter` test to pass as its `wrapper`. */

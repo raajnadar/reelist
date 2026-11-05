@@ -17,7 +17,9 @@ import { FilmMenu } from './FilmMenu'
 import { RemoteImage } from './RemoteImage'
 import { cascadeWindow, entranceTransition } from '../lib/motion'
 import { POSTER_W342, posterUrl } from '../lib/images'
+import { linkPreviewSupported } from '../lib/linkPreview'
 import type { Movie } from '../lib/types'
+import { useFilmActions } from '../lib/useFilmActions'
 
 export const CARD_WIDTH = 160
 
@@ -66,9 +68,8 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
 
   /*
     The menu of a long press, on Android only. On the web, a held mouse button
-    would open it, and the click would then open the film too. On iOS the
-    search is a native modal, which draws over the portal the menu uses; iOS
-    is to get the native `Link.Preview` instead.
+    would open it, and the click would then open the film too. iOS has the
+    native context menu below, with the same actions.
 
     Null until the first long press, so a list of cards mounts no menus. The
     menu then stays mounted, so its exit animation can run.
@@ -89,6 +90,47 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
           },
         }
       : {}
+
+  /*
+    The same actions as a native iOS context menu. A press and hold on a card
+    lifts it, shows a preview of the film page, and lists the actions under
+    it; a tap on the preview opens the page. The hook sends no request, so a
+    row of cards costs nothing until a press.
+
+    Both are direct children of the Link, which looks no deeper for them. They
+    are there only where the native view that draws them is, see
+    lib/linkPreview.ts. The preview stays off in the search sheet. The sheet
+    is a route of the root stack, and the film page is in the `(main)` group
+    under it, so there is no stack for the preview to load the page into. The
+    menu alone is still there, and its actions close the sheet, as
+    `dismissTo` says.
+  */
+  const actions = useFilmActions(movie, dismissTo)
+  const preview = linkPreviewSupported && !dismissTo ? <Link.Preview /> : null
+  const contextMenu = linkPreviewSupported ? (
+    <Link.Menu>
+      <Link.MenuAction icon="play.fill" onPress={actions.watchTrailer}>
+        Watch trailer
+      </Link.MenuAction>
+      <Link.MenuAction
+        icon={actions.saved ? 'bookmark.slash' : 'bookmark'}
+        onPress={actions.toggleSaved}
+      >
+        {actions.saved ? 'Remove from watchlist' : 'Save to watchlist'}
+      </Link.MenuAction>
+      {actions.saved ? (
+        <Link.MenuAction
+          icon={actions.watched ? 'eye.slash' : 'eye'}
+          onPress={actions.toggleWatched}
+        >
+          {actions.watched ? 'Mark as not watched' : 'Mark as watched'}
+        </Link.MenuAction>
+      ) : null}
+      <Link.MenuAction icon="square.and.arrow.up" onPress={actions.share}>
+        Share
+      </Link.MenuAction>
+    </Link.Menu>
+  ) : null
 
   // Runs on both paths because a hook cannot be conditional. A resting 1 sits
   // at the end of the card's window, so the style is inert without a row.
@@ -206,7 +248,9 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
           A link, not a press handler, so the web renders an anchor: a crawler
           can follow it, and a reader can open it in a new tab. `asChild` puts
           the href and the handler on the Card, which forwards both. In select
-          mode the card opens nothing, so it has no link.
+          mode the card opens nothing, so it has no link. The Trigger marks
+          the card as the part of the link a press lands on, apart from the
+          iOS preview and menu beside it.
         */}
         {selection ? (
           card
@@ -217,7 +261,9 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
             {...longPressProps}
             asChild
           >
-            {card}
+            <Link.Trigger>{card}</Link.Trigger>
+            {preview}
+            {contextMenu}
           </Link>
         )}
       </Motion.View>

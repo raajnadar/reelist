@@ -1,7 +1,7 @@
 import { Skeleton } from '@rootnative/components/skeleton'
 import { useBreakpointValue, useTheme, useWindowDimensions } from '@rootnative/core'
-import { Motion, Presence, Stagger } from '@rootnative/inertia'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { Motion, MotionConfig, Presence, Stagger } from '@rootnative/inertia'
+import { useIsPreview, useLocalSearchParams, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type DimensionValue } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -149,14 +149,23 @@ const REPORTS: Record<
  */
 function FilmPage({ children }: { children: ReactNode }) {
   const theme = useTheme()
+  /*
+    A press and hold on a card shows this page as the iOS peek. The peek is
+    a still: an entrance that starts at opacity zero never settled there on
+    the simulator, and the body stayed blank after the skeleton. With no
+    motion, every value lands on its end state at once.
+  */
+  const preview = useIsPreview()
 
   return (
-    <View
-      testID="film-page"
-      style={[styles.screen, { backgroundColor: theme.colors.background }]}
-    >
-      {children}
-    </View>
+    <MotionConfig reducedMotion={preview ? 'always' : 'user'}>
+      <View
+        testID="film-page"
+        style={[styles.screen, { backgroundColor: theme.colors.background }]}
+      >
+        {children}
+      </View>
+    </MotionConfig>
   )
 }
 
