@@ -258,12 +258,20 @@ export function AppNavigation({ children }: { children: ReactNode }) {
   if (!hidden && kind === 'rail') {
     side = (
       // The rail runs the full height, so it is the one that clears the
-      // status bar on its side of the window. The inset goes on a wrapper:
-      // a `paddingTop` on the rail itself replaces the rail's own vertical
-      // padding, and on the web, where the inset is 0, the first item then
-      // sits cut off at the top edge. The colour goes on the wrapper too, so
-      // it runs up under the status bar.
-      <View style={{ paddingTop: insets.top, backgroundColor: container }}>
+      // status bar on its side of the window, and in landscape the camera
+      // cutout on its edge. The insets go on a wrapper: a `paddingTop` on the
+      // rail itself replaces the rail's own vertical padding, and on the web,
+      // where the inset is 0, the first item then sits cut off at the top
+      // edge. The colour goes on the wrapper too, so it runs under both
+      // insets.
+      <View
+        style={{
+          paddingTop: insets.top,
+          paddingLeft: insets.left,
+          backgroundColor: container,
+        }}
+        testID="app-navigation-rail-frame"
+      >
         {/* The rail pads its top by 4 dp only, so without a header the
             first item sits on the window edge. The mark is the header. */}
         <NavigationRail

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { useContext, useEffect, type ReactElement } from 'react'
-import { AccessibilityInfo, Text } from 'react-native'
+import { AccessibilityInfo, StyleSheet, Text } from 'react-native'
 import type { SharedValue } from 'react-native-reanimated'
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BarShrinkContext } from '../lib/floatingBar'
@@ -345,6 +345,23 @@ describe('AppNavigation', () => {
     await act(async () => {})
 
     expect(screen.getByText('bottom 128')).toBeTruthy()
+  })
+
+  // A phone in landscape has a side inset for the camera cutout, and the rail
+  // sits on that edge. Without the padding, the cutout covers the labels.
+  it('keeps the rail clear of the camera cutout in landscape', async () => {
+    mockBreakpoint = 'expanded'
+    const screen = renderWithProviders(
+      <SafeAreaInsetsContext.Provider value={{ top: 0, left: 62, right: 62, bottom: 21 }}>
+        <AppNavigation>{content}</AppNavigation>
+      </SafeAreaInsetsContext.Provider>,
+    )
+    await act(async () => {})
+
+    const frame = StyleSheet.flatten(
+      screen.getByTestId('app-navigation-rail-frame').props.style,
+    )
+    expect(frame.paddingLeft).toBe(62)
   })
 
   it('gives the screens the plain inset beside the rail', async () => {
