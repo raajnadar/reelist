@@ -46,21 +46,23 @@ import { NAVIGATION_CONTAINER } from '../theme'
 
 /**
  * The tallest bottom inset that holds only a gesture handle: the iOS home
- * indicator (34) or the Android gesture bar (about 24). The handle is a thin
- * line low in the inset, so the floating bar can sit over the inset and still
- * clear it. A taller inset holds the Android three-button bar.
+ * indicator (34) or the Android gesture bar (about 24). A taller inset holds
+ * the Android three-button bar.
  */
 const HANDLE_INSET_MAX = 40
 
 /**
- * The distance from the bottom edge of the window to the floating bar: the
- * same gap as at its sides. Over a three-button bar, the same gap above the
- * buttons, which must stay clear.
+ * The distance from the bottom edge of the window to the floating bar.
+ *
+ * Over a gesture handle, the bar sits just above the inset, so the handle
+ * has its strip to itself and the bar does not sit on the home indicator.
+ * A window with no inset keeps the same gap as at the sides. Over a
+ * three-button bar, the same gap above the buttons, which must stay clear.
  */
 function barBottomFor(insetBottom: number) {
   return insetBottom > HANDLE_INSET_MAX
     ? insetBottom + FLOATING_BAR_GAP
-    : FLOATING_BAR_GAP
+    : Math.max(insetBottom, FLOATING_BAR_GAP)
 }
 
 type Item = Omit<Destination, 'icon'> & {

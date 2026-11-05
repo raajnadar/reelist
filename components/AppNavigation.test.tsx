@@ -324,12 +324,12 @@ describe('AppNavigation', () => {
 
   // The bar floats over the page, so a list pads its end by the room the full
   // bar takes. The 34 point inset of the test window holds only the home
-  // indicator, so the bar sits 16 points from the edge, as at its sides, and
-  // the 64 point bar comes on top of that gap.
+  // indicator, so the bar sits just above it, and the 64 point bar comes on
+  // top of that inset.
   it('gives the screens room to scroll clear of the floating bar', async () => {
     const screen = await renderNavigation(<BottomInset />)
 
-    expect(screen.getByText('bottom 80')).toBeTruthy()
+    expect(screen.getByText('bottom 98')).toBeTruthy()
   })
 
   // A 48 point inset holds the Android three-button bar, and the floating bar
@@ -376,14 +376,14 @@ describe('AppNavigation', () => {
       expect(screen.getByText(/You are offline/)).toBeTruthy()
     })
 
-    // The full bar takes 80 points (see above). The notice adds its height
+    // The full bar takes 98 points (see above). The notice adds its height
     // and the 8 point gap between it and the bar.
     it('gives the screens room to scroll clear of the notice above the bar', async () => {
       mockOnline = false
       const screen = await renderNavigation(<BottomInset />)
       layOutNotice(screen)
 
-      expect(screen.getByText('bottom 132')).toBeTruthy()
+      expect(screen.getByText('bottom 150')).toBeTruthy()
     })
 
     // Beside the rail, the notice sits 16 points over the 34 point inset.
