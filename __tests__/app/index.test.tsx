@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { act, fireEvent, waitFor } from '@testing-library/react-native'
 import { renderWithProviders } from '../../lib/test-utils'
 import { mockMovies } from '../../lib/mock'
@@ -5,6 +6,7 @@ import { PullToRefresh } from '../../components/PullToRefresh'
 import HomeScreen from '../../app/(main)/index'
 import { MissingProxyUrlError } from '../../lib/config'
 import { setLanguage } from '../../lib/language'
+import { STORAGE_KEY as TIPS_KEY, TIPS } from '../../lib/tips'
 
 // Outside `app/` for the reason movie/[id].test.tsx records: a test file inside
 // `app/` becomes an Expo Router route.
@@ -77,6 +79,68 @@ it('still shows the header when the rows fail to load', async () => {
   await waitFor(() => expect(screen.getByText('TMDB is unavailable')).toBeTruthy())
   // The header does not depend on the rows, so a failed load must not remove it.
   expect(screen.getByLabelText('Settings')).toBeTruthy()
+})
+
+describe('the tips', () => {
+  // The card leaves through its exit fade, which moves only under fake timers.
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  const rowsLoaded = async (screen: ReturnType<typeof renderWithProviders>) =>
+    waitFor(() => expect(screen.getByText('Trending this week')).toBeTruthy())
+
+  const gone = async (screen: ReturnType<typeof renderWithProviders>) => {
+    await act(async () => {
+      jest.advanceTimersByTime(2000)
+    })
+    expect(screen.queryByTestId('tips-card')).toBeNull()
+  }
+
+  it('opens the tips page from the header button, marked as new', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+
+    fireEvent.press(await screen.findByLabelText('Tips and gestures, new'))
+
+    expect(mockPush).toHaveBeenCalledWith('/tips')
+    await act(async () => {})
+  })
+
+  it('shows one tip at a time above the rows, and goes after the last', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+    await rowsLoaded(screen)
+
+    expect(screen.getByText(`Tip 1 of ${TIPS.length}`)).toBeTruthy()
+    expect(screen.getByText(TIPS[0].title)).toBeTruthy()
+    for (let step = 1; step < TIPS.length; step++)
+      fireEvent.press(screen.getByText('Next'))
+    expect(screen.getByText(TIPS[TIPS.length - 1].title)).toBeTruthy()
+
+    fireEvent.press(screen.getByText('Got it'))
+
+    await gone(screen)
+    expect(screen.getByLabelText('Tips and gestures')).toBeTruthy()
+  })
+
+  it('closes from the cross, and opens the tips page from the card', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+    await rowsLoaded(screen)
+
+    fireEvent.press(screen.getByText('All tips'))
+    expect(mockPush).toHaveBeenCalledWith('/tips')
+
+    fireEvent.press(screen.getByLabelText('Close the tips'))
+    await gone(screen)
+  })
+
+  it('does not come back after the reader closed it', async () => {
+    await AsyncStorage.setItem(TIPS_KEY, JSON.stringify({ seen: true }))
+
+    const screen = renderWithProviders(<HomeScreen />)
+    await rowsLoaded(screen)
+
+    expect(screen.queryByTestId('tips-card')).toBeNull()
+    expect(screen.getByLabelText('Tips and gestures')).toBeTruthy()
+  })
 })
 
 describe('the pull to refresh', () => {

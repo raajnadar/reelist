@@ -43,11 +43,11 @@ export const DESTINATIONS: Destination[] = [
 
 /**
  * The links at the end of the drawer. The bar and the rail keep to the four
- * destinations, so there the settings stay in the home header, and the
- * privacy policy in the settings.
+ * destinations, so there the tips and the settings stay in the home header,
+ * and the privacy policy in the settings.
  */
 export type DrawerLink = {
-  value: 'settings' | 'privacy'
+  value: 'tips' | 'settings' | 'privacy'
   label: string
   icon: string
   selectedIcon: string
@@ -55,6 +55,13 @@ export type DrawerLink = {
 }
 
 export const DRAWER_LINKS: DrawerLink[] = [
+  {
+    value: 'tips',
+    label: 'Tips and gestures',
+    icon: 'lightbulb-outline',
+    selectedIcon: 'lightbulb',
+    href: '/tips',
+  },
   {
     value: 'settings',
     label: 'Settings',
@@ -106,8 +113,8 @@ export function activeDestination(pathname: string): Destination['value'] | unde
 
 /**
  * The drawer item the reader is on. The drawer holds more than the four
- * destinations, so the settings and the privacy policy light an item of their
- * own there.
+ * destinations, so the tips, the settings, and the privacy policy light an
+ * item of their own there.
  */
 export function activeDrawerItem(pathname: string): string | undefined {
   return (

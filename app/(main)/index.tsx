@@ -1,10 +1,12 @@
 import { AppBar } from '@rootnative/components/appbar'
+import { Badge } from '@rootnative/components/badge'
+import { Icon } from '@rootnative/components/icon'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
 import { useBreakpoint, useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
-import { StyleSheet, View } from 'react-native'
+import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from '../../components/BrandMark'
 import { GenreChips } from '../../components/GenreChips'
@@ -15,6 +17,7 @@ import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../../components/Skeleton'
 import { SpinningCog } from '../../components/SpinningCog'
 import { StateMessage } from '../../components/StateMessage'
+import { TipsCard } from '../../components/TipsCard'
 import {
   getGenres,
   getPopular,
@@ -28,6 +31,7 @@ import { homeMeta, metadataFor } from '../../lib/head'
 import { languageName, useLanguage } from '../../lib/language'
 import { navigationKind } from '../../lib/navigation'
 import { homeEntry, loadSeed, type HomeSeed } from '../../lib/prerender'
+import { useTips } from '../../lib/tips'
 import { usePrerendered } from '../../lib/usePrerendered'
 import { useResource } from '../../lib/useResource'
 import { useServerPainted } from '../../lib/useServerPainted'
@@ -170,6 +174,15 @@ export default function HomeScreen() {
   // Rows from a request fade in. See lib/useServerPainted.ts.
   const rowsPainted = useServerPainted() && rows.data === null
 
+  const tips = useTips()
+  const tipsNew = tips.loaded && !tips.seen
+  /**
+   * No card on the web. The static page is drawn before the browser storage
+   * is read, so the card would push the carousel down after the first paint:
+   * a layout shift, and a later LCP. The badge on the icon moves nothing.
+   */
+  const tipsCard = tipsNew && Platform.OS !== 'web'
+
   return (
     <View
       style={[
@@ -200,6 +213,18 @@ export default function HomeScreen() {
           insetTop
           leading={navigation === 'bar' ? <BrandMark size={26} /> : undefined}
           actions={[
+            {
+              icon: (props) => (
+                <Badge visible={tipsNew}>
+                  <Icon source="lightbulb-outline" {...props} />
+                </Badge>
+              ),
+              accessibilityLabel: tipsNew
+                ? 'Tips and gestures, new'
+                : 'Tips and gestures',
+              tooltip: 'Tips and gestures',
+              onPress: () => router.push('/tips'),
+            },
             {
               icon: (props) => <SpinningCog {...props} />,
               accessibilityLabel: 'Settings',
@@ -282,6 +307,19 @@ export default function HomeScreen() {
                 />
               }
             >
+              <Presence>
+                {tipsCard ? (
+                  <Motion.View
+                    key="tips"
+                    initial={{ opacity: 0, translateY: 12 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition="enter"
+                  >
+                    <TipsCard />
+                  </Motion.View>
+                ) : null}
+              </Presence>
               {/*
                 The first row gets the lightbox carousel as a featured treatment.
                 The rest stay compact rows — the scale effect loses its weight if

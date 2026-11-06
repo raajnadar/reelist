@@ -189,9 +189,12 @@ describe('AppNavigation', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
-  it('opens the settings and the privacy policy from the end of the drawer', async () => {
+  it('opens the tips, the settings, and the privacy policy from the end of the drawer', async () => {
     mockBreakpoint = 'extraLarge'
     const screen = await renderNavigation()
+
+    fireEvent.press(screen.getByTestId('app-navigation-drawer-item-tips'))
+    expect(mockNavigate).toHaveBeenCalledWith('/tips')
 
     fireEvent.press(screen.getByTestId('app-navigation-drawer-item-settings'))
     expect(mockNavigate).toHaveBeenCalledWith('/about')

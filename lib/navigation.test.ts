@@ -61,6 +61,7 @@ describe('activeDrawerItem', () => {
     expect(activeDrawerItem('/watchlist')).toBe('watchlist')
     expect(activeDrawerItem('/about')).toBe('settings')
     expect(activeDrawerItem('/privacy')).toBe('privacy')
+    expect(activeDrawerItem('/tips')).toBe('tips')
   })
 
   it('names nothing on a film, a person, or a genre', () => {
