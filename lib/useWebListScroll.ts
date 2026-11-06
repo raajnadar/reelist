@@ -32,16 +32,19 @@ const scrollNode = (list: List | null) => {
  * the code counts the same as a scroll of the reader.
  *
  * Each slot of the list must be a snap area, with `scrollSnapAlign`. The list
- * snaps while the reader moves it. Call `releaseSnap` before the code moves
- * the list.
+ * snaps only while the reader moves it: the snap comes on with a touch or a
+ * wheel, and goes off when the list rests. Call `releaseSnap` before the
+ * code moves the list while the reader could still be on it.
  *
- * The snap is off when the list mounts, and comes on when the list first
- * rests. The list scrolls to `initialScrollIndex` after this effect, and
- * mounts the slots on the left of it as it goes. WebKit re-snaps after each
- * layout to the snap area with the index it holds, so a slot that mounts on
- * the left moves the list to the slot before, which mounts another, and the
- * list runs away until a touch. Chromium follows the snapped element, not
- * its index, and never showed this.
+ * The snap is off while the code moves the list and while the list mounts
+ * its slots. WebKit re-snaps after each layout to the snap area with the
+ * index it holds, so a slot that mounts on the left of the centred one moves
+ * the list to the slot before, which mounts another, and the list runs away.
+ * This showed on first mount, in the scroll to `initialScrollIndex`, and
+ * again when the snap came on at a rest between two batches of slots on a
+ * cold load. Chromium follows the snapped element, not its index, and never
+ * showed this. A wheel that starts with the snap off still lands on a slot:
+ * Chromium snaps when the gesture ends, with the snap its listener turned on.
  *
  * `mounted` is false while the list is not on the page.
  */
@@ -76,10 +79,9 @@ export function useWebListScroll(
       else clearTimeout(rest)
       rest = setTimeout(() => {
         rest = undefined
-        // A scroll of the code is on its slot now, and the slots near it are
-        // mounted. A wheel does not wait for its listener, so the snap must be
-        // on before the next wheel starts.
-        node.style.scrollSnapType = SNAP
+        // The reader is off the list, or the code moved it. Slots that mount
+        // from here on must not move it.
+        node.style.scrollSnapType = 'none'
         onMoving(false)
       }, REST_MS)
     }
@@ -104,11 +106,12 @@ export function useWebListScroll(
 }
 
 /**
- * Turns the snap of `useWebListScroll` off until the list comes to rest, or
- * until the next touch or wheel.
+ * Turns the snap of `useWebListScroll` off until the next touch or wheel.
  *
  * A scroll of the code lands on a slot by itself. With the snap on, a jump to
  * a slot that is not mounted yet lands on the nearest slot that is mounted.
+ * The snap is on only while the reader moves the list, so this matters when
+ * the code moves the list before that scroll rests.
  */
 export function releaseSnap(list: List | null) {
   const node = scrollNode(list)

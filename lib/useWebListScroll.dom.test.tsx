@@ -19,18 +19,17 @@ const fire = (node: HTMLElement, type: string) =>
     node.dispatchEvent(type.startsWith('touch') ? new TouchEvent(type) : new Event(type))
   })
 
-// The list scrolls to its first slot after the mount. With the snap on, WebKit
-// re-snapped on each slot that mounted, and the list ran away on iOS.
-it('snaps the list only once it first rests, and lets the code turn the snap off', () => {
+// The list scrolls to its first slot after the mount, and mounts the slots on
+// the left of it in batches for a while after. With the snap on, WebKit
+// re-snapped on each slot that mounted, and the list ran away on iOS. So the
+// snap is on only while the reader moves the list.
+it('keeps the snap off from the mount until the reader moves the list', () => {
   jest.useFakeTimers()
-  const { node, list, unmount } = setup()
+  const { node, unmount } = setup()
   expect(node.style.scrollSnapType).toBe('none')
 
   fire(node, 'scroll')
   act(() => jest.advanceTimersByTime(150))
-  expect(node.style.scrollSnapType).toBe('x mandatory')
-
-  releaseSnap(list.current)
 
   expect(node.style.scrollSnapType).toBe('none')
 
@@ -38,32 +37,35 @@ it('snaps the list only once it first rests, and lets the code turn the snap off
   jest.useRealTimers()
 })
 
-// The code turns the snap off before a jump to a slot that is not mounted.
-// The reader's next scroll must snap again.
-it.each(['touchstart', 'wheel'])('snaps again on a %s', (type) => {
+it.each(['touchstart', 'wheel'])(
+  'snaps while a %s moves the list, until it rests',
+  (type) => {
+    jest.useFakeTimers()
+    const { node, unmount } = setup()
+
+    fire(node, type)
+    fire(node, 'scroll')
+    expect(node.style.scrollSnapType).toBe('x mandatory')
+
+    act(() => jest.advanceTimersByTime(150))
+
+    expect(node.style.scrollSnapType).toBe('none')
+
+    // The cleanup of the test library waits on real timers.
+    unmount()
+    jest.useRealTimers()
+  },
+)
+
+// The code turns the snap off before a jump to a slot that is not mounted,
+// while the reader could still be on the list.
+it('lets the code turn the snap off', () => {
   const { node, list } = setup()
+  fire(node, 'touchstart')
+
   releaseSnap(list.current)
 
-  fire(node, type)
-
-  expect(node.style.scrollSnapType).toBe('x mandatory')
-})
-
-// A wheel scrolls before its listener runs, so the snap cannot wait for it.
-it('snaps again when a scroll of the code comes to rest', () => {
-  jest.useFakeTimers()
-  const { node, list, unmount } = setup()
-  releaseSnap(list.current)
-
-  fire(node, 'scroll')
   expect(node.style.scrollSnapType).toBe('none')
-  act(() => jest.advanceTimersByTime(150))
-
-  expect(node.style.scrollSnapType).toBe('x mandatory')
-
-  // The cleanup of the test library waits on real timers.
-  unmount()
-  jest.useRealTimers()
 })
 
 it('reports a finger that touches the list and leaves it', () => {
