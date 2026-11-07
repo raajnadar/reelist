@@ -34,6 +34,19 @@ it('restarts into the downloaded update when the reader asks', () => {
   })
 })
 
+it('sizes the restart image like the launch splash, not at its pixel size', () => {
+  mockUpdatePending = true
+
+  const screen = renderWithProviders(<UpdateSnackbar />)
+  fireEvent.press(screen.getByText('Restart'))
+
+  expect(mockReload).toHaveBeenCalledWith({
+    reloadScreenOptions: expect.objectContaining({
+      image: expect.objectContaining({ width: 100, height: 106 }),
+    }),
+  })
+})
+
 it('does not restart when the reader closes the snackbar', () => {
   mockUpdatePending = true
 

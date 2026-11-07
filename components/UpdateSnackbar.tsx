@@ -1,13 +1,19 @@
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { reloadAsync, useUpdates } from 'expo-updates'
 import { useEffect, useRef } from 'react'
+import { Image } from 'react-native'
 
 // The same look as the splash screen in app.json, so the restart does not
 // flash the default white reload screen.
-const RELOAD_SCREEN = {
-  backgroundColor: '#4C0519',
-  image: require('../assets/splash-icon.png'),
-  fade: true,
+function reloadScreen() {
+  const splash = Image.resolveAssetSource(require('../assets/splash-icon.png'))
+  return {
+    backgroundColor: '#4C0519',
+    // expo-updates draws the image at its pixel size in dp (1024 px gives
+    // 1024 dp), so give the 100 dp width of the expo-splash-screen default.
+    image: splash && { url: splash.uri, width: 100, height: 106 },
+    fade: true,
+  }
 }
 
 /**
@@ -31,7 +37,7 @@ export function UpdateSnackbar() {
       actionLabel: 'Restart',
       showCloseIcon: true,
       onAction: () => {
-        reloadAsync({ reloadScreenOptions: RELOAD_SCREEN }).catch(() => {})
+        reloadAsync({ reloadScreenOptions: reloadScreen() }).catch(() => {})
       },
     })
   }, [isUpdatePending, snackbar])
