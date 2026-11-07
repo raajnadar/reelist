@@ -33,6 +33,21 @@ jest.mock('../../lib/api', () => ({
   getGenres: jest.fn(),
 }))
 
+// A row that records each mount and draws only its title, which is all that
+// this suite reads from a row.
+const mockRowMount = jest.fn()
+
+jest.mock('../../components/MovieRow', () => {
+  const { createElement, useEffect } = jest.requireActual('react')
+  const { Text } = jest.requireActual('react-native')
+  return {
+    MovieRow: ({ title }: { title: string }) => {
+      useEffect(() => mockRowMount(title), [title])
+      return createElement(Text, null, title)
+    },
+  }
+})
+
 const api = jest.requireMock('../../lib/api')
 
 beforeEach(() => {
@@ -130,6 +145,22 @@ describe('the tips', () => {
 
     fireEvent.press(screen.getByLabelText('Close the tips'))
     await gone(screen)
+  })
+
+  it('remounts the rows after the card leaves, so they measure their new place', async () => {
+    const screen = renderWithProviders(<HomeScreen />)
+    await rowsLoaded(screen)
+    const mounts = mockRowMount.mock.calls.length
+
+    fireEvent.press(screen.getByLabelText('Close the tips'))
+    // The card holds its space during the exit fade. A row that measured now
+    // would read the old place again.
+    expect(mockRowMount).toHaveBeenCalledTimes(mounts)
+
+    await gone(screen)
+    expect(mockRowMount.mock.calls.slice(mounts).map(([title]) => title)).toEqual(
+      expect.arrayContaining(['Popular', 'Top rated']),
+    )
   })
 
   it('does not come back after the reader closed it', async () => {

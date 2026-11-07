@@ -6,6 +6,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useBreakpoint, useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
+import { useCallback, useEffect, useState } from 'react'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandMark } from '../../components/BrandMark'
@@ -66,6 +67,15 @@ const REPORTS: Record<
   transient: { icon: 'cloud-off-outline', tone: 'error', title: 'Could not load movies' },
   setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
   missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
+}
+
+/**
+ * Calls `onRemoved` when Presence takes the tips card out of the layout,
+ * which is after its exit, not when the exit starts.
+ */
+function RemovalSignal({ onRemoved }: { onRemoved: () => void }) {
+  useEffect(() => onRemoved, [onRemoved])
+  return null
 }
 
 export default function HomeScreen() {
@@ -182,6 +192,14 @@ export default function HomeScreen() {
    * a layout shift, and a later LCP. The badge on the icon moves nothing.
    */
   const tipsCard = tipsNew && Platform.OS !== 'web'
+  /**
+   * Each MovieRow measures its place for useInView once, on mount. When the
+   * card goes, the rows move up by its height, and a stale place keeps a row
+   * blank until the reader scrolls that much further. A new key remounts the
+   * rows, so they measure again. The carousel has no useInView.
+   */
+  const [rowsLayout, setRowsLayout] = useState(0)
+  const onTipsRemoved = useCallback(() => setRowsLayout((n) => n + 1), [])
 
   return (
     <View
@@ -317,6 +335,7 @@ export default function HomeScreen() {
                     transition="enter"
                   >
                     <TipsCard />
+                    <RemovalSignal onRemoved={onTipsRemoved} />
                   </Motion.View>
                 ) : null}
               </Presence>
@@ -329,7 +348,11 @@ export default function HomeScreen() {
                 index === 0 ? (
                   <MovieCarousel key={row.title} title={row.title} movies={row.movies} />
                 ) : (
-                  <MovieRow key={row.title} title={row.title} movies={row.movies} />
+                  <MovieRow
+                    key={`${row.title}:${rowsLayout}`}
+                    title={row.title}
+                    movies={row.movies}
+                  />
                 ),
               )}
             </Motion.ScrollView>
