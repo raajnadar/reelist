@@ -67,8 +67,8 @@ export type ShareState = { saved?: boolean; watched?: boolean }
 
 /**
  * The film a share can describe. The three detail fields are optional, because
- * the menu of a card has only a list `Movie`, and a share from there drops the
- * lines that need them.
+ * the menu of a card has only a list `Movie` until the film loads, and a share
+ * from there drops the lines that need them.
  */
 export type ShareFilm = Pick<Movie, 'id' | 'title' | 'release_date' | 'vote_average'> &
   Partial<Pick<MovieDetail, 'genres' | 'runtime' | 'tagline'>>

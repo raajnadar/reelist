@@ -363,21 +363,43 @@ describe('the iOS context menu', () => {
   })
 })
 
-it('shares the film through the system sheet', async () => {
-  const share = jest
-    .spyOn(Share, 'share')
-    .mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
-  const screen = renderWithProviders(<MovieCard movie={film} />)
-  await openMenu(screen)
+describe('the share', () => {
+  const link = `https://reelist.raajnadar.in/movie/${film.id}`
 
-  fireEvent.press(screen.getByText('Share'))
+  it('sends the details of the film that the menu loaded', async () => {
+    const share = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
+    const screen = renderWithProviders(<MovieCard movie={film} />)
+    await openMenu(screen)
 
-  await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
-  // Android reads only `message`, so the link travels in it. A card has no
-  // runtime, genres, or tagline, so the text has the rating alone.
-  expect(share.mock.calls[0][0]).toEqual({
-    message: `🎬 Dune: Part Two (2024)\n★ 8.2\n\nReelist put this on my radar:\nhttps://reelist.raajnadar.in/movie/${film.id}`,
+    fireEvent.press(screen.getByText('Share'))
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+    // Android reads only `message`, so the link travels in it.
+    expect(share.mock.calls[0][0]).toEqual({
+      message: `🎬 Dune: Part Two (2024)\n★ 8.2 · 2h 47m · Science Fiction, Adventure\n"Long live the fighters."\n\nReelist put this on my radar:\n${link}`,
+    })
+    share.mockRestore()
+    await closed(screen)
   })
-  share.mockRestore()
-  await closed(screen)
+
+  it('sends the facts of the card when the film did not load', async () => {
+    getMovie.mockRejectedValue(new Error('Network request failed'))
+    const share = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
+    const screen = renderWithProviders(<MovieCard movie={film} />)
+    await openMenu(screen)
+
+    fireEvent.press(screen.getByText('Share'))
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+    // A card has no runtime, genres, or tagline, so the text has the rating.
+    expect(share.mock.calls[0][0]).toEqual({
+      message: `🎬 Dune: Part Two (2024)\n★ 8.2\n\nReelist put this on my radar:\n${link}`,
+    })
+    share.mockRestore()
+    await closed(screen)
+  })
 })

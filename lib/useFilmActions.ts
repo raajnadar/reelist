@@ -72,6 +72,10 @@ export function useFilmActions(movie: Movie, dismissTo = false) {
     watchTrailer,
     toggleSaved: toggle,
     toggleWatched,
-    share: () => share(movie, { saved, watched }),
+    // With the film in the store, the share also has the runtime, the genres,
+    // and the tagline. It does not wait for a request, so the sheet opens at
+    // once, with the list facts when the film is not there.
+    share: () =>
+      share(readCache<MovieDetail | null>(key)?.value ?? movie, { saved, watched }),
   }
 }
