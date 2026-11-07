@@ -67,7 +67,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/phone-home-dark.jpg" />
-    <img src="assets/docs/screenshots/phone-home-light.jpg" alt="The home screen on a phone, with the trending carousel" width="30%" />
+    <img src="assets/docs/screenshots/phone-home-light.jpg" alt="The home screen on a phone, with the trending carousel and the floating navigation bar" width="30%" />
   </picture>
   &nbsp;
   <picture>
@@ -77,7 +77,7 @@
   &nbsp;
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/phone-watchlist-dark.jpg" />
-    <img src="assets/docs/screenshots/phone-watchlist-light.jpg" alt="The watchlist on a phone: 2 of 8 films watched" width="30%" />
+    <img src="assets/docs/screenshots/phone-watchlist-light.jpg" alt="The watchlist on a phone: 3 of 8 films watched" width="30%" />
   </picture>
 </p>
 
