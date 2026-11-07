@@ -25,9 +25,16 @@ const { resetWatchlist } = require('./lib/watchlist')
 const { resetAppearance } = require('./lib/appearance')
 const { resetRegion } = require('./lib/region')
 const { resetLanguage } = require('./lib/language')
-const { resetTips } = require('./lib/tips')
 const { clearSearchOrigin } = require('./lib/searchOrigin')
 const AsyncStorage = require('@react-native-async-storage/async-storage')
+
+// lib/tips imports lib/pip and lib/linkPreview, which read their native modules
+// as they load. A require at the top loads them before a test file can mock
+// `expo`, and lib/pip.test.ts then gets the copy without the module. So it
+// loads at the first test, and only once: a second require after a
+// `jest.resetModules()` loads a second copy of the module graph, and that
+// breaks lib/tmdb.test.ts.
+let tips
 
 beforeEach(async () => {
   clearCache()
@@ -35,7 +42,8 @@ beforeEach(async () => {
   resetAppearance()
   resetRegion()
   resetLanguage()
-  resetTips()
+  tips ??= require('./lib/tips')
+  tips.resetTips()
   clearSearchOrigin()
   // The mock keeps its own values as well, so the store and the device copy
   // have to be emptied together.
