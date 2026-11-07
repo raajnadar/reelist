@@ -72,6 +72,6 @@ export function useFilmActions(movie: Movie, dismissTo = false) {
     watchTrailer,
     toggleSaved: toggle,
     toggleWatched,
-    share: () => share(movie),
+    share: () => share(movie, { saved, watched }),
   }
 }

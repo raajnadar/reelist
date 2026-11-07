@@ -373,9 +373,10 @@ it('shares the film through the system sheet', async () => {
   fireEvent.press(screen.getByText('Share'))
 
   await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
-  // Android reads only `message`, so the link travels in it.
+  // Android reads only `message`, so the link travels in it. A card has no
+  // runtime, genres, or tagline, so the text has the rating alone.
   expect(share.mock.calls[0][0]).toEqual({
-    message: `Dune: Part Two (2024)\nhttps://reelist.raajnadar.in/movie/${film.id}`,
+    message: `🎬 Dune: Part Two (2024)\n★ 8.2\n\nReelist put this on my radar:\nhttps://reelist.raajnadar.in/movie/${film.id}`,
   })
   share.mockRestore()
   await closed(screen)

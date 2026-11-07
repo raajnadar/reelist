@@ -1,16 +1,28 @@
 import { Platform, Share } from 'react-native'
-import { mockMovies } from './mock'
+import { mockMovieDetail, mockMovies } from './mock'
 import {
   copyMovieLink,
+  copyShareMessage,
   hasShareSheet,
   movieUrl,
+  shareMessage,
   shareMovie,
+  shareNote,
   shareTargets,
   shareTitle,
 } from './share'
 import { SITE_URL } from './site'
 
 const [dune] = mockMovies
+
+const FOUND = 'Reelist put this on my radar:'
+const FULL = [
+  '🎬 Dune: Part Two (2024)',
+  '★ 8.2 · 2h 47m · Science Fiction, Adventure',
+  '"Long live the fighters."',
+  '',
+  FOUND,
+].join('\n')
 
 const shareSpy = jest.spyOn(Share, 'share')
 
@@ -35,15 +47,48 @@ describe('shareTitle', () => {
   })
 })
 
+describe('shareNote', () => {
+  it('names what the reader did, and ranks watched over saved', () => {
+    expect(shareNote(dune.id)).toBe(FOUND)
+    expect(shareNote(dune.id, { saved: true })).toBe(
+      'Saved this one on Reelist. Watch it with me?',
+    )
+    expect(shareNote(dune.id, { saved: true, watched: true })).toBe(
+      'I watched this on Reelist. Your turn:',
+    )
+  })
+
+  it('picks the line by the film id, so two films do not always read the same', () => {
+    expect(shareNote(1)).not.toBe(shareNote(2))
+    expect(shareNote(1)).toBe(shareNote(1))
+  })
+})
+
+describe('shareMessage', () => {
+  it('gives the title, the facts, the tagline, and the note', () => {
+    expect(shareMessage(mockMovieDetail)).toBe(FULL)
+  })
+
+  it('drops the lines a list film cannot fill', () => {
+    expect(shareMessage(dune)).toBe(`🎬 Dune: Part Two (2024)\n★ 8.2\n\n${FOUND}`)
+  })
+
+  it('drops the facts line for an unrated film with no cut and no genres', () => {
+    expect(
+      shareMessage({ ...dune, vote_average: 0, runtime: 0, genres: [], tagline: '' }),
+    ).toBe(`🎬 Dune: Part Two (2024)\n\n${FOUND}`)
+  })
+})
+
 describe('shareMovie', () => {
-  it('sends the link in the url field on iOS', async () => {
+  it('sends the message and the link in the url field on iOS', async () => {
     shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
 
-    const outcome = await shareMovie(dune)
+    const outcome = await shareMovie(mockMovieDetail)
 
     expect(outcome).toBe('shared')
     expect(shareSpy).toHaveBeenCalledWith(
-      { message: 'Dune: Part Two (2024)', url: movieUrl(dune.id) },
+      { message: FULL, url: movieUrl(dune.id) },
       expect.objectContaining({ dialogTitle: 'Dune: Part Two (2024)' }),
     )
   })
@@ -53,11 +98,11 @@ describe('shareMovie', () => {
     Platform.OS = 'android'
     shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined })
 
-    await shareMovie(dune)
+    await shareMovie(mockMovieDetail)
 
     Platform.OS = os
     expect(shareSpy).toHaveBeenCalledWith(
-      { message: `Dune: Part Two (2024)\n${movieUrl(dune.id)}` },
+      { message: `${FULL}\n${movieUrl(dune.id)}` },
       expect.anything(),
     )
   })
@@ -127,8 +172,21 @@ describe('copyMovieLink', () => {
   })
 })
 
+describe('copyShareMessage', () => {
+  it('puts the message and the link on the clipboard', async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined)
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { clipboard: { writeText } },
+      configurable: true,
+    })
+
+    expect(await copyShareMessage(mockMovieDetail)).toBe(true)
+    expect(writeText).toHaveBeenCalledWith(`${FULL}\n${movieUrl(dune.id)}`)
+  })
+})
+
 describe('shareTargets', () => {
-  const targets = shareTargets(dune)
+  const targets = shareTargets(mockMovieDetail)
   const byId = (id: string) => targets.find((t) => t.id === id)!
 
   it('lists the three sites in order', () => {
@@ -142,10 +200,16 @@ describe('shareTargets', () => {
     }
   })
 
-  it('encodes the title where the site takes one', () => {
+  it('gives X a short post, and email the whole message', () => {
     const title = encodeURIComponent('Dune: Part Two (2024)')
-    expect(byId('x').url).toContain(`text=${title}`)
+    const post = encodeURIComponent(
+      'Dune: Part Two (2024)\n"Long live the fighters."\nvia Reelist',
+    )
+    expect(byId('x').url).toContain(`text=${post}`)
     expect(byId('email').url).toContain(`subject=${title}`)
+    expect(byId('email').url).toContain(
+      `body=${encodeURIComponent(`${FULL}\n${movieUrl(dune.id)}`)}`,
+    )
   })
 
   it('opens a mail draft for the email target', () => {

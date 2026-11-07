@@ -2,6 +2,7 @@ import { Button } from '@rootnative/components/button'
 import type { MovieDetail } from '../lib/types'
 import { BUTTON_SIZE } from '../lib/buttonSize'
 import { useShareMovie } from '../lib/useShareMovie'
+import { useShareState } from '../lib/useShareState'
 
 /**
  * The share action on a phone: one press, one system sheet. See
@@ -11,13 +12,14 @@ import { useShareMovie } from '../lib/useShareMovie'
  */
 export function ShareButton({ movie }: { movie: MovieDetail }) {
   const share = useShareMovie()
+  const state = useShareState(movie.id)
 
   return (
     <Button
       variant="outlined"
       size={BUTTON_SIZE.inline}
       leadingIcon="share-variant"
-      onPress={() => share(movie)}
+      onPress={() => share(movie, state)}
     >
       Share
     </Button>

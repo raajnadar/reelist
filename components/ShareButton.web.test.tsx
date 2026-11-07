@@ -1,7 +1,7 @@
 import { fireEvent } from '@testing-library/react-native'
 import { Linking, Share } from 'react-native'
 import { mockMovieDetail } from '../lib/mock'
-import { movieUrl, shareTargets } from '../lib/share'
+import { movieUrl, shareMessage, shareTargets } from '../lib/share'
 import { renderWithProviders } from '../lib/test-utils'
 // The full file name, because Jest resolves the platform as iOS and would
 // otherwise pick the native button. The web menu is what this file covers.
@@ -59,6 +59,19 @@ it('copies the link and says so', async () => {
 
   expect(await screen.findByText('Link copied')).toBeTruthy()
   expect(writeText).toHaveBeenCalledWith(movieUrl(movie.id))
+})
+
+it('copies the whole message with the link, and says so', async () => {
+  const writeText = jest.fn().mockResolvedValue(undefined)
+  setNavigator({ clipboard: { writeText } })
+
+  const screen = renderWithProviders(<ShareButton movie={movie} />)
+
+  fireEvent.press(screen.getByTestId('share-button'))
+  fireEvent.press(await screen.findByText('Copy message'))
+
+  expect(await screen.findByText('Message copied')).toBeTruthy()
+  expect(writeText).toHaveBeenCalledWith(`${shareMessage(movie)}\n${movieUrl(movie.id)}`)
 })
 
 it('opens a site target in a new tab', async () => {

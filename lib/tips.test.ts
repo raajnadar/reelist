@@ -25,6 +25,7 @@ describe('tipsFor', () => {
       'trailer-window',
       'photo-zoom',
       'carousel-hold',
+      'share-note',
     ])
   })
 
@@ -56,6 +57,7 @@ describe('tipsFor', () => {
       'escape-key',
       'arrow-keys',
       'carousel-hover',
+      'share-note',
     ])
   })
 })

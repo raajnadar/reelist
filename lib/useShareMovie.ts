@@ -1,6 +1,5 @@
 import { useSnackbar } from '@rootnative/components/snackbar'
-import { shareMovie } from './share'
-import type { Movie } from './types'
+import { shareMovie, type ShareFilm, type ShareState } from './share'
 
 /**
  * Opens the system share sheet for one film, on a phone.
@@ -9,13 +8,11 @@ import type { Movie } from './types'
  * reader cannot see: a link that went to the clipboard instead of a sheet,
  * and a share that failed.
  */
-export function useShareMovie(): (
-  movie: Pick<Movie, 'id' | 'title' | 'release_date'>,
-) => Promise<void> {
+export function useShareMovie(): (movie: ShareFilm, state?: ShareState) => Promise<void> {
   const snackbar = useSnackbar()
 
-  return async (movie) => {
-    const outcome = await shareMovie(movie)
+  return async (movie, state) => {
+    const outcome = await shareMovie(movie, state)
     if (outcome === 'copied') {
       snackbar.show({ message: 'Link copied', replace: true })
     } else if (outcome === 'failed') {

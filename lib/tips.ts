@@ -28,6 +28,14 @@ export type TipContext = {
 
 const ANDROID_12 = 31
 
+/** On every platform. The share text is built in lib/share.ts. */
+const SHARE_NOTE: Tip = {
+  id: 'share-note',
+  icon: 'share-variant',
+  title: 'Share a film you kept',
+  body: 'A share sends the rating, the tagline, and a line that says the film is on your watchlist, or that you watched it.',
+}
+
 export function tipsFor({ os, linkPreview, pip, pipOnHome }: TipContext): Tip[] {
   if (os === 'web') {
     return [
@@ -55,6 +63,7 @@ export function tipsFor({ os, linkPreview, pip, pipOnHome }: TipContext): Tip[] 
         title: 'Point at the carousel to stop it',
         body: 'The carousel stays on a film while the pointer is on its poster.',
       },
+      SHARE_NOTE,
     ]
   }
 
@@ -97,6 +106,7 @@ export function tipsFor({ os, linkPreview, pip, pipOnHome }: TipContext): Tip[] 
       title: 'Hold the carousel',
       body: 'The carousel stays on a film while your finger is on it.',
     },
+    SHARE_NOTE,
   )
   return tips
 }
