@@ -1,5 +1,6 @@
 import { Menu } from '@rootnative/components/menu'
 import { StyleSheet } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getMovie } from '../lib/api'
 import type { Movie, MovieDetail } from '../lib/types'
 import { filmKey, useFilmActions } from '../lib/useFilmActions'
@@ -28,6 +29,7 @@ type Props = {
 export function FilmMenu({ movie, visible, onDismiss, dismissTo = false }: Props) {
   const { saved, watched, watchTrailer, toggleSaved, toggleWatched, share } =
     useFilmActions(movie, dismissTo)
+  const insets = useSafeAreaInsets()
 
   const film = useResource<MovieDetail | null>(
     filmKey(movie.id),
@@ -45,6 +47,11 @@ export function FilmMenu({ movie, visible, onDismiss, dismissTo = false }: Props
       anchor={null}
       anchorStyle={styles.anchor}
       align="center"
+      // The Menu keeps 8 dp from the window edge, not from the system bars, so
+      // a menu above a card near the top went under the status bar. The margin
+      // applies to every edge. Remove it with the ui release that fixes
+      // RootNative DX feedback R48.
+      screenMargin={8 + Math.max(insets.top, insets.bottom)}
       testID="film-menu"
     >
       <Menu.Item
