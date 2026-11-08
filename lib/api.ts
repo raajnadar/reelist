@@ -631,9 +631,9 @@ export const getGenres = async (): Promise<Genre[]> => {
  * list, so the screen shows films rather than a failure.
  *
  * `filters` becomes the extra parameters `lib/discover.ts` names. Each of them
- * must be in `ALLOWED_PARAMS` in `proxy/api/tmdb.ts`, or the proxy drops it
- * and the grid shows the unfiltered list under a filter chip that says
- * otherwise.
+ * must be in `ALLOWED_PARAMS` in `proxy/api/tmdb.ts`, and each `sort_by` value
+ * in `ALLOWED_PARAM_VALUES`, or the proxy drops it and the grid shows the
+ * unfiltered list under a filter chip that says otherwise.
  */
 export const getMoviesByGenre = async (
   genreId: number,
@@ -660,7 +660,7 @@ export const getMoviesByGenre = async (
 export const getPopularByLanguage = async (language: string): Promise<Paged> =>
   toPaged(
     await tmdbFetch<RawPaged>('/discover/movie', {
-      ...toDiscoverParams({ language }),
+      ...toDiscoverParams({ languages: [language] }),
       page: '1',
     }),
   )

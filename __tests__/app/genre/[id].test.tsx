@@ -12,6 +12,10 @@ import type { Movie } from '../../../lib/types'
 // its route table from `require.context('./app')`, so a test file in there
 // becomes a route and Metro then bundles the testing library into the app.
 
+// A filter test renders the screen and the whole filter sheet. Beside the
+// other suites, the first one went past the 5 s default on 2026-11-08.
+jest.setTimeout(15_000)
+
 const mockReplace = jest.fn()
 const mockSetParams = jest.fn()
 let mockParams: Record<string, string> = { id: '28', name: 'Action' }
@@ -325,13 +329,42 @@ describe('switching genre', () => {
 })
 
 describe('the filters', () => {
+  type Screen = ReturnType<typeof renderWithProviders>
+
+  /**
+   * The sheet takes no touch until its first layout, and the test renderer
+   * runs no layout, so the test sends the one the library tests send.
+   */
+  const openSheet = async (screen: Screen) => {
+    fireEvent.press(screen.getByTestId('filter-open'))
+    fireEvent(await screen.findByTestId('filter-sheet'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 360, height: 600 } },
+    })
+  }
+
+  /** Moves a slider by its accessibility actions, as a screen reader does. */
+  const step = (screen: Screen, label: string, times: number) => {
+    for (let i = 0; i < times; i++) {
+      fireEvent(screen.getByLabelText(label), 'accessibilityAction', {
+        nativeEvent: { actionName: 'increment' },
+      })
+    }
+  }
+
+  /** "Any", then 5+, 6+, 7+: three steps up is 7+. */
+  const pickRating = async (screen: Screen, steps: number) => {
+    await openSheet(screen)
+    step(screen, 'Minimum rating', steps)
+    fireEvent.press(screen.getByTestId('filter-apply'))
+  }
+
   it('shows no filter row for a broken link', async () => {
     mockParams = { id: 'abc' }
 
     const screen = renderWithProviders(<GenreScreen />)
 
     await waitFor(() => expect(screen.getByText('Broken link')).toBeTruthy())
-    expect(screen.queryByTestId('filter-rating')).toBeNull()
+    expect(screen.queryByTestId('filter-open')).toBeNull()
   })
 
   /**
@@ -349,13 +382,94 @@ describe('the filters', () => {
     await waitFor(() => expect(screen.getByText('Film 21')).toBeTruthy())
 
     getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
-    fireEvent.press(screen.getByTestId('filter-rating'))
-    fireEvent.press(await screen.findByText('7+'))
+    await pickRating(screen, 3)
 
     await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
     expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, { rating: 7 })
     expect(screen.queryByText('Film 1')).toBeNull()
     expect(screen.queryByText('Film 21')).toBeNull()
+  })
+
+  /**
+   * The sheet holds a draft. Each step of a slider would otherwise reload the
+   * grid behind the sheet, and a way out of the sheet would not undo it.
+   */
+  it('changes nothing until the reader presses Show films', async () => {
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    await openSheet(screen)
+    fireEvent.press(screen.getByTestId('language-ta'))
+    step(screen, 'Minimum rating', 2)
+
+    expect(getMoviesByGenre).toHaveBeenCalledTimes(1)
+    expect(mockSetParams).not.toHaveBeenCalled()
+  })
+
+  it('drops the draft when the reader closes the sheet', async () => {
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    await openSheet(screen)
+    fireEvent.press(screen.getByTestId('language-ta'))
+    expect(screen.getByTestId('language-ta')).toBeChecked()
+    fireEvent.press(screen.getByLabelText('Close filters'))
+    await openSheet(screen)
+
+    expect(screen.getByTestId('language-ta')).not.toBeChecked()
+    expect(getMoviesByGenre).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('filter-language')).toBeNull()
+  })
+
+  it('starts the sheet on the filters on screen', async () => {
+    mockParams = { id: '28', name: 'Action', language: 'ta,ml', rating: '7' }
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    await openSheet(screen)
+
+    expect(screen.getByTestId('language-ta')).toBeChecked()
+    expect(screen.getByTestId('language-ml')).toBeChecked()
+    expect(screen.getByTestId('language-en')).not.toBeChecked()
+    expect(screen.getByLabelText('Minimum rating').props.accessibilityValue.text).toBe(
+      '7+',
+    )
+  })
+
+  it('sends every pick of the sheet in one request', async () => {
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    await openSheet(screen)
+    fireEvent.press(screen.getByText('Top rated'))
+    fireEvent.press(screen.getByTestId('decade-1990'))
+    fireEvent.press(screen.getByTestId('language-ml'))
+    fireEvent.press(screen.getByTestId('language-ta'))
+    step(screen, 'Runtime', 6)
+    fireEvent.press(screen.getByTestId('filter-apply'))
+
+    await waitFor(() =>
+      expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, {
+        sort: 'rated',
+        decade: 1990,
+        languages: ['ta', 'ml'],
+        runtime: { min: 90 },
+      }),
+    )
+  })
+
+  it('clears every pick of the draft with Clear all', async () => {
+    mockParams = { id: '28', name: 'Action', decade: '1990', sort: 'newest' }
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    await openSheet(screen)
+    fireEvent.press(screen.getByTestId('filter-clear'))
+    fireEvent.press(screen.getByTestId('filter-apply'))
+
+    await waitFor(() => expect(getMoviesByGenre).toHaveBeenLastCalledWith(28, 1, {}))
+    expect(screen.queryByTestId('filter-decade')).toBeNull()
+    expect(screen.queryByTestId('filter-sort')).toBeNull()
   })
 
   it('starts again from the first page on a pull to refresh', async () => {
@@ -397,7 +511,7 @@ describe('the filters', () => {
     const screen = renderWithProviders(<GenreScreen />)
     await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
 
-    expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, { language: 'ta' })
+    expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, { languages: ['ta'] })
     expect(screen.getByText('Tamil')).toBeTruthy()
   })
 
@@ -408,14 +522,18 @@ describe('the filters', () => {
     await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
     expect(mockSetParams).not.toHaveBeenCalled()
 
-    fireEvent.press(screen.getByTestId('filter-rating'))
-    fireEvent.press(await screen.findByText('7+'))
+    await openSheet(screen)
+    step(screen, 'Minimum rating', 3)
+    fireEvent.press(screen.getByTestId('language-ml'))
+    fireEvent.press(screen.getByTestId('language-ta'))
+    fireEvent.press(screen.getByTestId('filter-apply'))
 
     await waitFor(() =>
       expect(mockSetParams).toHaveBeenCalledWith({
+        sort: undefined,
         decade: undefined,
         rating: '7',
-        language: undefined,
+        language: 'ta,ml',
         runtime: undefined,
       }),
     )
@@ -431,14 +549,20 @@ describe('the filters', () => {
     expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, { decade: 1990, rating: 7 })
     expect(screen.getByText('1990s')).toBeTruthy()
     expect(screen.getByText('7+')).toBeTruthy()
-    expect(screen.getByText('Language')).toBeTruthy()
+    expect(screen.queryByText('Tamil')).toBeNull()
     // The address already says so.
     expect(mockSetParams).not.toHaveBeenCalled()
   })
 
-  // A link is untrusted. A value the menu does not offer reads as no filter.
-  it('ignores a filter value the menu does not offer', async () => {
-    mockParams = { id: '28', name: 'Action', rating: '9', language: 'xx' }
+  // A link is untrusted. A value the sheet does not offer reads as no filter.
+  it('ignores a filter value the sheet does not offer', async () => {
+    mockParams = {
+      id: '28',
+      name: 'Action',
+      rating: '4',
+      language: 'xx',
+      sort: 'revenue',
+    }
 
     const screen = renderWithProviders(<GenreScreen />)
     await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
@@ -446,15 +570,29 @@ describe('the filters', () => {
     expect(getMoviesByGenre).toHaveBeenCalledWith(28, 1, {})
   })
 
-  it('names the pick on its chip', async () => {
+  it('names each pick on its own chip', async () => {
     const screen = renderWithProviders(<GenreScreen />)
     await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
 
-    fireEvent.press(screen.getByTestId('filter-language'))
-    fireEvent.press(await screen.findByText('Tamil'))
+    await openSheet(screen)
+    fireEvent.press(screen.getByText('Newest'))
+    fireEvent.press(screen.getByTestId('language-ta'))
+    fireEvent.press(screen.getByTestId('language-ko'))
+    fireEvent.press(screen.getByTestId('filter-apply'))
 
-    await waitFor(() => expect(screen.getByText('Tamil')).toBeTruthy())
-    expect(screen.queryByText('Language')).toBeNull()
+    await waitFor(() => expect(screen.getByText('Tamil +1')).toBeTruthy())
+    expect(screen.getByLabelText('Languages: Tamil, Korean')).toBeTruthy()
+    expect(screen.getByLabelText('Sort: Newest')).toBeTruthy()
+  })
+
+  it('opens the sheet from a pick chip', async () => {
+    mockParams = { id: '28', name: 'Action', decade: '1990' }
+    const screen = renderWithProviders(<GenreScreen />)
+    await waitFor(() => expect(screen.getByText(mockMovies[0].title)).toBeTruthy())
+
+    fireEvent.press(screen.getByTestId('filter-decade'))
+
+    expect(await screen.findByTestId('filter-sheet')).toBeTruthy()
   })
 
   it('sends the next page under the same pick', async () => {
@@ -463,8 +601,9 @@ describe('the filters', () => {
     await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
 
     getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 20, 5, 1))
-    fireEvent.press(screen.getByTestId('filter-decade'))
-    fireEvent.press(await screen.findByText('1990s'))
+    await openSheet(screen)
+    fireEvent.press(screen.getByTestId('decade-1990'))
+    fireEvent.press(screen.getByTestId('filter-apply'))
     await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
 
     getMoviesByGenre.mockResolvedValueOnce(pageOf(120, 20, 5, 2))
@@ -475,7 +614,7 @@ describe('the filters', () => {
     )
   })
 
-  // The chip carries its own clear, so a reader never has to open the menu to
+  // The chip carries its own clear, so a reader never has to open the sheet to
   // undo one pick. The unfiltered page is in the store, so no request follows.
   it('clears one pick from its chip', async () => {
     getMoviesByGenre.mockResolvedValueOnce(pageOf(1, 3, 1))
@@ -483,11 +622,12 @@ describe('the filters', () => {
     await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
 
     getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
-    fireEvent.press(screen.getByTestId('filter-runtime'))
-    fireEvent.press(await screen.findByText('Under 90 min'))
+    await openSheet(screen)
+    fireEvent.press(screen.getByTestId('language-ta'))
+    fireEvent.press(screen.getByTestId('filter-apply'))
     await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
 
-    fireEvent.press(screen.getByLabelText('Remove Under 90 min'))
+    fireEvent.press(screen.getByLabelText('Remove Languages: Tamil'))
 
     await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
     expect(screen.queryByText('Film 100')).toBeNull()
@@ -504,8 +644,7 @@ describe('the filters', () => {
     await waitFor(() => expect(screen.getByText('Film 1')).toBeTruthy())
 
     getMoviesByGenre.mockResolvedValueOnce({ results: [], page: 1, total_pages: 1 })
-    fireEvent.press(screen.getByTestId('filter-rating'))
-    fireEvent.press(await screen.findByText('8+'))
+    await pickRating(screen, 5)
 
     await waitFor(() => expect(screen.getByTestId('genre-no-match')).toBeTruthy())
     expect(screen.queryByText('Nothing here yet')).toBeNull()
@@ -536,8 +675,7 @@ describe('the filters', () => {
     await waitFor(() => expect(getMoviesByGenre).toHaveBeenCalledWith(28, 2, {}))
 
     getMoviesByGenre.mockResolvedValueOnce(pageOf(100, 3, 1, 1))
-    fireEvent.press(screen.getByTestId('filter-rating'))
-    fireEvent.press(await screen.findByText('7+'))
+    await pickRating(screen, 3)
     await waitFor(() => expect(screen.getByText('Film 100')).toBeTruthy())
 
     resolvePageTwo(pageOf(21, 20))

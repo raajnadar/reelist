@@ -150,12 +150,26 @@ describe('the key', () => {
     ['vote_average.gte', '7'],
     ['vote_count.gte', '100'],
     ['with_original_language', 'hi'],
+    // More than one language: a pipe is "any of these" to TMDB.
+    ['with_original_language', 'ta|ml'],
     ['with_runtime.gte', '90'],
     ['with_runtime.lte', '120'],
-  ])('forwards the %s filter', async (name, value) => {
-    await get(`path=%2Fdiscover%2Fmovie&${encodeURIComponent(name)}=${value}`)
+    ['sort_by', 'vote_average.desc'],
+    ['sort_by', 'primary_release_date.desc'],
+  ])('forwards the %s filter %s', async (name, value) => {
+    await get(
+      `path=%2Fdiscover%2Fmovie&${encodeURIComponent(name)}=${encodeURIComponent(value)}`,
+    )
 
     expect(upstreamUrl().searchParams.get(name)).toBe(value)
+  })
+
+  // The genre screen sends two orders. Any other one is dropped, so the
+  // cache holds no copy of a list in an order the app never asks for.
+  it('drops a sort order the genre screen does not send', async () => {
+    await get('path=%2Fdiscover%2Fmovie&with_genres=28&sort_by=revenue.desc')
+
+    expect(upstreamUrl().searchParams.has('sort_by')).toBe(false)
   })
 
   // The explore screen sends the country with the cinema lists. A dropped
@@ -170,9 +184,9 @@ describe('the key', () => {
   // `with_genres` is now on the list, so it must still be dropped where it
   // does not belong rather than forwarded on any path a caller names.
   it('still drops an unknown parameter on the discover path', async () => {
-    await get('path=%2Fdiscover%2Fmovie&with_genres=28&sort_by=revenue.desc')
+    await get('path=%2Fdiscover%2Fmovie&with_genres=28&with_keywords=9715')
 
-    expect(upstreamUrl().searchParams.has('sort_by')).toBe(false)
+    expect(upstreamUrl().searchParams.has('with_keywords')).toBe(false)
   })
 
   // The detail screen asks for the cast, the videos, the recommendations, the

@@ -72,6 +72,8 @@ const ALLOWED_PARAMS = new Set([
   'with_original_language',
   'with_runtime.gte',
   'with_runtime.lte',
+  // The genre screen order. Checked by value in ALLOWED_PARAM_VALUES.
+  'sort_by',
   // The country for the cinema lists on the explore screen. A plain value
   // that names no path, so the name check is enough.
   'region',
@@ -106,6 +108,11 @@ const ALLOWED_PARAMS = new Set([
  * past the allowlist; it is held to one value so the cache holds one copy of
  * each film rather than one per spelling of the list.
  *
+ * `sort_by` is checked against the two orders the genre screen sends, the
+ * values `toDiscoverParams` in `lib/discover.ts` writes. "Popular" sends no
+ * `sort_by`, because it is the TMDB default. A free value would let a caller
+ * fill the cache with one copy of each list per order.
+ *
  * The value is checked on its own rather than against the path it arrives with.
  * A film value sent to the person endpoint is one TMDB ignores, not a way past
  * the allowlist, and pairing the two here would only add a rule with nothing to
@@ -121,6 +128,7 @@ const ALLOWED_PARAM_VALUES = new Map([
     ]),
   ],
   ['include_image_language', new Set(['en,null'])],
+  ['sort_by', new Set(['vote_average.desc', 'primary_release_date.desc'])],
 ])
 
 /**

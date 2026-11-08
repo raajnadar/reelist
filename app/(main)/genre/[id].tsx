@@ -9,6 +9,7 @@ import { useLanguage } from '../../../lib/language'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DiscoverFilterRow } from '../../../components/DiscoverFilterRow'
+import { FilterSheet } from '../../../components/FilterSheet'
 import { MovieCard } from '../../../components/MovieCard'
 import { PullToRefresh } from '../../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
@@ -26,6 +27,7 @@ import {
 } from '../../../lib/discover'
 import { missingFailure, type FailureKind } from '../../../lib/errors'
 import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { haptic } from '../../../lib/haptics'
 import { useBarScroll } from '../../../lib/floatingBar'
 import { genreMeta, metadataFor, noindexMeta } from '../../../lib/head'
 import { genreEntry, loadSeed } from '../../../lib/prerender'
@@ -152,9 +154,16 @@ function GenreScreen() {
   const [filters, setFilters] = useState<DiscoverFilters>(() => {
     const linked = filtersFromParams(params)
     if (hasFilters(linked)) return linked
-    return preferredLanguage ? { language: preferredLanguage } : EMPTY_FILTERS
+    return preferredLanguage ? { languages: [preferredLanguage] } : EMPTY_FILTERS
   })
   useUrlState(filtersToParams(filters))
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const applyFilters = (next: DiscoverFilters) => {
+    setSheetOpen(false)
+    if (filterKey(next) !== filterKey(filters)) haptic('select')
+    setFilters(next)
+  }
 
   /**
    * What is being asked for: one genre under one set of filters.
@@ -326,7 +335,21 @@ function GenreScreen() {
         placeholders show and after a pick that matched nothing. A bad id has
         no list to filter, so it gets no row.
       */}
-      {validId ? <DiscoverFilterRow filters={filters} onChange={setFilters} /> : null}
+      {validId ? (
+        <>
+          <DiscoverFilterRow
+            filters={filters}
+            onChange={setFilters}
+            onOpen={() => setSheetOpen(true)}
+          />
+          <FilterSheet
+            visible={sheetOpen}
+            filters={filters}
+            onApply={applyFilters}
+            onDismiss={() => setSheetOpen(false)}
+          />
+        </>
+      ) : null}
 
       <Presence>
         {loading ? (

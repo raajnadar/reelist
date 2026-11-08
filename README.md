@@ -46,7 +46,7 @@
 | **Trailers and stills** | The trailer plays inside the app. On Android it keeps playing in a small window when you leave. The gallery shows the stills of the film. |
 | **Cast and people**     | A cast card opens the person, with each film they appear in, newest first. The director and the writers are named too. |
 | **Film page extras**    | Where to watch, reviews, similar films, the franchise the film is part of, and links to IMDb and the official site. |
-| **Genres**              | An endless grid for each genre, with filters for the decade, the rating, the language, and the runtime. The filters stay in the link. |
+| **Genres**              | An endless grid for each genre. A filter sheet sorts it by popularity, rating, or release date, and filters it by decade, minimum rating, runtime, and one or more languages. The filters stay in the link. |
 | **Search**              | The results change as you type. On the web, `/` opens the search from any page.                           |
 | **Watchlist**           | It stays on the device, so it opens offline. It has "To watch" and "Watched" tabs, select mode, and undo. |
 | **Adaptive navigation** | A bar on a phone, a rail on a tablet or a laptop, and a drawer on a wide screen.                          |

@@ -1156,8 +1156,8 @@ describe('getMoviesByGenre', () => {
     await getMoviesByGenre(28, 1, {
       decade: 2010,
       rating: 7,
-      language: 'hi',
-      runtime: 'short',
+      languages: ['hi', 'ta'],
+      runtime: { max: 90 },
     })
 
     expect(tmdbFetch).toHaveBeenCalledWith('/discover/movie', {
@@ -1167,8 +1167,22 @@ describe('getMoviesByGenre', () => {
       'primary_release_date.lte': '2019-12-31',
       'vote_average.gte': '7',
       'vote_count.gte': '100',
-      with_original_language: 'hi',
-      'with_runtime.lte': '89',
+      with_original_language: 'hi|ta',
+      'with_runtime.lte': '90',
+    })
+  })
+
+  // The order is checked by value on the proxy, so the value is checked here.
+  it('adds the sort order to the request', async () => {
+    tmdbFetch.mockResolvedValue({ results: [] })
+
+    await getMoviesByGenre(28, 1, { sort: 'rated' })
+
+    expect(tmdbFetch).toHaveBeenCalledWith('/discover/movie', {
+      with_genres: '28',
+      page: '1',
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': '100',
     })
   })
 

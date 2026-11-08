@@ -49,7 +49,7 @@ export function tipsFor({ os, linkPreview, pip, pipOnHome }: TipContext): Tip[] 
         id: 'escape-key',
         icon: 'keyboard-esc',
         title: 'Press Esc to close',
-        body: 'Esc closes the search, the settings, a trailer, or a photo.',
+        body: 'Esc closes the search, the settings, the filters, a trailer, or a photo.',
       },
       {
         id: 'arrow-keys',
