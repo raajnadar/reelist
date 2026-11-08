@@ -11,7 +11,7 @@ const APP_THEMES: ThemePair = { light: lightTheme, dark: darkTheme }
  * The light and the dark theme for one poster colour, or the app themes when
  * the film has no colour.
  */
-export function filmThemes(seed: string | null): ThemePair {
+function filmThemes(seed: string | null): ThemePair {
   if (!seed) return APP_THEMES
   const { lightTheme: light, darkTheme: dark } = createMaterialTheme(
     seed,

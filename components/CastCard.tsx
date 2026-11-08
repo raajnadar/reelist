@@ -17,7 +17,7 @@ import type { CastMember } from '../lib/types'
 // Narrower than CARD_WIDTH in MovieCard. A headshot carries a name and a role
 // rather than a title and a rating, and a poster-width card would fit three
 // faces on a phone where five belong.
-export const CAST_CARD_WIDTH = 120
+const CAST_CARD_WIDTH = 120
 
 type Props = {
   member: CastMember

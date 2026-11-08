@@ -12,7 +12,7 @@ export type ExternalLink = {
 }
 
 /** The IMDb title page for one `tt` id. */
-export const imdbUrl = (imdbId: string) => `https://www.imdb.com/title/${imdbId}/`
+const imdbUrl = (imdbId: string) => `https://www.imdb.com/title/${imdbId}/`
 
 /**
  * The links the film page offers, in the order it prints them. Each one is

@@ -46,7 +46,7 @@ const RING_OFFSET = 2
 export const FLOATING_SHADOW =
   '0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15)'
 
-export type FloatingBarItem = {
+type FloatingBarItem = {
   value: string
   /** The name a screen reader reads. The bar shows the icon alone. */
   label: string

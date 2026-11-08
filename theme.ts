@@ -11,7 +11,7 @@ import { createMaterialTheme } from '@rootnative/core/create-theme'
 export const FILM_SCHEME_OPTIONS = { variant: 'content' } as const
 
 /** The app theme adds neutral surfaces, which drop the red tint from the dark greys. */
-export const SCHEME_OPTIONS = { ...FILM_SCHEME_OPTIONS, surfaceTone: 'neutral' } as const
+const SCHEME_OPTIONS = { ...FILM_SCHEME_OPTIONS, surfaceTone: 'neutral' } as const
 
 const SEED = '#BE123C'
 

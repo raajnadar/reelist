@@ -64,6 +64,13 @@ jobs:
         if: ${{ !cancelled() }}
         run: yarn lint
 
+      # Knip reads the whole import graph, so it finds what ESLint cannot: a
+      # file nothing imports, an export nothing uses, and a dependency nothing
+      # needs. knip.json holds the few things it cannot see on its own.
+      - name: Find unused code and dependencies
+        if: ${{ !cancelled() }}
+        run: yarn knip
+
       - name: Check formatting
         if: ${{ !cancelled() }}
         run: yarn format:check

@@ -228,5 +228,3 @@ const styles = StyleSheet.create({
   passRoot: { pointerEvents: 'box-none' },
   passPart: { pointerEvents: 'none' },
 })
-
-export type { Props as StateMessageProps }

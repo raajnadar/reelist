@@ -19,7 +19,7 @@ import { useServerPainted } from '../lib/useServerPainted'
 const CLIPPED_LINES = 5
 
 /** The TMDB page with every review of the film. */
-export const reviewsUrl = (movieId: number) =>
+const reviewsUrl = (movieId: number) =>
   `https://www.themoviedb.org/movie/${movieId}/reviews`
 
 /**

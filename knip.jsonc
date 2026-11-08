@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  "workspaces": {
+    ".": {
+      // Metro picks a `.web` file over its sibling by platform. Knip does not
+      // know that rule, so without this it reports every `.web` file as unused.
+      "entry": ["**/*.web.{ts,tsx}"],
+      "ignoreDependencies": [
+        // jest.config.js names the transform. jest ships it, so it is not listed.
+        "babel-jest",
+        // The `@jest-environment jsdom` docblocks. jest-expo ships it.
+        "jest-environment-jsdom",
+        // Knip's Expo plugin asks for it when app.json sets userInterfaceStyle.
+        // Expo SDK 58 handles that key without the package.
+        "expo-system-ui",
+      ],
+    },
+    // Vercel deploys the proxy on its own. Its handlers are its entry points.
+    "proxy": {
+      "entry": ["api/*.ts"],
+    },
+  },
+}

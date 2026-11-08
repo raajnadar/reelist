@@ -17,7 +17,7 @@ import { useSyncExternalStore } from 'react'
 export const STORAGE_KEY = 'reelist.region.v1'
 
 /** The country the app reads when the device reports none. */
-export const FALLBACK_REGION = 'US'
+const FALLBACK_REGION = 'US'
 
 export type RegionOption = { code: string; name: string }
 

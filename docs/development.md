@@ -97,6 +97,7 @@ feels different there. Use the phone build to judge the motion.
 | `yarn typecheck`      | Generates the route types, then runs TypeScript.                      |
 | `yarn lint`           | Runs ESLint.                                                          |
 | `yarn lint:fix`       | Runs ESLint and applies the fixes it can.                             |
+| `yarn knip` | Reports unused files, exports, and dependencies. |
 | `yarn format`         | Applies Prettier to every file.                                       |
 | `yarn format:check`   | Reports the files that Prettier would change.                         |
 | `yarn test`           | Runs Jest: the app, the DOM, and the proxy tests.                     |
@@ -108,11 +109,11 @@ feels different there. Use the phone build to judge the motion.
 | `yarn seo`            | Writes `sitemap.xml` and `robots.txt` into `dist/`.                   |
 | `yarn seo:audit`      | Checks the head tags and the structure of each page in `dist/`.       |
 | `yarn seo:browse`     | Loads each page in `dist/` in headless Chrome, and fails on an error. |
-| `yarn verify`         | Runs lint, typecheck, format:check, and test.                         |
+| `yarn verify` | Runs lint, knip, typecheck, format:check, and test. |
 
 CI runs two jobs on every push to `main` and on every pull request:
 
-- **`check`** runs `typecheck`, `lint`, `format:check`, and `test`.
+- **`check`** runs `typecheck`, `lint`, `knip`, `format:check`, and `test`.
 - **`web`** runs `export:web`, then `seo`, `seo:audit`, and `seo:browse`.
 
 `yarn typecheck` generates the route types first. `.expo/` is gitignored, so a

@@ -16,7 +16,7 @@ import { CARD_WIDTH } from './MovieCard'
  * static block under reduced motion. The local version reproduced all of that
  * by hand; only the sizes below are this app's concern.
  */
-export function SkeletonCard() {
+function SkeletonCard() {
   return (
     <View style={styles.card}>
       {/*

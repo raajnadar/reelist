@@ -92,7 +92,7 @@ export function carouselGeometry(width: number, height: number) {
  * bottom bar, never the rail or the drawer. `dvh` because react-native-web
  * measures the visual viewport.
  */
-export const STILL_CARD_WIDTH =
+const STILL_CARD_WIDTH =
   `min(calc(100vw - ${2 * (CAROUSEL_PEEK + CAROUSEL_SPACING)}px), max(${CAROUSEL_MIN_CARD_WIDTH}px, min(${CAROUSEL_MAX_CARD_WIDTH}px, calc(100dvh * ${CAROUSEL_POSTER_SHARE} * 2 / 3))))` as DimensionValue
 
 /**

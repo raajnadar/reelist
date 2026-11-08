@@ -114,7 +114,7 @@ export const mockMovies: Movie[] = [
  * photo on file, and an uncredited part. A cast card test that never sees them
  * would pass against data TMDB does not send.
  */
-export const mockCast: CastMember[] = [
+const mockCast: CastMember[] = [
   {
     id: 1082047,
     name: 'Timothée Chalamet',
@@ -198,7 +198,7 @@ export const mockVideos: Video[] = [
  * director, then the writers. The director also wrote the screenplay, so he
  * is in both groups, as TMDB bills him.
  */
-export const mockCrew: CrewMember[] = [
+const mockCrew: CrewMember[] = [
   {
     id: 137427,
     name: 'Denis Villeneuve',
@@ -226,7 +226,7 @@ export const mockCrew: CrewMember[] = [
  * Two reviews, in the shape the `reviews` block sends them. The second one
  * carries no score, which is the absent form `lib/api.ts` maps to `0`.
  */
-export const mockReviews: Review[] = [
+const mockReviews: Review[] = [
   {
     id: '65e0f1a2b3c4d5e6f7a8b9c0',
     author: 'A Film Reader',

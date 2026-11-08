@@ -183,7 +183,12 @@ export function markTipsSeen(): void {
 export const useTips = (): TipsState =>
   useSyncExternalStore(subscribe, getState, getState)
 
-/** Puts the store back to its start state, for a test. See jest.setup.js. */
+/**
+ * Puts the store back to its start state, for a test. jest.setup.js calls it
+ * through a lazy `require`, which Knip cannot follow.
+ *
+ * @public
+ */
 export function resetTips(): void {
   state = { seen: false, loaded: false }
   touched = false
