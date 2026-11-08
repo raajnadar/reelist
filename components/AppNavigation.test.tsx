@@ -367,6 +367,26 @@ describe('AppNavigation', () => {
     expect(frame.paddingLeft).toBe(62)
   })
 
+  // An app bar pads the side insets itself, so beside the rail it would clear
+  // the cutout a second time.
+  it('gives the screens no left inset beside the rail', async () => {
+    mockBreakpoint = 'expanded'
+    function SideInsets() {
+      const { left, right } = useSafeAreaInsets()
+      return <Text>{`left ${left} right ${right}`}</Text>
+    }
+    const screen = renderWithProviders(
+      <SafeAreaInsetsContext.Provider value={{ top: 0, left: 62, right: 62, bottom: 21 }}>
+        <AppNavigation>
+          <SideInsets />
+        </AppNavigation>
+      </SafeAreaInsetsContext.Provider>,
+    )
+    await act(async () => {})
+
+    expect(screen.getByText('left 0 right 62')).toBeTruthy()
+  })
+
   it('gives the screens the plain inset beside the rail', async () => {
     mockBreakpoint = 'expanded'
     const screen = await renderNavigation(<BottomInset />)

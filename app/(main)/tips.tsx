@@ -63,10 +63,7 @@ export default function TipsScreen() {
                 key={tip.id}
                 headlineText={tip.title}
                 supportingText={tip.body}
-                // Not 0: with 0 the item keeps the two-line template and
-                // centres the icon beside the wrapped text. RootNative DX
-                // feedback R47.
-                supportingTextNumberOfLines={10}
+                supportingTextNumberOfLines={0}
                 leadingContent={
                   <Icon
                     source={tip.icon}

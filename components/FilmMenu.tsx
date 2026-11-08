@@ -1,6 +1,5 @@
 import { Menu } from '@rootnative/components/menu'
 import { StyleSheet } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getMovie } from '../lib/api'
 import type { Movie, MovieDetail } from '../lib/types'
 import { filmKey, useFilmActions } from '../lib/useFilmActions'
@@ -19,8 +18,11 @@ type Props = {
  * and a share, in the order of the buttons on the film page. The handlers
  * are in useFilmActions, which the iOS context menu shares.
  *
- * The menu has no anchor element of its own. Its measured box fills the card
- * it sits in, so the menu opens against the card.
+ * The menu has no anchor element of its own. Its measured box is a line
+ * across the middle of the card, so the menu opens over the card. A card is
+ * about as tall as half the screen, and a box that filled it left too little
+ * room above or below for four items: the menu then scrolled, with Share out
+ * of view.
  *
  * A list sends no trailer, so the menu asks for the film when it mounts. The
  * answer goes into the store the film page reads, and a tap on the card after
@@ -29,7 +31,6 @@ type Props = {
 export function FilmMenu({ movie, visible, onDismiss, dismissTo = false }: Props) {
   const { saved, watched, watchTrailer, toggleSaved, toggleWatched, share } =
     useFilmActions(movie, dismissTo)
-  const insets = useSafeAreaInsets()
 
   const film = useResource<MovieDetail | null>(
     filmKey(movie.id),
@@ -47,11 +48,6 @@ export function FilmMenu({ movie, visible, onDismiss, dismissTo = false }: Props
       anchor={null}
       anchorStyle={styles.anchor}
       align="center"
-      // The Menu keeps 8 dp from the window edge, not from the system bars, so
-      // a menu above a card near the top went under the status bar. The margin
-      // applies to every edge. Remove it with the ui release that fixes
-      // RootNative DX feedback R48.
-      screenMargin={8 + Math.max(insets.top, insets.bottom)}
       testID="film-menu"
     >
       <Menu.Item
@@ -79,5 +75,12 @@ export function FilmMenu({ movie, visible, onDismiss, dismissTo = false }: Props
 
 const styles = StyleSheet.create({
   // The box takes no touch, so a press still reaches the card under it.
-  anchor: { ...StyleSheet.absoluteFill, pointerEvents: 'none' },
+  anchor: {
+    position: 'absolute',
+    start: 0,
+    end: 0,
+    top: '50%',
+    height: 0,
+    pointerEvents: 'none',
+  },
 })

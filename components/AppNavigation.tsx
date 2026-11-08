@@ -149,11 +149,18 @@ export function AppNavigation({ children }: { children: ReactNode }) {
    * inset that holds the full bar and the notice lets the last row scroll
    * clear of both. The full bar, not the small one: a list that changed its
    * padding as the bar shrank would jump.
+   *
+   * The rail pads the left inset, so the screens beside it get none. An app
+   * bar pads the side insets itself, and it would clear the cutout twice.
    */
+  const rail = kind === 'rail' && !hidden
   const screenInsets = useMemo(() => {
     const bottom = (bar ? barBottom + FLOATING_BAR_HEIGHT : insets.bottom) + noticeRoom
-    return bottom === insets.bottom ? insets : { ...insets, bottom }
-  }, [bar, barBottom, insets, noticeRoom])
+    const left = rail ? 0 : insets.left
+    return bottom === insets.bottom && left === insets.left
+      ? insets
+      : { ...insets, bottom, left }
+  }, [bar, rail, barBottom, insets, noticeRoom])
 
   /**
    * The size the bar moves to, which the screens write as they scroll. See
@@ -255,7 +262,7 @@ export function AppNavigation({ children }: { children: ReactNode }) {
   const container = NAVIGATION_CONTAINER[scheme]
 
   let side: ReactNode = null
-  if (!hidden && kind === 'rail') {
+  if (rail) {
     side = (
       // The rail runs the full height, so it is the one that clears the
       // status bar on its side of the window, and in landscape the camera

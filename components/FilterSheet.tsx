@@ -43,9 +43,9 @@ const runtimeText = (minutes: number): string =>
  * nothing.
  *
  * Each open mounts a new form, so each draft starts from the filters on
- * screen. The key does this, not the unmount at the end of the exit
- * animation: a reader who opens the sheet again while it slides away would
- * otherwise get the draft they threw away.
+ * screen. The unmount at the end of the exit animation is too late: a reader
+ * who opens the sheet again while it slides away would get the draft they
+ * threw away.
  */
 export function FilterSheet({
   visible,
