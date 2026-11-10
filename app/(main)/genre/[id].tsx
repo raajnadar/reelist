@@ -3,7 +3,6 @@ import { LoadingIndicator } from '@rootnative/components/loading-indicator'
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../../../lib/language'
 import { StyleSheet, View } from 'react-native'
@@ -93,7 +92,6 @@ export default function GenreRoute() {
 function GenreScreen() {
   const theme = useTheme()
   const snackbar = useSnackbar()
-  const router = useRouter()
   const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const { onScroll } = useBarScroll()

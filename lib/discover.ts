@@ -226,9 +226,7 @@ export const filterKey = (filters: DiscoverFilters): string =>
  * The names the filters take in the address:
  * `/genre/28?sort=rated&decade=1990&rating=7&language=ta,ml&runtime=90-120`.
  */
-const FILTER_PARAMS = ['sort', 'decade', 'rating', 'language', 'runtime'] as const
-
-export type FilterParam = (typeof FILTER_PARAMS)[number]
+export type FilterParam = 'sort' | 'decade' | 'rating' | 'language' | 'runtime'
 
 /** One applied filter, as the chip row under the genre title names it. */
 export type AppliedFilter = {

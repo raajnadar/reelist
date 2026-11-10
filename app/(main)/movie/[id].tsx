@@ -1,7 +1,7 @@
 import { Skeleton } from '@rootnative/components/skeleton'
 import { useBreakpointValue, useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, MotionConfig, Presence, Stagger } from '@rootnative/inertia'
-import { useIsPreview, useLocalSearchParams, useRouter } from 'expo-router'
+import { useIsPreview, useLocalSearchParams } from 'expo-router'
 import type { ReactNode } from 'react'
 import { StyleSheet, View, type DimensionValue } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -24,7 +24,6 @@ import { MovieRow } from '../../../components/MovieRow'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { ReviewList } from '../../../components/ReviewList'
 import { SkeletonRow } from '../../../components/Skeleton'
-import { StateMessage } from '../../../components/StateMessage'
 import { FailureMessage } from '../../../components/FailureMessage'
 import { VideoRow } from '../../../components/VideoRow'
 import { WatchProviders } from '../../../components/WatchProviders'
@@ -138,7 +137,6 @@ function FilmPage({ children }: { children: ReactNode }) {
 }
 
 export default function MovieScreen() {
-  const router = useRouter()
   const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()

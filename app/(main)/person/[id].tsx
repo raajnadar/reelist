@@ -1,7 +1,7 @@
 import { Typography } from '@rootnative/components/typography'
 import { useBreakpointValue, useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
@@ -9,7 +9,6 @@ import { MovieCard } from '../../../components/MovieCard'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { PersonProfile, PersonProfileSkeleton } from '../../../components/PersonProfile'
 import { SkeletonGrid } from '../../../components/Skeleton'
-import { StateMessage } from '../../../components/StateMessage'
 import { FailureMessage } from '../../../components/FailureMessage'
 import { PosterGrid } from '../../../components/PosterGrid'
 import { getPerson } from '../../../lib/api'
@@ -29,7 +28,6 @@ export const generateMetadata = () => metadataFor(noindexMeta(MISSING_TITLE))
 
 export default function PersonScreen() {
   const theme = useTheme()
-  const router = useRouter()
   const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const width = useContentWidth()

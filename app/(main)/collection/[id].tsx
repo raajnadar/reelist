@@ -2,7 +2,7 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DetailHeader, HEADER_HEIGHT } from '../../../components/DetailHeader'
@@ -10,7 +10,6 @@ import { DetailHero } from '../../../components/DetailHero'
 import { MovieCard } from '../../../components/MovieCard'
 import { Skeleton } from '@rootnative/components/skeleton'
 import { SkeletonGrid } from '../../../components/Skeleton'
-import { StateMessage } from '../../../components/StateMessage'
 import { FailureMessage } from '../../../components/FailureMessage'
 import { PosterGrid } from '../../../components/PosterGrid'
 import { getCollection } from '../../../lib/api'
@@ -46,7 +45,6 @@ const HERO_MAX_HEIGHT = 320
  */
 export default function CollectionScreen() {
   const theme = useTheme()
-  const router = useRouter()
   const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const width = useContentWidth()

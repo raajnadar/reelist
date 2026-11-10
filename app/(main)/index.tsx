@@ -17,7 +17,6 @@ import { PullToRefresh } from '../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../../components/Skeleton'
 import { SpinningCog } from '../../components/SpinningCog'
-import { StateMessage } from '../../components/StateMessage'
 import { FailureMessage } from '../../components/FailureMessage'
 import { TipsCard } from '../../components/TipsCard'
 import {
