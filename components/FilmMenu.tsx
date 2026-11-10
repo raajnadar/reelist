@@ -1,8 +1,9 @@
 import { Menu } from '@rootnative/components/menu'
 import { StyleSheet } from 'react-native'
 import { getMovie } from '../lib/api'
+import { movieKey } from '../lib/resourceCache'
 import type { Movie, MovieDetail } from '../lib/types'
-import { filmKey, useFilmActions } from '../lib/useFilmActions'
+import { useFilmActions } from '../lib/useFilmActions'
 import { useResource } from '../lib/useResource'
 
 type Props = {
@@ -33,7 +34,7 @@ export function FilmMenu({ movie, visible, onDismiss, dismissTo = false }: Props
     useFilmActions(movie, dismissTo)
 
   const film = useResource<MovieDetail | null>(
-    filmKey(movie.id),
+    movieKey(movie.id),
     () => getMovie(movie.id),
     'Could not load the film',
   )

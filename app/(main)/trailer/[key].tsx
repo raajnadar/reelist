@@ -1,7 +1,7 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { defaultTopAppBarTokens, useWindowDimensions } from '@rootnative/core'
 import { openURL } from 'expo-linking'
-import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useIsFocused, useLocalSearchParams } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
@@ -15,6 +15,7 @@ import { enterPip, pipSupported, setAutoEnterPip, useInPip } from '../../../lib/
 import { ON_STAGE, STAGE } from '../../../lib/stage'
 import { useWebKey } from '../../../lib/useWebKey'
 import { watchUrl } from '../../../lib/youtube'
+import { useGoBack } from '../../../lib/useGoBack'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Trailer'))
 
@@ -38,7 +39,6 @@ const BAR_HEIGHT = defaultTopAppBarTokens.smallContainerHeight
 const ASPECT = 16 / 9
 
 export default function TrailerScreen() {
-  const router = useRouter()
   const insets = useSafeAreaInsets()
   const { width, height } = useWindowDimensions()
 
@@ -51,7 +51,7 @@ export default function TrailerScreen() {
    */
   const { key, title } = useLocalSearchParams<{ key: string; title?: string }>()
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  const close = useGoBack()
   // The player is a YouTube frame. While it has the focus, the keys go to the
   // frame, not to this page, so Escape works once the focus is outside it.
   useWebKey('Escape', close)

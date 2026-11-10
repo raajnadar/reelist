@@ -11,6 +11,14 @@
  */
 
 /**
+ * The cache keys the screens share. Two screens that ask for the same key
+ * read one entry, so the film page, the gallery, and the menu of a card hold
+ * one copy of a film between them.
+ */
+export const movieKey = (id: number) => `movie:${id}`
+export const GENRES_KEY = 'home:genres'
+
+/**
  * How long an answer counts as current.
  *
  * Five minutes sits under the ten the proxy already caches at its edge
@@ -73,6 +81,20 @@ export const clearCache = (): void => {
 const inFlight = new Map<string, Promise<unknown>>()
 
 /**
+ * One request for the key, shared with any other caller asking right now, and
+ * its answer written to the cache. The answer is kept even when the caller
+ * has gone: the next visit then draws it with no wait.
+ */
+export const fetchShared = async <T>(
+  key: string,
+  fetcher: () => Promise<T>,
+): Promise<T> => {
+  const value = await shareRequest(key, fetcher)
+  writeCache(key, value)
+  return value
+}
+
+/**
  * The request for `key`, shared by everyone who asks while it runs.
  *
  * Two hooks that mount with the same key in one commit each start the effect
@@ -82,7 +104,7 @@ const inFlight = new Map<string, Promise<unknown>>()
  * answer is the store's business, so the promise is dropped as soon as it
  * lands and the next ask after that sends a request of its own.
  */
-export const shareRequest = <T>(key: string, fetcher: () => Promise<T>): Promise<T> => {
+const shareRequest = <T>(key: string, fetcher: () => Promise<T>): Promise<T> => {
   const pending = inFlight.get(key) as Promise<T> | undefined
   if (pending) return pending
   const promise: Promise<T> = fetcher().finally(() => {

@@ -11,7 +11,7 @@ import {
 import { Link } from 'expo-router'
 import { useState } from 'react'
 import { Platform, StyleSheet, View, type AccessibilityActionEvent } from 'react-native'
-import { metaLine } from '../lib/format'
+import { cardLabel, metaLine } from '../lib/format'
 import { haptic } from '../lib/haptics'
 import { FilmMenu } from './FilmMenu'
 import { RemoteImage } from './RemoteImage'
@@ -145,7 +145,7 @@ export function MovieCard({ movie, index = 0, progress, dismissTo, selection }: 
     <Card
       variant="filled"
       style={styles.card}
-      accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
+      accessibilityLabel={cardLabel(movie)}
       {...checkboxProps}
     >
       {/* 2:3 is the TMDB poster ratio.

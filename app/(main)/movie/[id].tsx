@@ -25,10 +25,12 @@ import { PageHead } from '@rootnative/seo/expo-router'
 import { ReviewList } from '../../../components/ReviewList'
 import { SkeletonRow } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
+import { FailureMessage } from '../../../components/FailureMessage'
 import { VideoRow } from '../../../components/VideoRow'
 import { WatchProviders } from '../../../components/WatchProviders'
 import { getMovie } from '../../../lib/api'
-import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
+import { movieKey } from '../../../lib/resourceCache'
+import { missingFailure, type Failure } from '../../../lib/errors'
 import { useBarScroll } from '../../../lib/floatingBar'
 import { metadataFor, movieMeta, noindexMeta } from '../../../lib/head'
 import { BACKDROP_W780, POSTER_W500, backdropUrl, posterUrl } from '../../../lib/images'
@@ -44,6 +46,7 @@ import type { MovieDetail } from '../../../lib/types'
 import { useContentWidth } from '../../../lib/useContentWidth'
 import { usePrerendered } from '../../../lib/usePrerendered'
 import { useResource } from '../../../lib/useResource'
+import { useGoBack } from '../../../lib/useGoBack'
 
 /**
  * The films the static web export writes a page for. See lib/prerender.ts.
@@ -63,12 +66,13 @@ export async function loader(_request: unknown, params: { id: string }) {
   return movieEntry(await loadSeed(), params.id)
 }
 
+/** The headline, and the page title, for an id TMDB has no film for. */
+const MISSING_TITLE = 'Movie not found'
+
 /** The head the static export writes. The seed film, or the missing-film head. */
 export async function generateMetadata(_request: unknown, params: { id: string }) {
   const entry = movieEntry(await loadSeed(), params.id)
-  return metadataFor(
-    entry ? movieMeta(fromSeed(entry)) : noindexMeta(REPORTS.missing.title),
-  )
+  return metadataFor(entry ? movieMeta(fromSeed(entry)) : noindexMeta(MISSING_TITLE))
 }
 
 /**
@@ -106,42 +110,6 @@ const SERVER_HERO_HEIGHT =
   `min(calc(100vw * ${HERO_ASPECT.compact}), calc(100dvh * ${HERO_HEIGHT_SHARE}))` as DimensionValue
 
 /**
- * How each kind of failure is presented, and what it offers.
- *
- * The three never share an action: a dropped request retries, an unset proxy
- * URL is a setup mistake with no request to repeat, and a link that names no
- * film — a bad id, or an id TMDB has nothing for — leaves only the way out.
- * A record keyed by kind rather than three nested conditions spread across five
- * props.
- */
-const REPORTS: Record<
-  FailureKind,
-  {
-    icon: string
-    tone: 'error' | 'neutral'
-    title: string
-    actionLabel?: string
-    actionIcon?: string
-  }
-> = {
-  transient: {
-    icon: 'cloud-off-outline',
-    tone: 'error',
-    title: 'Could not load the movie',
-    actionLabel: 'Try again',
-    actionIcon: 'refresh',
-  },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: {
-    icon: 'link-off',
-    tone: 'error',
-    title: 'Movie not found',
-    actionLabel: 'Go home',
-    actionIcon: 'home-outline',
-  },
-}
-
-/**
  * The page under everything else, in the background colour of the film.
  *
  * It reads the theme here, inside `FilmTheme`, so the colour is the film's own
@@ -171,6 +139,7 @@ function FilmPage({ children }: { children: ReactNode }) {
 
 export default function MovieScreen() {
   const router = useRouter()
+  const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const { id } = useLocalSearchParams<{ id: string }>()
   // The route param is always a string. TMDB ids are numeric, so a non-numeric
@@ -188,7 +157,7 @@ export default function MovieScreen() {
    * below, where it is found.
    */
   const detail = useResource<MovieDetail | null>(
-    validId ? `movie:${movieId}` : null,
+    validId ? movieKey(movieId) : null,
     () => getMovie(movieId),
     'Could not load the movie',
   )
@@ -269,15 +238,6 @@ export default function MovieScreen() {
   // run under it.
   const headerSpace = insets.top + HEADER_HEIGHT
 
-  // The handler behind REPORTS, which carries only the words. `setup` has none:
-  // the fix is a file on the developer's disk and a restart, and no button on
-  // this screen can apply it.
-  const actions: Record<FailureKind, (() => void) | undefined> = {
-    transient: detail.reload,
-    setup: undefined,
-    missing: () => router.replace('/'),
-  }
-
   return (
     // The whole page takes its colours from the poster, the header and the
     // skeleton too. The skeleton draws in the app colours, because the colour
@@ -296,9 +256,7 @@ export default function MovieScreen() {
           title={movie?.title ?? ''}
           scrollY={scrollY}
           revealAt={heroHeight - overlap}
-          // `router.back` alone dead-ends on a deep link, where this screen is the
-          // first entry in the history and there is nothing to go back to.
-          onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+          onBack={goBack}
         />
 
         {/*
@@ -312,7 +270,7 @@ export default function MovieScreen() {
         page that exists.
       */}
         {failure?.kind === 'missing' ? (
-          <PageHead title={REPORTS.missing.title} noindex />
+          <PageHead title={MISSING_TITLE} noindex />
         ) : movie ? (
           <PageHead {...movieMeta(movie)} />
         ) : null}
@@ -353,18 +311,15 @@ export default function MovieScreen() {
             /* The block centres in the room it is given, so the padding is what
              keeps it clear of the floating header rather than a top margin
              that would push it off centre. */
-            <StateMessage
+            <FailureMessage
               key="error"
               testID="detail-error"
-              icon={REPORTS[failure.kind].icon}
-              tone={REPORTS[failure.kind].tone}
-              title={REPORTS[failure.kind].title}
+              failure={failure}
+              title="Could not load the movie"
+              onRetry={detail.reload}
+              missingTitle={MISSING_TITLE}
               // The floating header has no title in this state, so this is the h1.
               titleLevel={1}
-              body={failure.message}
-              actionLabel={REPORTS[failure.kind].actionLabel}
-              actionIcon={REPORTS[failure.kind].actionIcon}
-              onAction={actions[failure.kind]}
               style={{ paddingTop: headerSpace }}
             />
           ) : movie ? (

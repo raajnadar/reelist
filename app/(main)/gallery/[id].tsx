@@ -8,6 +8,7 @@ import { StateMessage } from '../../../components/StateMessage'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../../../lib/head'
 import { getMovie } from '../../../lib/api'
+import { movieKey } from '../../../lib/resourceCache'
 import { missingFailure, type Failure } from '../../../lib/errors'
 import { ON_STAGE, STAGE } from '../../../lib/stage'
 import type { MovieDetail } from '../../../lib/types'
@@ -40,7 +41,7 @@ export default function GalleryScreen() {
   const initialIndex = Number(at) || 0
 
   const detail = useResource<MovieDetail | null>(
-    validId ? `movie:${movieId}` : null,
+    validId ? movieKey(movieId) : null,
     () => getMovie(movieId),
     'Could not load the gallery',
   )

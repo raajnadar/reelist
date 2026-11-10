@@ -11,18 +11,24 @@ import { MovieCard } from '../../../components/MovieCard'
 import { Skeleton } from '@rootnative/components/skeleton'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
+import { FailureMessage } from '../../../components/FailureMessage'
+import { PosterGrid } from '../../../components/PosterGrid'
 import { getCollection } from '../../../lib/api'
-import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
+import { missingFailure, type Failure } from '../../../lib/errors'
 import { filmCount } from '../../../lib/format'
-import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { gridInset } from '../../../lib/grid'
 import { useBarScroll } from '../../../lib/floatingBar'
 import { collectionMeta, metadataFor, noindexMeta } from '../../../lib/head'
 import { BACKDROP_W780, backdropUrl } from '../../../lib/images'
 import type { Collection } from '../../../lib/types'
 import { useContentWidth } from '../../../lib/useContentWidth'
 import { useResource } from '../../../lib/useResource'
+import { useGoBack } from '../../../lib/useGoBack'
 
-export const generateMetadata = () => metadataFor(noindexMeta(REPORTS.missing.title))
+/** The headline, and the page title, for an id TMDB has no collection for. */
+const MISSING_TITLE = 'Collection not found'
+
+export const generateMetadata = () => metadataFor(noindexMeta(MISSING_TITLE))
 
 /**
  * The backdrop height, as a fraction of the content width. Shorter than the
@@ -35,49 +41,15 @@ const HERO_ASPECT = 0.42
 const HERO_MAX_HEIGHT = 320
 
 /**
- * How each kind of failure is presented, and what it offers.
- *
- * The three never share an action, for the reason the film screen gives: a
- * dropped request retries, a setup mistake has no request to repeat, and a
- * link that names no collection leaves only the way out.
- */
-const REPORTS: Record<
-  FailureKind,
-  {
-    icon: string
-    tone: 'error' | 'neutral'
-    title: string
-    actionLabel?: string
-    actionIcon?: string
-  }
-> = {
-  transient: {
-    icon: 'cloud-off-outline',
-    tone: 'error',
-    title: 'Could not load the collection',
-    actionLabel: 'Try again',
-    actionIcon: 'refresh',
-  },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: {
-    icon: 'link-off',
-    tone: 'error',
-    title: 'Collection not found',
-    actionLabel: 'Go home',
-    actionIcon: 'home-outline',
-  },
-}
-
-/**
  * One franchise: its backdrop, its name, its synopsis, and every film in it
  * as a grid in release order.
  */
 export default function CollectionScreen() {
   const theme = useTheme()
   const router = useRouter()
+  const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const width = useContentWidth()
-  const columns = posterColumns(width)
 
   const { id } = useLocalSearchParams<{ id: string }>()
   // Derived from the param rather than stored, because a bad id needs no
@@ -105,16 +77,10 @@ export default function CollectionScreen() {
   const headerSpace = insets.top + HEADER_HEIGHT
   const heroHeight = Math.min(width * HERO_ASPECT, HERO_MAX_HEIGHT)
 
-  const actions: Record<FailureKind, (() => void) | undefined> = {
-    transient: detail.reload,
-    setup: undefined,
-    missing: () => router.replace('/'),
-  }
-
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {failure?.kind === 'missing' ? (
-        <PageHead title={REPORTS.missing.title} noindex />
+        <PageHead title={MISSING_TITLE} noindex />
       ) : collection ? (
         <PageHead {...collectionMeta(collection)} />
       ) : null}
@@ -122,9 +88,7 @@ export default function CollectionScreen() {
         title={collection?.name ?? ''}
         scrollY={scrollY}
         revealAt={heroHeight}
-        // `router.back` alone dead-ends on a deep link, where this screen is
-        // the first entry in the history and there is nothing to go back to.
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onBack={goBack}
       />
 
       <Presence>
@@ -138,17 +102,14 @@ export default function CollectionScreen() {
             <SkeletonGrid width={width} />
           </Motion.View>
         ) : failure ? (
-          <StateMessage
+          <FailureMessage
             key="error"
             testID="collection-error"
-            icon={REPORTS[failure.kind].icon}
-            tone={REPORTS[failure.kind].tone}
-            title={REPORTS[failure.kind].title}
+            failure={failure}
+            title="Could not load the collection"
+            onRetry={detail.reload}
+            missingTitle={MISSING_TITLE}
             titleLevel={1}
-            body={failure.message}
-            actionLabel={REPORTS[failure.kind].actionLabel}
-            actionIcon={REPORTS[failure.kind].actionIcon}
-            onAction={actions[failure.kind]}
             style={{ paddingTop: headerSpace }}
           />
         ) : collection ? (
@@ -163,22 +124,13 @@ export default function CollectionScreen() {
               reason the person screen gives: the header scrolls away with the
               films.
             */}
-            <Motion.FlatList
+            <PosterGrid
               data={collection.parts}
+              width={width}
               onScroll={onScroll}
               scrollEventThrottle={16}
-              key={columns}
-              numColumns={columns}
-              keyExtractor={(movie) => String(movie.id)}
               renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
-              columnWrapperStyle={columns > 1 ? styles.column : undefined}
-              contentContainerStyle={[
-                styles.list,
-                {
-                  paddingBottom: insets.bottom + 16,
-                  paddingHorizontal: gridInset(width),
-                },
-              ]}
+              contentStyle={{ paddingBottom: insets.bottom + 16 }}
               ListHeaderComponent={
                 // The hero spans the full width, so the header undoes the inset
                 // of the list around it and puts it back on the text.
@@ -220,8 +172,6 @@ export default function CollectionScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  list: { gap: GRID_GAP },
-  column: { gap: GRID_GAP },
   header: { marginBottom: 4 },
   intro: { paddingTop: 16, paddingBottom: 8, gap: 8 },
 })

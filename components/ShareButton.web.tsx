@@ -7,11 +7,11 @@ import {
   copyMovieLink,
   copyShareMessage,
   hasShareSheet,
-  shareMovie,
   shareTargets,
 } from '../lib/share'
 import type { MovieDetail } from '../lib/types'
 import { BUTTON_SIZE } from '../lib/buttonSize'
+import { useShareMovie } from '../lib/useShareMovie'
 import { useShareState } from '../lib/useShareState'
 
 /**
@@ -31,6 +31,7 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
   const snackbar = useSnackbar()
   const sheet = hasShareSheet()
   const state = useShareState(movie.id)
+  const share = useShareMovie()
 
   const copy = async () => {
     const copied = await copyMovieLink(movie)
@@ -48,12 +49,6 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
     })
   }
 
-  const share = async () => {
-    if ((await shareMovie(movie, state)) === 'failed') {
-      snackbar.show({ message: 'Could not share the link', replace: true })
-    }
-  }
-
   return (
     <Menu
       anchor={
@@ -69,7 +64,11 @@ export function ShareButton({ movie }: { movie: MovieDetail }) {
       }
     >
       {sheet ? (
-        <Menu.Item label="More apps" leadingIcon="share-variant" onPress={share} />
+        <Menu.Item
+          label="More apps"
+          leadingIcon="share-variant"
+          onPress={() => share(movie, state)}
+        />
       ) : null}
       <Menu.Item label="Copy link" leadingIcon="content-copy" onPress={copy} />
       <Menu.Item

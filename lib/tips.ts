@@ -1,8 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useSyncExternalStore } from 'react'
 import { Platform } from 'react-native'
 import { linkPreviewSupported } from './linkPreview'
 import { pipSupported } from './pip'
+import { createPreferenceStore } from './preferenceStore'
 
 /** A feature that has no button of its own, so a reader can miss it. */
 export type Tip = {
@@ -120,7 +119,7 @@ export const TIPS: Tip[] = tipsFor({
 
 export const STORAGE_KEY = 'reelist.tips.v1'
 
-export type TipsState = {
+type TipsState = {
   /** The reader closed the tips card, or opened the tips page. */
   seen: boolean
   /**
@@ -130,67 +129,27 @@ export type TipsState = {
   loaded: boolean
 }
 
-let state: TipsState = { seen: false, loaded: false }
+const store = createPreferenceStore<TipsState>({
+  key: STORAGE_KEY,
+  initial: () => ({ seen: false, loaded: false }),
+  parse: (stored) => ('seen' in stored ? { seen: stored.seen === true } : {}),
+  serialize: ({ seen }) => ({ seen }),
+})
 
-const listeners = new Set<() => void>()
-let touched = false
-
-const set = (next: Partial<TipsState>) => {
-  state = { ...state, ...next }
-  for (const listener of listeners) listener()
-}
-
-/** The device copy is not trusted input: it can be half written. */
-export function parseStored(raw: string | null): Partial<TipsState> {
-  if (!raw) return {}
-  try {
-    const value: unknown = JSON.parse(raw)
-    return typeof value === 'object' && value !== null && 'seen' in value
-      ? { seen: value.seen === true }
-      : {}
-  } catch {
-    return {}
-  }
-}
-
-const hydrate = async () => {
-  let raw: string | null = null
-  try {
-    raw = await AsyncStorage.getItem(STORAGE_KEY)
-  } catch {
-    // Unreadable storage shows the tips again, which costs the reader one tap.
-  }
-  set({ ...(touched ? {} : parseStored(raw)), loaded: true })
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  if (!state.loaded && listeners.size === 1) void hydrate()
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-const getState = () => state
+/** Turns the stored string back into the state. */
+export const parseStored = store.parseStored
 
 export function markTipsSeen(): void {
-  if (state.seen) return
-  touched = true
-  set({ seen: true })
-  void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ seen: true })).catch(() => {})
+  if (store.getState().seen) return
+  store.choose({ seen: true })
 }
 
-export const useTips = (): TipsState =>
-  useSyncExternalStore(subscribe, getState, getState)
+export const useTips = store.useStore
 
 /**
- * Puts the store back to its start state, for a test. jest.setup.js calls it
- * through a lazy `require`, which Knip cannot follow.
+ * For jest.setup.js, which calls it before each test through a lazy
+ * `require` that Knip cannot follow.
  *
  * @public
  */
-export function resetTips(): void {
-  state = { seen: false, loaded: false }
-  touched = false
-  listeners.clear()
-}
+export const resetTips = store.reset

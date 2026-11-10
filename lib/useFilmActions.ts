@@ -1,14 +1,14 @@
 import { useSnackbar } from '@rootnative/components/snackbar'
 import { useRouter, type Href } from 'expo-router'
+import { trailerHref } from './navigation'
 import { getMovie } from './api'
 import { haptic } from './haptics'
-import { readCache, shareRequest, writeCache } from './resourceCache'
+import { fetchShared, movieKey, readCache } from './resourceCache'
 import type { Movie, MovieDetail } from './types'
+import { undoSnackbar } from './undo'
 import { useShareMovie } from './useShareMovie'
 import { useToggleSaved } from './useToggleSaved'
 import { isWatched, setWatched } from './watchlist'
-
-export const filmKey = (id: number) => `movie:${id}`
 
 /**
  * What a film's menu offers, on both platforms: the trailer, the watchlist,
@@ -27,7 +27,7 @@ export function useFilmActions(movie: Movie, dismissTo = false) {
   const { saved, stored, toggle } = useToggleSaved(movie, dismissTo)
   const watched = saved && isWatched(stored)
 
-  const key = filmKey(movie.id)
+  const key = movieKey(movie.id)
   const go = (href: Href) => (dismissTo ? router.dismissTo(href) : router.push(href))
 
   const watchTrailer = async () => {
@@ -35,8 +35,7 @@ export function useFilmActions(movie: Movie, dismissTo = false) {
     if (!detail) {
       try {
         // Joins the request in flight, when the Android menu sent one.
-        detail = await shareRequest(key, () => getMovie(movie.id))
-        writeCache(key, detail)
+        detail = await fetchShared(key, () => getMovie(movie.id))
       } catch {
         snackbar.show({ message: 'Could not load the trailer', replace: true })
         return
@@ -47,23 +46,19 @@ export function useFilmActions(movie: Movie, dismissTo = false) {
       snackbar.show({ message: 'This film has no trailer', replace: true })
       return
     }
-    go(`/trailer/${trailer.key}?title=${encodeURIComponent(movie.title)}`)
+    go(trailerHref(trailer.key, movie.title))
   }
 
   const toggleWatched = () => {
     const next = !watched
     setWatched([movie.id], next)
     haptic(next ? 'save' : 'unsave')
-    snackbar.show({
-      message: next ? 'Marked as watched' : 'Marked as not watched',
-      actionLabel: 'Undo',
-      duration: 'long',
-      replace: true,
-      onAction: () => {
+    snackbar.show(
+      undoSnackbar(next ? 'Marked as watched' : 'Marked as not watched', () => {
         setWatched([movie.id], watched)
         haptic(next ? 'unsave' : 'save')
-      },
-    })
+      }),
+    )
   }
 
   return {

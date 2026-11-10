@@ -1,5 +1,5 @@
 import { EMPTY_FILTERS, toDiscoverParams, type DiscoverFilters } from './discover'
-import { fetchPosterColor, tmdbFetch } from './tmdb'
+import { fetchPosterColor, tmdbFetch, TmdbError } from './tmdb'
 import type {
   CastMember,
   Collection,
@@ -21,10 +21,6 @@ import type {
  * The single seam between the UI and the data source. Every screen imports from
  * here and nowhere else, so the transport underneath can change without
  * touching a call site.
- *
- * These functions now call TMDB. They were written async against static mock
- * data first, which is why this change touched no screen: every caller already
- * awaited a promise and handled the failure.
  */
 
 /**
@@ -484,7 +480,20 @@ const toPaged = (raw: RawPaged): Paged => ({
 const PERSON_APPEND = 'movie_credits'
 
 /**
- * Newest first, with the undated films last.
+ * A missing id answers null instead of throwing, so a screen can tell "no
+ * such film" from "the request failed". Only one of the two is worth a retry.
+ */
+const nullOn404 = async <T>(request: Promise<T>): Promise<T | null> => {
+  try {
+    return await request
+  } catch (e) {
+    if (e instanceof TmdbError && e.status === 404) return null
+    throw e
+  }
+}
+
+/**
+ * Sorts by release date, with the undated films last.
  *
  * TMDB returns a filmography in no order a reader would expect — neither by
  * date nor by billing. The rule lives here rather than in the screen for the
@@ -492,13 +501,21 @@ const PERSON_APPEND = 'movie_credits'
  *
  * An announced film carries the empty date sentinel, which sorts before every
  * real date as a string. Those entries go to the end instead, where the least
- * certain part of a filmography belongs.
+ * certain part of a list belongs: a filmography reads newest first, and a
+ * franchise in release order, the first film and then its sequels.
  */
-const byNewest = (a: Movie, b: Movie): number => {
-  if (!a.release_date) return b.release_date ? 1 : 0
-  if (!b.release_date) return -1
-  return b.release_date.localeCompare(a.release_date)
-}
+const byReleaseDate =
+  (order: 'newest' | 'oldest') =>
+  (a: Movie, b: Movie): number => {
+    if (!a.release_date) return b.release_date ? 1 : 0
+    if (!b.release_date) return -1
+    return order === 'newest'
+      ? b.release_date.localeCompare(a.release_date)
+      : a.release_date.localeCompare(b.release_date)
+  }
+
+const byNewest = byReleaseDate('newest')
+const byOldest = byReleaseDate('oldest')
 
 /**
  * The films of one person, from the `cast` list of the `movie_credits` block.
@@ -581,16 +598,13 @@ export const getUpcoming = async (region: string): Promise<Paged> =>
  * fail the film: it answers null instead.
  */
 export const getMovie = async (id: number): Promise<MovieDetail | null> => {
-  let raw: Record<string, unknown>
-  try {
-    raw = await tmdbFetch<Record<string, unknown>>(`/movie/${id}`, {
+  const raw = await nullOn404(
+    tmdbFetch<Record<string, unknown>>(`/movie/${id}`, {
       append_to_response: APPEND,
       include_image_language: IMAGE_LANGUAGES,
-    })
-  } catch (e) {
-    if (e instanceof Error && 'status' in e && e.status === 404) return null
-    throw e
-  }
+    }),
+  )
+  if (!raw) return null
 
   const posterPath = raw.poster_path
   const posterColor =
@@ -665,26 +679,6 @@ export const getPopularByLanguage = async (language: string): Promise<Paged> =>
     }),
   )
 
-/**
- * One person, and the films they appear in.
- *
- * Returns null for an id TMDB has nobody for, the same way `getMovie` does. The
- * person screen separates "no such person" from "the request failed", and only
- * one of the two is worth offering a retry for.
- */
-/**
- * Oldest first, with the undated films last.
- *
- * A franchise reads in release order: the first film, then its sequels. An
- * announced part carries the empty date sentinel and goes to the end, where a
- * film that does not exist yet belongs.
- */
-const byOldest = (a: Movie, b: Movie): number => {
-  if (!a.release_date) return b.release_date ? 1 : 0
-  if (!b.release_date) return -1
-  return a.release_date.localeCompare(b.release_date)
-}
-
 const toCollection = (raw: Record<string, unknown>): Collection => ({
   id: raw.id as number,
   name: (raw.name as string) ?? '',
@@ -698,23 +692,16 @@ const toCollection = (raw: Record<string, unknown>): Collection => ({
 
 /** One franchise and its films. Null for an id TMDB has no collection for. */
 export const getCollection = async (id: number): Promise<Collection | null> => {
-  try {
-    return toCollection(await tmdbFetch<Record<string, unknown>>(`/collection/${id}`))
-  } catch (e) {
-    if (e instanceof Error && 'status' in e && e.status === 404) return null
-    throw e
-  }
+  const raw = await nullOn404(tmdbFetch<Record<string, unknown>>(`/collection/${id}`))
+  return raw && toCollection(raw)
 }
 
+/** One person, and the films they appear in. Null for an id TMDB has nobody for. */
 export const getPerson = async (id: number): Promise<PersonDetail | null> => {
-  try {
-    return toPersonDetail(
-      await tmdbFetch<Record<string, unknown>>(`/person/${id}`, {
-        append_to_response: PERSON_APPEND,
-      }),
-    )
-  } catch (e) {
-    if (e instanceof Error && 'status' in e && e.status === 404) return null
-    throw e
-  }
+  const raw = await nullOn404(
+    tmdbFetch<Record<string, unknown>>(`/person/${id}`, {
+      append_to_response: PERSON_APPEND,
+    }),
+  )
+  return raw && toPersonDetail(raw)
 }

@@ -7,20 +7,21 @@ import { Tabs } from '@rootnative/components/tabs'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useIsFocused, useRouter } from 'expo-router'
+import { useIsFocused } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { BackHandler, Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MovieCard } from '../../components/MovieCard'
 import { SkeletonGrid } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
+import { PosterGrid } from '../../components/PosterGrid'
 import { TooltipIconButton } from '../../components/TooltipIconButton'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { filmCount } from '../../lib/format'
 import { useBarScroll } from '../../lib/floatingBar'
 import { metadataFor, noindexMeta } from '../../lib/head'
 import { haptic } from '../../lib/haptics'
-import { GRID_GAP, gridInset, posterColumns } from '../../lib/grid'
+import { GRID_GAP, gridInset } from '../../lib/grid'
 import { useContentWidth } from '../../lib/useContentWidth'
 import { useSearchLaunch } from '../../lib/useSearchLaunch'
 import { useAddressKey, useAddressParams } from '../../lib/useAddressParams'
@@ -36,6 +37,8 @@ import {
   useWatchlist,
   type WatchlistOrder,
 } from '../../lib/watchlist'
+import { undoSnackbar } from '../../lib/undo'
+import { useGoBack } from '../../lib/useGoBack'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Watchlist'))
 
@@ -73,11 +76,10 @@ export default function WatchlistRoute() {
 
 function WatchlistScreen() {
   const theme = useTheme()
-  const router = useRouter()
   const insets = useSafeAreaInsets()
   const { onScroll } = useBarScroll()
   const width = useContentWidth()
-  const columns = posterColumns(width)
+  const goBack = useGoBack()
   const inset = gridInset(width)
 
   /**
@@ -182,34 +184,26 @@ function WatchlistScreen() {
     const state = watched ? 'watched' : 'not watched'
     stopSelecting()
     haptic(watched ? 'save' : 'unsave')
-    snackbar.show({
-      message: `${filmCount(changed.length)} marked as ${state}`,
-      actionLabel: 'Undo',
-      duration: 'long',
-      replace: true,
-      onAction: () => {
+    snackbar.show(
+      undoSnackbar(`${filmCount(changed.length)} marked as ${state}`, () => {
         setWatched(changed, !watched)
         haptic(watched ? 'unsave' : 'save')
-      },
-    })
+      }),
+    )
   }
 
   const removePicked = () => {
     const removed = removeSaved(picked.map((m) => m.id))
     stopSelecting()
     haptic('unsave')
-    snackbar.show({
-      message: `${filmCount(removed.length)} removed from your watchlist`,
-      actionLabel: 'Undo',
-      duration: 'long',
-      replace: true,
-      onAction: () => {
+    snackbar.show(
+      undoSnackbar(`${filmCount(removed.length)} removed from your watchlist`, () => {
         // Lowest index first, so each film goes back to its old place. See
         // removeSaved.
         for (const { film, at } of removed) restoreSaved([film], at)
         haptic('save')
-      },
-    })
+      }),
+    )
   }
 
   /*
@@ -219,16 +213,12 @@ function WatchlistScreen() {
   const clear = () => {
     const removed = clearWatchlist()
     haptic('unsave')
-    snackbar.show({
-      message: 'Watchlist cleared',
-      actionLabel: 'Undo',
-      duration: 'long',
-      replace: true,
-      onAction: () => {
+    snackbar.show(
+      undoSnackbar('Watchlist cleared', () => {
         restoreSaved(removed)
         haptic('save')
-      },
-    })
+      }),
+    )
   }
 
   const selectActions = (
@@ -320,10 +310,7 @@ function WatchlistScreen() {
           ) : undefined
         }
         canGoBack
-        // Matches search, genre, and detail: `router.back` alone dead-ends when
-        // this screen is the first entry in the history, as it is on a deep
-        // link.
-        onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onBackPress={goBack}
         trailing={selecting ? selectActions : options}
       />
 
@@ -363,15 +350,9 @@ function WatchlistScreen() {
             </View>
 
             {shown.length ? (
-              <Motion.FlatList
+              <PosterGrid
                 data={shown}
-                // `key` forces a remount when the column count changes. FlatList
-                // caches its layout per item and does not recompute on a
-                // numColumns change alone, which leaves the old grid geometry
-                // behind after a rotation or a browser resize.
-                key={columns}
-                numColumns={columns}
-                keyExtractor={(m) => String(m.id)}
+                width={width}
                 // A pick changes no film in `data`, so FlatList needs this to
                 // draw the checkboxes again.
                 extraData={picks}
@@ -389,15 +370,7 @@ function WatchlistScreen() {
                     }
                   />
                 )}
-                columnWrapperStyle={columns > 1 ? styles.column : undefined}
-                contentContainerStyle={[
-                  styles.list,
-                  {
-                    paddingHorizontal: inset,
-                    paddingBottom: insets.bottom + 16,
-                  },
-                ]}
-                showsVerticalScrollIndicator={false}
+                contentStyle={[styles.list, { paddingBottom: insets.bottom + 16 }]}
                 onScroll={onScroll}
               />
             ) : tab === 'toWatch' ? (
@@ -460,7 +433,5 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  // The horizontal inset comes from the content width; see gridInset.
-  list: { paddingTop: GRID_GAP, gap: GRID_GAP },
-  column: { gap: GRID_GAP },
+  list: { paddingTop: GRID_GAP },
 })

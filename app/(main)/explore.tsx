@@ -10,8 +10,9 @@ import { MovieRow } from '../../components/MovieRow'
 import { PullToRefresh } from '../../components/PullToRefresh'
 import { SkeletonRow } from '../../components/Skeleton'
 import { StateMessage } from '../../components/StateMessage'
+import { FailureMessage } from '../../components/FailureMessage'
 import { getGenres, getNowPlaying, getUpcoming } from '../../lib/api'
-import { type FailureKind } from '../../lib/errors'
+import { GENRES_KEY } from '../../lib/resourceCache'
 import { useBarScroll } from '../../lib/floatingBar'
 import { exploreMeta, metadataFor } from '../../lib/head'
 import { regionName, useRegion } from '../../lib/region'
@@ -21,20 +22,6 @@ import type { Genre, Movie } from '../../lib/types'
 export const generateMetadata = () => metadataFor(exploreMeta)
 
 type Row = { title: string; movies: Movie[] }
-
-/**
- * How each kind of failure is presented. The same record as the home, for the
- * same reasons: only `transient` has an action, and `missing` cannot occur
- * for two fixed lists.
- */
-const REPORTS: Record<
-  FailureKind,
-  { icon: string; tone: 'error' | 'neutral'; title: string }
-> = {
-  transient: { icon: 'cloud-off-outline', tone: 'error', title: 'Could not load films' },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
-}
 
 /**
  * The ways into the catalogue that are not a film row on the home: the
@@ -74,7 +61,7 @@ export default function ExploreScreen() {
    * not replace two loaded film rows with an error. A failure leaves the grid
    * out, and the rest of the screen stands.
    */
-  const genres = useResource<Genre[]>('home:genres', getGenres, 'Could not load genres')
+  const genres = useResource<Genre[]>(GENRES_KEY, getGenres, 'Could not load genres')
 
   const retry = () => {
     rows.reload()
@@ -107,16 +94,12 @@ export default function ExploreScreen() {
             <SkeletonRow />
           </Motion.View>
         ) : failure ? (
-          <StateMessage
+          <FailureMessage
             key="error"
             testID="explore-error"
-            icon={REPORTS[failure.kind].icon}
-            tone={REPORTS[failure.kind].tone}
-            title={REPORTS[failure.kind].title}
-            body={failure.message}
-            actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
-            actionIcon="refresh"
-            onAction={failure.kind === 'transient' ? retry : undefined}
+            failure={failure}
+            title="Could not load films"
+            onRetry={retry}
           />
         ) : (
           <Motion.View

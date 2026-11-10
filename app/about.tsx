@@ -17,7 +17,7 @@ import {
 import corePackage from '@rootnative/core/package.json'
 import { Motion, Stagger } from '@rootnative/inertia'
 import inertiaPackage from '@rootnative/inertia/package.json'
-import { Link, useRouter, type Href } from 'expo-router'
+import { Link, type Href } from 'expo-router'
 import type { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -30,6 +30,7 @@ import { NEW_TAB } from '../lib/share'
 import { BUTTON_SIZE } from '../lib/buttonSize'
 import { useRootScreenRole } from '../lib/useRootScreenRole'
 import { useWebKey } from '../lib/useWebKey'
+import { useGoBack } from '../lib/useGoBack'
 
 export const generateMetadata = () => metadataFor(noindexMeta('About'))
 
@@ -116,7 +117,6 @@ const MODES: { value: ThemeMode; label: string }[] = [
  */
 export default function AboutScreen() {
   const theme = useTheme()
-  const router = useRouter()
   const insets = useSafeAreaInsets()
   const { mode } = useAppearance()
   const region = useRegion()
@@ -152,7 +152,7 @@ export default function AboutScreen() {
    */
   const cardRadius = roomy ? theme.shape.cornerExtraLarge : theme.shape.cornerNone
 
-  const dismiss = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  const dismiss = useGoBack()
   useWebKey('Escape', dismiss)
   const landmark = useRootScreenRole()
 
@@ -207,9 +207,6 @@ export default function AboutScreen() {
         {/*
           A close cross, not a back arrow. This is a modal, so the reader
           dismisses it; a back arrow would promise a place to go back to.
-
-          `router.back` alone dead-ends on a deep link straight to /about,
-          which the web build allows. The fallback matches search and detail.
 
           Only the phone's full-height card meets the status bar, so only it
           takes `insetTop`. The bar reads the inset from the SafeAreaProvider,

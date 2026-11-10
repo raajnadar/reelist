@@ -63,7 +63,6 @@ export function TipsCard({ tips = TIPS }: { tips?: Tip[] }) {
               key={item.id}
               onLayout={measure(item.id)}
               style={styles.measure}
-              pointerEvents="none"
               aria-hidden
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
@@ -120,7 +119,14 @@ function TipBody({ tip }: { tip: Tip }) {
 }
 
 const styles = StyleSheet.create({
-  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 },
+  measure: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0,
+    pointerEvents: 'none',
+  },
   card: { marginHorizontal: 16, marginTop: 8, marginBottom: 8, maxWidth: MAX_WIDTH },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // Puts the button in the corner, where the padding of the card would push it in.

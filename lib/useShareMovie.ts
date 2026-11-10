@@ -2,7 +2,7 @@ import { useSnackbar } from '@rootnative/components/snackbar'
 import { shareMovie, type ShareFilm, type ShareState } from './share'
 
 /**
- * Opens the system share sheet for one film, on a phone.
+ * Opens the system share sheet for one film, on a phone or in a browser.
  *
  * The sheet reports its own result, so this speaks only for the two ends the
  * reader cannot see: a link that went to the clipboard instead of a sheet,

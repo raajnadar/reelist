@@ -14,7 +14,7 @@ import { MissingProxyUrlError } from './config'
  * Without the distinction every failure would offer a "Try again" button. Under
  * a setup instruction, or under a broken link, that button cannot work.
  */
-export type FailureKind = 'transient' | 'setup' | 'missing'
+type FailureKind = 'transient' | 'setup' | 'missing'
 
 /** A failure, in the shape the screen that reports it needs. */
 export type Failure = {

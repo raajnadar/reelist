@@ -10,57 +10,29 @@ import { PageHead } from '@rootnative/seo/expo-router'
 import { PersonProfile, PersonProfileSkeleton } from '../../../components/PersonProfile'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
+import { FailureMessage } from '../../../components/FailureMessage'
+import { PosterGrid } from '../../../components/PosterGrid'
 import { getPerson } from '../../../lib/api'
-import { missingFailure, type Failure, type FailureKind } from '../../../lib/errors'
-import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { missingFailure, type Failure } from '../../../lib/errors'
+import { gridInset } from '../../../lib/grid'
 import { useBarScroll } from '../../../lib/floatingBar'
 import { metadataFor, noindexMeta, personMeta } from '../../../lib/head'
 import type { PersonDetail } from '../../../lib/types'
 import { useContentWidth } from '../../../lib/useContentWidth'
 import { useResource } from '../../../lib/useResource'
+import { useGoBack } from '../../../lib/useGoBack'
 
-export const generateMetadata = () => metadataFor(noindexMeta(REPORTS.missing.title))
+/** The headline, and the page title, for an id TMDB has nobody for. */
+const MISSING_TITLE = 'Person not found'
 
-/**
- * How each kind of failure is presented, and what it offers.
- *
- * The three never share an action: a dropped request retries, an unset proxy
- * URL is a setup mistake with no request to repeat, and a link that names
- * nobody — a bad id, or an id TMDB answered 404 for — leaves only the way out.
- */
-const REPORTS: Record<
-  FailureKind,
-  {
-    icon: string
-    tone: 'error' | 'neutral'
-    title: string
-    actionLabel?: string
-    actionIcon?: string
-  }
-> = {
-  transient: {
-    icon: 'cloud-off-outline',
-    tone: 'error',
-    title: 'Could not load the person',
-    actionLabel: 'Try again',
-    actionIcon: 'refresh',
-  },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: {
-    icon: 'link-off',
-    tone: 'error',
-    title: 'Person not found',
-    actionLabel: 'Go home',
-    actionIcon: 'home-outline',
-  },
-}
+export const generateMetadata = () => metadataFor(noindexMeta(MISSING_TITLE))
 
 export default function PersonScreen() {
   const theme = useTheme()
   const router = useRouter()
+  const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const width = useContentWidth()
-  const columns = posterColumns(width)
 
   const { id } = useLocalSearchParams<{ id: string }>()
   // A route parameter is a string from an untrusted source: a deep link can
@@ -121,15 +93,6 @@ export default function PersonScreen() {
    */
   const revealAt = photoWidth * 1.5
 
-  // The handler behind REPORTS, which carries only the words. `setup` has none:
-  // the fix is a file on the developer's disk and a restart, and no button on
-  // this screen can apply it.
-  const actions: Record<FailureKind, (() => void) | undefined> = {
-    transient: detail.reload,
-    setup: undefined,
-    missing: () => router.replace('/'),
-  }
-
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {/*
@@ -139,7 +102,7 @@ export default function PersonScreen() {
         A missing person gets `noindex`, for the reason the film screen gives.
       */}
       {failure?.kind === 'missing' ? (
-        <PageHead title={REPORTS.missing.title} noindex />
+        <PageHead title={MISSING_TITLE} noindex />
       ) : person ? (
         <PageHead {...personMeta(person)} />
       ) : null}
@@ -147,9 +110,7 @@ export default function PersonScreen() {
         title={person?.name ?? ''}
         scrollY={scrollY}
         revealAt={revealAt}
-        // `router.back` alone dead-ends on a deep link, where this screen is
-        // the first entry in the history and there is nothing to go back to.
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onBack={goBack}
       />
 
       <Presence>
@@ -168,18 +129,15 @@ export default function PersonScreen() {
             <SkeletonGrid width={width} />
           </Motion.View>
         ) : failure ? (
-          <StateMessage
+          <FailureMessage
             key="error"
             testID="person-error"
-            icon={REPORTS[failure.kind].icon}
-            tone={REPORTS[failure.kind].tone}
-            title={REPORTS[failure.kind].title}
+            failure={failure}
+            title="Could not load the person"
+            onRetry={detail.reload}
+            missingTitle={MISSING_TITLE}
             // The floating header has no title in this state, so this is the h1.
             titleLevel={1}
-            body={failure.message}
-            actionLabel={REPORTS[failure.kind].actionLabel}
-            actionIcon={REPORTS[failure.kind].actionIcon}
-            onAction={actions[failure.kind]}
             // The block centres in the room it is given, so the padding is what
             // keeps it clear of the floating header rather than a top margin
             // that would push it off centre.
@@ -199,26 +157,15 @@ export default function PersonScreen() {
               once. The header scrolls away with the films, which is what the
               reader expects of a page about one person.
             */}
-            <Motion.FlatList
+            <PosterGrid
               data={person.credits}
+              width={width}
               onScroll={onScroll}
-              // `key` forces a remount when the column count changes. FlatList
-              // caches its layout per item and does not recompute on a
-              // numColumns change alone, which leaves the old grid geometry
-              // behind after a rotation or a browser resize.
-              key={columns}
-              numColumns={columns}
-              keyExtractor={(movie) => String(movie.id)}
               renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
-              columnWrapperStyle={columns > 1 ? styles.column : undefined}
-              contentContainerStyle={[
-                styles.list,
-                {
-                  paddingTop: headerSpace,
-                  paddingBottom: insets.bottom + 16,
-                  paddingHorizontal: gridInset(width),
-                },
-              ]}
+              contentStyle={{
+                paddingTop: headerSpace,
+                paddingBottom: insets.bottom + 16,
+              }}
               ListHeaderComponent={
                 <View style={styles.header}>
                   <PersonProfile person={person} photoWidth={photoWidth} wide={wide} />
@@ -255,10 +202,6 @@ export default function PersonScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   fill: { flex: 1 },
-  // The horizontal inset comes from the content width; see gridInset. A fixed
-  // inset left the slack of the columns on the right: 50 beside 16 on a phone.
-  list: { gap: GRID_GAP },
-  column: { gap: GRID_GAP },
   // The list already pads itself, so the header only carries the space between
   // the profile and the first row of posters.
   header: { gap: 20, marginBottom: 4 },

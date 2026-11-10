@@ -477,13 +477,19 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
         tap, which the inner `animate` answers, and the pull, which the outer
         interpolation answers — because one element cannot take both.
       */}
-      <Motion.View style={[styles.chrome, chromeStyle]} pointerEvents="box-none">
+      <Motion.View style={[styles.chrome, chromeStyle]}>
         <Motion.View
           testID="gallery-chrome"
-          style={[styles.fill, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+          style={[
+            styles.fill,
+            {
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+              pointerEvents: chrome ? 'box-none' : 'none',
+            },
+          ]}
           animate={{ opacity: chrome ? 1 : 0 }}
           transition="hover"
-          pointerEvents={chrome ? 'box-none' : 'none'}
         >
           <AppBar
             title={title}
@@ -502,7 +508,7 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
             trailing={<Counter index={index} count={count} />}
           />
 
-          <View style={styles.middle} pointerEvents="box-none">
+          <View style={styles.middle}>
             {roomy ? (
               <>
                 <TooltipIconButton
@@ -783,12 +789,13 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: STAGE },
   page: { overflow: 'hidden' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  chrome: { ...StyleSheet.absoluteFill },
+  chrome: { ...StyleSheet.absoluteFill, pointerEvents: 'box-none' },
   stripBar: { height: STRIP_HEIGHT, justifyContent: 'center' },
   middle: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    pointerEvents: 'box-none',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
   },

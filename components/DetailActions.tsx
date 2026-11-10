@@ -1,6 +1,7 @@
 import { Button } from '@rootnative/components/button'
 import { Motion } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
+import { trailerHref } from '../lib/navigation'
 import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import type { MovieDetail } from '../lib/types'
@@ -55,11 +56,7 @@ export function DetailActions({ movie }: { movie: MovieDetail }) {
           variant="filled"
           size={BUTTON_SIZE.inline}
           leadingIcon="play"
-          onPress={() =>
-            router.push(
-              `/trailer/${trailer.key}?title=${encodeURIComponent(movie.title)}`,
-            )
-          }
+          onPress={() => router.push(trailerHref(trailer.key, movie.title))}
         >
           Watch trailer
         </Button>

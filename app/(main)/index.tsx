@@ -18,6 +18,7 @@ import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonRow } from '../../components/Skeleton'
 import { SpinningCog } from '../../components/SpinningCog'
 import { StateMessage } from '../../components/StateMessage'
+import { FailureMessage } from '../../components/FailureMessage'
 import { TipsCard } from '../../components/TipsCard'
 import {
   getGenres,
@@ -26,7 +27,7 @@ import {
   getTopRated,
   getTrending,
 } from '../../lib/api'
-import { type FailureKind } from '../../lib/errors'
+import { GENRES_KEY } from '../../lib/resourceCache'
 import { useBarScroll } from '../../lib/floatingBar'
 import { homeMeta, metadataFor } from '../../lib/head'
 import { languageName, useLanguage } from '../../lib/language'
@@ -37,6 +38,7 @@ import { usePrerendered } from '../../lib/usePrerendered'
 import { useResource } from '../../lib/useResource'
 import { useServerPainted } from '../../lib/useServerPainted'
 import type { Genre, Movie } from '../../lib/types'
+import { visuallyHidden } from '../../lib/a11y'
 
 export const generateMetadata = () => metadataFor(homeMeta)
 
@@ -49,24 +51,6 @@ type Row = { title: string; movies: Movie[] }
  */
 export async function loader() {
   return homeEntry(await loadSeed())
-}
-
-/**
- * How each kind of failure is presented. The action itself is bound inside the
- * screen, because only `transient` has one here — an unset proxy URL is fixed
- * in a file on the developer's disk, and no button on this screen can do it.
- *
- * `missing` cannot occur: the screen asks for three fixed lists, not for an id.
- * It is listed so the record stays exhaustive and a new kind is a type error
- * rather than a blank state.
- */
-const REPORTS: Record<
-  FailureKind,
-  { icon: string; tone: 'error' | 'neutral'; title: string }
-> = {
-  transient: { icon: 'cloud-off-outline', tone: 'error', title: 'Could not load movies' },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
 }
 
 /**
@@ -134,7 +118,7 @@ export default function HomeScreen() {
    * absent and the rest of the screen is untouched. Its `failure` is read by
    * nobody for that reason.
    */
-  const genres = useResource<Genre[]>('home:genres', getGenres, 'Could not load genres')
+  const genres = useResource<Genre[]>(GENRES_KEY, getGenres, 'Could not load genres')
 
   const retry = () => {
     rows.reload()
@@ -221,7 +205,7 @@ export default function HomeScreen() {
       */}
       {navigation === 'drawer' ? (
         <View style={styles.headerBesideDrawer}>
-          <Typography variant="headlineMedium" level={1} style={styles.hiddenHeading}>
+          <Typography variant="headlineMedium" level={1} style={visuallyHidden}>
             Reelist
           </Typography>
         </View>
@@ -285,16 +269,12 @@ export default function HomeScreen() {
             offers nothing, because the fix is a file on the developer's disk
             and a restart, not a second request.
           */
-          <StateMessage
+          <FailureMessage
             key="error"
             testID="home-error"
-            icon={REPORTS[failure.kind].icon}
-            tone={REPORTS[failure.kind].tone}
-            title={REPORTS[failure.kind].title}
-            body={failure.message}
-            actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
-            actionIcon="refresh"
-            onAction={failure.kind === 'transient' ? retry : undefined}
+            failure={failure}
+            title="Could not load movies"
+            onRetry={retry}
           />
         ) : (
           <Motion.View
@@ -369,14 +349,4 @@ const styles = StyleSheet.create({
   // Only the hidden heading is left in the header, so this gap is all that
   // keeps the chips off the top edge.
   headerBesideDrawer: { paddingTop: 16 },
-  // The same as the heading of the search sheet: out of the layout and out
-  // of sight, but in the accessibility tree.
-  hiddenHeading: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    overflow: 'hidden',
-    opacity: 0,
-    pointerEvents: 'none',
-  },
 })

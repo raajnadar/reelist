@@ -96,3 +96,10 @@ export const monthYear = (iso: string) => {
 }
 
 export const filmCount = (count: number) => (count === 1 ? '1 film' : `${count} films`)
+
+/** What a screen reader says for a film card: the title, then the meta line. */
+export const cardLabel = (movie: {
+  title: string
+  vote_average: number
+  release_date: string
+}) => `${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`

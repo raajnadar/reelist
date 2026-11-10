@@ -10,6 +10,7 @@ import {
   type SharedValue,
 } from '@rootnative/inertia'
 import { useRouter } from 'expo-router'
+import { trailerHref } from '../lib/navigation'
 import { useRef } from 'react'
 import { FlatList, StyleSheet, View, type ViewInstance } from 'react-native'
 import { cascadeWindow, LIFT_SPACE } from '../lib/motion'
@@ -117,9 +118,7 @@ function VideoCard({
           variant="filled"
           style={styles.card}
           accessibilityLabel={`Play ${video.name}. ${video.type}`}
-          onPress={() =>
-            router.push(`/trailer/${video.key}?title=${encodeURIComponent(title)}`)
-          }
+          onPress={() => router.push(trailerHref(video.key, title))}
         >
           <Card.Media aspectRatio={VIDEO_ASPECT}>
             <View

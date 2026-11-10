@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toFailure, type Failure } from './errors'
 import { subscribeOnline } from './network'
-import { evictCache, readCache, shareRequest, writeCache } from './resourceCache'
+import { evictCache, fetchShared, readCache } from './resourceCache'
 
 /**
  * One asynchronous answer, in the shape a screen draws.
@@ -80,14 +80,8 @@ export function useResource<T>(
 
     let active = true
 
-    // Shared with any other hook asking for the same key right now, so two
-    // screens that mount together send one request between them.
-    shareRequest(key, fetcherRef.current)
+    fetchShared(key, fetcherRef.current)
       .then((value) => {
-        // Written before the `active` check: the answer is worth keeping even
-        // when the screen that asked for it has gone, and the next visit then
-        // draws it with no wait.
-        writeCache(key, value)
         if (active) setOutcome({ key, data: value, failure: null })
       })
       .catch((e: unknown) => {
@@ -132,8 +126,7 @@ export function useResource<T>(
     if (key === null) return true
     setRefreshing(true)
     try {
-      const value = await shareRequest(key, fetcherRef.current)
-      writeCache(key, value)
+      const value = await fetchShared(key, fetcherRef.current)
       if (mountedRef.current && keyRef.current === key) {
         setOutcome({ key, data: value, failure: null })
       }

@@ -4,6 +4,7 @@ import { mockMovieDetail } from '../../../lib/mock'
 import { writeCache } from '../../../lib/resourceCache'
 import GalleryScreen from '../../../app/(main)/gallery/[id]'
 import { haptic } from '../../../lib/haptics'
+import { StyleSheet } from 'react-native'
 
 jest.mock('../../../lib/haptics', () => ({ haptic: jest.fn() }))
 const mockHaptic = haptic as jest.Mock
@@ -144,6 +145,10 @@ it('rejects a non-numeric id without calling the data layer', async () => {
   expect(getMovie).not.toHaveBeenCalled()
 })
 
+// The chrome gates presses through its style, not through a prop.
+const chromePointer = (screen: ReturnType<typeof renderWithProviders>) =>
+  StyleSheet.flatten(screen.getByTestId('gallery-chrome').props.style).pointerEvents
+
 describe('a tap on the picture', () => {
   beforeEach(() => {
     jest.useFakeTimers()
@@ -166,13 +171,13 @@ describe('a tap on the picture', () => {
     const screen = renderWithProviders(<GalleryScreen />)
 
     tap(screen)
-    expect(screen.getByTestId('gallery-chrome').props.pointerEvents).toBe('box-none')
+    expect(chromePointer(screen)).toBe('box-none')
 
     await act(async () => {
       jest.advanceTimersByTime(300)
     })
 
-    expect(screen.getByTestId('gallery-chrome').props.pointerEvents).toBe('none')
+    expect(chromePointer(screen)).toBe('none')
   })
 
   it('brings them back on the next tap', async () => {
@@ -187,7 +192,7 @@ describe('a tap on the picture', () => {
       jest.advanceTimersByTime(300)
     })
 
-    expect(screen.getByTestId('gallery-chrome').props.pointerEvents).toBe('box-none')
+    expect(chromePointer(screen)).toBe('box-none')
   })
 
   // Two taps inside the window are a zoom, not two toggles: the first is
@@ -201,6 +206,6 @@ describe('a tap on the picture', () => {
       jest.advanceTimersByTime(300)
     })
 
-    expect(screen.getByTestId('gallery-chrome').props.pointerEvents).toBe('box-none')
+    expect(chromePointer(screen)).toBe('box-none')
   })
 })

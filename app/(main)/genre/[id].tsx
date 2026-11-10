@@ -15,7 +15,10 @@ import { PullToRefresh } from '../../../components/PullToRefresh'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { SkeletonGrid } from '../../../components/Skeleton'
 import { StateMessage } from '../../../components/StateMessage'
+import { FailureMessage } from '../../../components/FailureMessage'
+import { PosterGrid } from '../../../components/PosterGrid'
 import { getGenres, getMoviesByGenre } from '../../../lib/api'
+import { GENRES_KEY } from '../../../lib/resourceCache'
 import {
   EMPTY_FILTERS,
   filterKey,
@@ -25,8 +28,8 @@ import {
   type DiscoverFilters,
   type FilterParam,
 } from '../../../lib/discover'
-import { missingFailure, type FailureKind } from '../../../lib/errors'
-import { GRID_GAP, gridInset, posterColumns } from '../../../lib/grid'
+import { missingFailure } from '../../../lib/errors'
+import { GRID_GAP } from '../../../lib/grid'
 import { haptic } from '../../../lib/haptics'
 import { useBarScroll } from '../../../lib/floatingBar'
 import { genreMeta, metadataFor, noindexMeta } from '../../../lib/head'
@@ -37,6 +40,7 @@ import { useResource } from '../../../lib/useResource'
 import { useAddressKey, useAddressParams } from '../../../lib/useAddressParams'
 import { useUrlState } from '../../../lib/useUrlState'
 import type { Genre, Movie, Paged } from '../../../lib/types'
+import { useGoBack } from '../../../lib/useGoBack'
 
 /**
  * The genres the static web export writes a page for: the chip row of the
@@ -59,47 +63,13 @@ export async function loader(_request: unknown, params: { id: string }) {
   return genreEntry(await loadSeed(), params.id)
 }
 
+/** The headline, and the page title, for an id that names no genre. */
+const MISSING_TITLE = 'Broken link'
+
 /** The head the static export writes. The seed genre, or the missing-genre head. */
 export async function generateMetadata(_request: unknown, params: { id: string }) {
   const genre = genreEntry(await loadSeed(), params.id)
-  return metadataFor(
-    genre ? genreMeta(genre.id, genre.name) : noindexMeta(REPORTS.missing.title),
-  )
-}
-
-/**
- * How each kind of failure is presented, and what it offers.
- *
- * The three never share an action: a dropped request retries, an unset proxy
- * URL is a setup mistake with no request to repeat, and a link that names no
- * genre leaves only the way out. A record keyed by kind rather than three
- * nested conditions spread across five props.
- */
-const REPORTS: Record<
-  FailureKind,
-  {
-    icon: string
-    tone: 'error' | 'neutral'
-    title: string
-    actionLabel?: string
-    actionIcon?: string
-  }
-> = {
-  transient: {
-    icon: 'cloud-off-outline',
-    tone: 'error',
-    title: 'Could not load movies',
-    actionLabel: 'Try again',
-    actionIcon: 'refresh',
-  },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: {
-    icon: 'link-off',
-    tone: 'error',
-    title: 'Broken link',
-    actionLabel: 'Go home',
-    actionIcon: 'home-outline',
-  },
+  return metadataFor(genre ? genreMeta(genre.id, genre.name) : noindexMeta(MISSING_TITLE))
 }
 
 /**
@@ -124,10 +94,10 @@ function GenreScreen() {
   const theme = useTheme()
   const snackbar = useSnackbar()
   const router = useRouter()
+  const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const { onScroll } = useBarScroll()
   const width = useContentWidth()
-  const columns = posterColumns(width)
 
   const params = useAddressParams<
     { id: string; name?: string } & Partial<Record<FilterParam, string>>
@@ -297,38 +267,22 @@ function GenreScreen() {
    * is already known: there is nothing to ask.
    */
   const list = useResource<Genre[]>(
-    known || !validId ? null : 'home:genres',
+    known || !validId ? null : GENRES_KEY,
     getGenres,
     'Could not load genres',
   )
   const name = known ?? list.data?.find((genre) => genre.id === genreId)?.name
   const title = name ?? 'Genre'
 
-  // The handler behind REPORTS, which carries only the words. `setup` has none:
-  // the fix is a file on the developer's disk and a restart, and no button on
-  // this screen can apply it.
-  const actions: Record<FailureKind, (() => void) | undefined> = {
-    transient: retry,
-    setup: undefined,
-    missing: () => router.replace('/'),
-  }
-
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {/* A missing genre gets `noindex`, for the reason the film screen gives. */}
       {failure?.kind === 'missing' ? (
-        <PageHead title={REPORTS.missing.title} noindex />
+        <PageHead title={MISSING_TITLE} noindex />
       ) : validId && name ? (
         <PageHead {...genreMeta(genreId, name)} />
       ) : null}
-      <AppBar
-        title={title}
-        insetTop
-        canGoBack
-        // Matches search and detail: `router.back` alone dead-ends when this
-        // screen is the first entry in the history, as it is on a deep link.
-        onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-      />
+      <AppBar title={title} insetTop canGoBack onBackPress={goBack} />
 
       {/*
         Above the states rather than inside the grid, so the row stays while the
@@ -365,16 +319,13 @@ function GenreScreen() {
             with no request to repeat; a bad link has no genre to load at all,
             and the only move left is out of the screen.
           */
-          <StateMessage
+          <FailureMessage
             key="error"
             testID="genre-error"
-            icon={REPORTS[failure.kind].icon}
-            tone={REPORTS[failure.kind].tone}
-            title={REPORTS[failure.kind].title}
-            body={failure.message}
-            actionLabel={REPORTS[failure.kind].actionLabel}
-            actionIcon={REPORTS[failure.kind].actionIcon}
-            onAction={actions[failure.kind]}
+            failure={failure}
+            title="Could not load movies"
+            onRetry={retry}
+            missingTitle={MISSING_TITLE}
           />
         ) : movies.length ? (
           <Motion.View
@@ -383,24 +334,11 @@ function GenreScreen() {
             animate={{ opacity: 1 }}
             style={styles.fill}
           >
-            <Motion.FlatList
+            <PosterGrid
               data={movies}
-              // `key` forces a remount when the column count changes. FlatList
-              // caches its layout per item and does not recompute on a
-              // numColumns change alone, which leaves the old grid geometry
-              // behind after a rotation or a browser resize.
-              key={columns}
-              numColumns={columns}
-              keyExtractor={(m) => String(m.id)}
+              width={width}
               renderItem={({ item, index }) => <MovieCard movie={item} index={index} />}
-              columnWrapperStyle={columns > 1 ? styles.column : undefined}
-              contentContainerStyle={[
-                styles.list,
-                {
-                  paddingHorizontal: gridInset(width),
-                  paddingBottom: insets.bottom + 16,
-                },
-              ]}
+              contentStyle={[styles.list, { paddingBottom: insets.bottom + 16 }]}
               refreshControl={
                 <PullToRefresh
                   refreshing={first.refreshing}
@@ -420,7 +358,6 @@ function GenreScreen() {
                   </View>
                 ) : undefined
               }
-              showsVerticalScrollIndicator={false}
             />
           </Motion.View>
         ) : hasFilters(filters) ? (
@@ -462,8 +399,6 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  // The horizontal inset comes from the content width; see gridInset.
-  list: { paddingTop: GRID_GAP, gap: GRID_GAP },
-  column: { gap: GRID_GAP },
+  list: { paddingTop: GRID_GAP },
   footer: { paddingVertical: 20, alignItems: 'center' },
 })

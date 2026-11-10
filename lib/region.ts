@@ -1,6 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getLocales } from 'expo-localization'
-import { useSyncExternalStore } from 'react'
+import { createPreferenceStore } from './preferenceStore'
 
 /**
  * Which country the watch providers are read for.
@@ -9,9 +8,6 @@ import { useSyncExternalStore } from 'react'
  * on nothing at all in Germany. The app follows the device region until the
  * reader picks one here. A reader who travels, or who uses a VPN, needs the
  * override, and a device that reports no region needs the fallback.
- *
- * A module store rather than a context, for the reason lib/appearance.ts is
- * one: the detail screen and the about screen both read it.
  */
 
 export const STORAGE_KEY = 'reelist.region.v1'
@@ -86,7 +82,7 @@ export const deviceRegion = (): string => {
 export const regionName = (code: string): string =>
   REGIONS.find((r) => r.code === code)?.name ?? code
 
-export type Region = {
+type Region = {
   /** The country the providers are read for. Never empty. */
   code: string
   /** Whether `code` is the reader's own choice rather than the device's. */
@@ -96,102 +92,33 @@ export type Region = {
 }
 
 /**
- * The snapshot, replaced rather than mutated, for the reason lib/appearance.ts
- * gives: `useSyncExternalStore` compares snapshots by identity. The effective
- * code lives in the snapshot rather than being derived in the hook, so the
- * getter can return the same object until something changes.
- */
-let state: Region = { code: deviceRegion(), chosen: false, loaded: false }
-
-const listeners = new Set<() => void>()
-let touched = false
-
-const emit = () => {
-  for (const listener of listeners) listener()
-}
-
-const set = (next: Partial<Region>) => {
-  state = { ...state, ...next }
-  emit()
-}
-
-/**
- * Turns the stored string back into a choice. The device copy is not trusted
- * input, for the reason lib/appearance.ts gives.
- */
-export function parseStored(raw: string | null): Partial<Region> {
-  if (!raw) return {}
-
-  try {
-    const value: unknown = JSON.parse(raw)
-    if (typeof value !== 'object' || value === null) return {}
-
-    const { code } = value as Record<string, unknown>
-
-    return isCode(code) ? { code, chosen: true } : {}
-  } catch {
-    return {}
-  }
-}
-
-const persist = () => {
-  // Not awaited, and its failure is not reported, for the reason
-  // lib/appearance.ts gives: the screen is already correct.
-  const value = state.chosen ? { code: state.code } : {}
-  void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(value)).catch(() => {})
-}
-
-const hydrate = async () => {
-  let raw: string | null = null
-  try {
-    raw = await AsyncStorage.getItem(STORAGE_KEY)
-  } catch {
-    // Unreadable storage is the device region. The app stays usable.
-  }
-
-  set({ ...(touched ? {} : parseStored(raw)), loaded: true })
-}
-
-const subscribe = (listener: () => void) => {
-  listeners.add(listener)
-  if (!state.loaded && listeners.size === 1) void hydrate()
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-const getState = () => state
-
-/**
- * The snapshot of the static export and of the first client render.
+ * The effective code lives in the snapshot rather than being derived in the
+ * hook, so the getter can return the same object until something changes.
  *
- * `deviceRegion()` reads the locale of the machine it runs on: Node at export
- * time, the browser at hydration. The two differ for every reader outside the
- * region of the build machine, and React then reports a hydration error on
- * the about screen, where the region name is text. So both sides render the
+ * `serverState`: `deviceRegion()` reads the locale of the machine it runs on,
+ * Node at export time and the browser at hydration. The two differ for every
+ * reader outside the region of the build machine, so both sides render the
  * fallback, and the device region replaces it right after hydration.
  */
-const SERVER_STATE: Region = { code: FALLBACK_REGION, chosen: false, loaded: false }
-const getServerState = () => SERVER_STATE
+const store = createPreferenceStore<Region>({
+  key: STORAGE_KEY,
+  initial: () => ({ code: deviceRegion(), chosen: false, loaded: false }),
+  parse: ({ code }) => (isCode(code) ? { code, chosen: true } : {}),
+  serialize: ({ code, chosen }) => (chosen ? { code } : {}),
+  serverState: { code: FALLBACK_REGION, chosen: false, loaded: false },
+})
+
+/** Turns the stored string back into a choice. */
+export const parseStored = store.parseStored
 
 /** Picks a country. `null` goes back to following the device. */
 export function setRegion(code: string | null): void {
-  touched = true
-  if (code === null) set({ code: deviceRegion(), chosen: false })
-  else set({ code, chosen: true })
-  persist()
+  if (code === null) store.choose({ code: deviceRegion(), chosen: false })
+  else store.choose({ code, chosen: true })
 }
 
 /** The country in use, whether the reader chose it, and whether the copy was read. */
-export const useRegion = (): Region =>
-  useSyncExternalStore(subscribe, getState, getServerState)
+export const useRegion = store.useStore
 
-/**
- * Puts the store back to its start state, for a test. jest.setup.js calls this
- * before each one, because the store lives as long as the process.
- */
-export function resetRegion(): void {
-  state = { code: deviceRegion(), chosen: false, loaded: false }
-  touched = false
-  listeners.clear()
-}
+/** For jest.setup.js, which calls it before each test. */
+export const resetRegion = store.reset

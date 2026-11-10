@@ -5,13 +5,13 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { useRouter } from 'expo-router'
 import { useEffect } from 'react'
 import { Platform, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useBarScroll } from '../../lib/floatingBar'
 import { metadataFor, noindexMeta } from '../../lib/head'
 import { markTipsSeen, TIPS } from '../../lib/tips'
+import { useGoBack } from '../../lib/useGoBack'
 
 const meta = noindexMeta('Tips and gestures')
 
@@ -27,7 +27,7 @@ const INTRO =
 
 export default function TipsScreen() {
   const theme = useTheme()
-  const router = useRouter()
+  const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const { onScroll } = useBarScroll()
 
@@ -37,12 +37,7 @@ export default function TipsScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <PageHead {...meta} />
-      <AppBar
-        title="Tips and gestures"
-        insetTop
-        canGoBack
-        onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-      />
+      <AppBar title="Tips and gestures" insetTop canGoBack onBackPress={goBack} />
 
       <Motion.ScrollView
         onScroll={onScroll}

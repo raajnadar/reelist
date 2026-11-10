@@ -40,10 +40,10 @@ export const shareTitle = (movie: Pick<Movie, 'title' | 'release_date'>) => {
 /**
  * How a share ended, so the caller can tell the reader what happened.
  *
- * `copied` is the web fallback: a browser without the Web Share API gets the
- * link on the clipboard instead. `dismissed` is iOS only, where the sheet
- * reports a cancel. `failed` covers a browser with neither API and a native
- * sheet that threw.
+ * `copied` is the web fallback: a browser whose sheet refused gets the link on
+ * the clipboard instead. `dismissed` is a cancel, which iOS reports as a
+ * result and a browser as an AbortError. Android reports none. `failed`
+ * covers a browser with neither API and a native sheet that threw.
  */
 export type ShareOutcome = 'shared' | 'copied' | 'dismissed' | 'failed'
 
@@ -227,9 +227,12 @@ export async function shareMovie(
     Platform.OS === 'android' ? { message: `${message}\n${url}` } : { message, url }
 
   try {
+    // react-native-web resolves with nothing: `navigator.share` has no result.
     const result = await Share.share(content, { dialogTitle: title, subject: title })
-    return result.action === Share.dismissedAction ? 'dismissed' : 'shared'
-  } catch {
+    return result?.action === Share.dismissedAction ? 'dismissed' : 'shared'
+  } catch (e) {
+    // A browser reports a closed sheet as an AbortError, not as a result.
+    if (e instanceof Error && e.name === 'AbortError') return 'dismissed'
     return (await copyToClipboard(url)) ? 'copied' : 'failed'
   }
 }

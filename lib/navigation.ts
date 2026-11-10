@@ -132,6 +132,10 @@ export function stackRouteName(href: Href): string | undefined {
   return href === '/' ? 'index' : href.slice(1)
 }
 
+/** The trailer page. The title travels along, so the page needs no request. */
+export const trailerHref = (key: string, title: string): Href =>
+  `/trailer/${key}?title=${encodeURIComponent(title)}`
+
 /**
  * The routes that fill the window with one picture or one video. A bar under
  * a photo, or a rail beside a trailer, would take room from the one thing the

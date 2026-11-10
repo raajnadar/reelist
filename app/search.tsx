@@ -3,21 +3,21 @@ import { PortalHost } from '@rootnative/components/portal'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme, useWindowDimensions } from '@rootnative/core'
 import { Motion, Presence } from '@rootnative/inertia'
-import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { FlatList, StyleSheet, TextInput, View } from 'react-native'
+import { StyleSheet, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GlassLayer } from '../components/GlassLayer'
 import { MovieCard } from '../components/MovieCard'
 import { SkeletonGrid } from '../components/Skeleton'
 import { StateMessage } from '../components/StateMessage'
+import { FailureMessage } from '../components/FailureMessage'
+import { PosterGrid } from '../components/PosterGrid'
 import { TooltipIconButton } from '../components/TooltipIconButton'
 import { PageHead } from '@rootnative/seo/expo-router'
 import { metadataFor, noindexMeta } from '../lib/head'
 import { haptic } from '../lib/haptics'
 import { searchMovies } from '../lib/api'
-import { type FailureKind } from '../lib/errors'
-import { GRID_GAP, GRID_PADDING, gridInset, posterColumns } from '../lib/grid'
+import { GRID_GAP, GRID_PADDING } from '../lib/grid'
 import { clearSearchOrigin, readSearchOrigin } from '../lib/searchOrigin'
 import { useDebounced } from '../lib/useDebounced'
 import { useKeyboardHeight } from '../lib/useKeyboardHeight'
@@ -27,6 +27,8 @@ import { useAddressKey, useAddressParams } from '../lib/useAddressParams'
 import { useUrlState } from '../lib/useUrlState'
 import { useWebKey } from '../lib/useWebKey'
 import type { Paged } from '../lib/types'
+import { useGoBack } from '../lib/useGoBack'
+import { visuallyHidden } from '../lib/a11y'
 
 export const generateMetadata = () => metadataFor(noindexMeta('Search'))
 
@@ -71,23 +73,6 @@ const FIELD_MAX_WIDTH = 560
 const SEARCH_HOST = 'search'
 
 /**
- * How each kind of failure is presented. The action is bound inside the screen:
- * only `transient` has one, because a search reaches no id and an unset proxy
- * URL is fixed off the screen.
- *
- * `missing` cannot occur — a search with no match is an empty result, not a
- * failure. It is listed so a new kind is a type error rather than a blank state.
- */
-const REPORTS: Record<
-  FailureKind,
-  { icon: string; tone: 'error' | 'neutral'; title: string }
-> = {
-  transient: { icon: 'cloud-off-outline', tone: 'error', title: 'Search failed' },
-  setup: { icon: 'cog-outline', tone: 'neutral', title: 'Setup needed' },
-  missing: { icon: 'movie-off-outline', tone: 'error', title: 'Nothing to show' },
-}
-
-/**
  * The search, as a sheet over the screen it was opened from.
  *
  * The route is a `transparentModal` (see app/_layout.tsx), so the screen below
@@ -102,10 +87,8 @@ export default function SearchRoute() {
 
 function SearchScreen() {
   const theme = useTheme()
-  const router = useRouter()
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
-  const columns = posterColumns(width)
   const fieldWidth = Math.min(width - GRID_PADDING * 2, FIELD_MAX_WIDTH)
   /**
    * The keyboard is up for the whole search, so the list pads its bottom by
@@ -192,9 +175,7 @@ function SearchScreen() {
   // tell them apart.
   const searched = search.data !== null
 
-  // Matches the about screen: `router.back` alone dead-ends when this screen is
-  // the first entry in the history, as it is on a deep link.
-  const dismiss = () => (router.canGoBack() ? router.back() : router.replace('/'))
+  const dismiss = useGoBack()
   useWebKey('Escape', dismiss)
   const landmark = useRootScreenRole()
 
@@ -218,7 +199,7 @@ function SearchScreen() {
         reader still needs one to name the sheet, so it gets one that only a
         screen reader finds.
       */}
-      <Typography level={1} style={styles.hiddenHeading}>
+      <Typography level={1} style={visuallyHidden}>
         Search
       </Typography>
       <GlassLayer onPress={dismiss} testID="search-glass" />
@@ -378,16 +359,12 @@ function SearchScreen() {
                 <SkeletonGrid width={width} />
               </Motion.View>
             ) : failure ? (
-              <StateMessage
+              <FailureMessage
                 key="error"
                 testID="search-error"
-                icon={REPORTS[failure.kind].icon}
-                tone={REPORTS[failure.kind].tone}
-                title={REPORTS[failure.kind].title}
-                body={failure.message}
-                actionLabel={failure.kind === 'transient' ? 'Try again' : undefined}
-                actionIcon="refresh"
-                onAction={failure.kind === 'transient' ? search.reload : undefined}
+                failure={failure}
+                title="Search failed"
+                onRetry={search.reload}
                 passThrough
               />
             ) : results.length ? (
@@ -397,29 +374,18 @@ function SearchScreen() {
                 animate={{ opacity: 1 }}
                 style={styles.fill}
               >
-                <FlatList
+                <PosterGrid
                   data={results}
-                  // `key` forces a remount when the column count changes. FlatList
-                  // caches its layout per item and does not recompute on a numColumns
-                  // change alone, which leaves the old grid geometry behind after a
-                  // rotation or a browser resize.
-                  key={columns}
-                  numColumns={columns}
-                  keyExtractor={(m) => String(m.id)}
+                  width={width}
                   renderItem={({ item, index }) => (
                     <MovieCard movie={item} index={index} dismissTo />
                   )}
-                  columnWrapperStyle={columns > 1 ? styles.gridRow : undefined}
-                  contentContainerStyle={[
+                  contentStyle={[
                     styles.list,
-                    {
-                      paddingHorizontal: gridInset(width),
-                      paddingBottom: Math.max(insets.bottom, keyboard) + 16,
-                    },
+                    { paddingBottom: Math.max(insets.bottom, keyboard) + 16 },
                   ]}
                   keyboardShouldPersistTaps="handled"
                   keyboardDismissMode="on-drag"
-                  showsVerticalScrollIndicator={false}
                 />
               </Motion.View>
             ) : searched ? (
@@ -473,16 +439,6 @@ const styles = StyleSheet.create({
     press. Nothing on the sheet is meant to draw past the window.
   */
   layer: { flex: 1, overflow: 'hidden' },
-  // Out of the layout and out of sight, but not out of the accessibility tree:
-  // `display: 'none'` would remove it from both.
-  hiddenHeading: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    overflow: 'hidden',
-    opacity: 0,
-    pointerEvents: 'none',
-  },
   fill: { flex: 1 },
   column: {
     position: 'absolute',
@@ -545,7 +501,5 @@ const styles = StyleSheet.create({
     pointer would come back cut off. GRID_GAP is the room it needs — see
     LIFT_SPACE — and it is the same space that separates two rows.
   */
-  // The horizontal inset comes from the window; see gridInset.
-  list: { paddingTop: GRID_GAP, gap: GRID_GAP },
-  gridRow: { gap: GRID_GAP },
+  list: { paddingTop: GRID_GAP },
 })

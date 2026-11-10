@@ -4,13 +4,14 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Motion } from '@rootnative/inertia'
 import { PageHead } from '@rootnative/seo/expo-router'
-import { Link, useRouter, type Href } from 'expo-router'
+import { Link, type Href } from 'expo-router'
 import { StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BUTTON_SIZE } from '../../lib/buttonSize'
 import { useBarScroll } from '../../lib/floatingBar'
 import { metadataFor, privacyMeta } from '../../lib/head'
 import { NEW_TAB } from '../../lib/share'
+import { useGoBack } from '../../lib/useGoBack'
 
 export const generateMetadata = () => metadataFor(privacyMeta)
 
@@ -150,21 +151,14 @@ const PARTS: Part[] = [
 
 export default function PrivacyScreen() {
   const theme = useTheme()
-  const router = useRouter()
+  const goBack = useGoBack()
   const insets = useSafeAreaInsets()
   const { onScroll } = useBarScroll()
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <PageHead {...privacyMeta} />
-      <AppBar
-        title="Privacy policy"
-        insetTop
-        canGoBack
-        // The Play listing links here, so this screen is often the first entry
-        // in the history. `router.back` alone would dead-end.
-        onBackPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-      />
+      <AppBar title="Privacy policy" insetTop canGoBack onBackPress={goBack} />
 
       <Motion.ScrollView
         onScroll={onScroll}

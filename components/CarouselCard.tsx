@@ -19,7 +19,7 @@ import {
   type PointerEvent,
   type ViewStyle,
 } from 'react-native'
-import { metaLine } from '../lib/format'
+import { cardLabel } from '../lib/format'
 import { RemoteImage } from './RemoteImage'
 import { POSTER_W500, posterUrl } from '../lib/images'
 import type { Movie } from '../lib/types'
@@ -251,7 +251,7 @@ export const CarouselCard = memo(function CarouselCard({
         <Link href={`/movie/${movie.id}`} asChild>
           <Motion.Pressable
             ref={(element: CardElement | null) => onElement?.(index, element)}
-            accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
+            accessibilityLabel={cardLabel(movie)}
             gesture={{
               hovered: { scale: 1.03 },
               pressed: { scale: 0.97 },
@@ -326,10 +326,7 @@ export function CarouselStill({ movie, width }: { movie: Movie; width: Dimension
   return (
     <View style={{ width }}>
       <Link href={`/movie/${movie.id}`} asChild>
-        <Pressable
-          accessibilityLabel={`${movie.title}. ${metaLine(movie.vote_average, movie.release_date)}`}
-          style={styles.press}
-        >
+        <Pressable accessibilityLabel={cardLabel(movie)} style={styles.press}>
           <View style={[styles.lift, LIFT_SHADOW]} />
           <View
             style={[styles.card, { backgroundColor: theme.colors.surfaceContainerHigh }]}
