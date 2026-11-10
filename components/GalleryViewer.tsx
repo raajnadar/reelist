@@ -482,11 +482,8 @@ export function GalleryViewer({ images, title, initialIndex, onClose }: Props) {
           testID="gallery-chrome"
           style={[
             styles.fill,
-            {
-              paddingTop: insets.top,
-              paddingBottom: insets.bottom,
-              pointerEvents: chrome ? 'box-none' : 'none',
-            },
+            { paddingTop: insets.top, paddingBottom: insets.bottom },
+            chrome ? styles.takesTouches : styles.ignoresTouches,
           ]}
           animate={{ opacity: chrome ? 1 : 0 }}
           transition="hover"
@@ -790,6 +787,8 @@ const styles = StyleSheet.create({
   page: { overflow: 'hidden' },
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   chrome: { ...StyleSheet.absoluteFill, pointerEvents: 'box-none' },
+  takesTouches: { pointerEvents: 'box-none' },
+  ignoresTouches: { pointerEvents: 'none' },
   stripBar: { height: STRIP_HEIGHT, justifyContent: 'center' },
   middle: {
     flex: 1,
