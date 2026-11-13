@@ -445,7 +445,7 @@ describe('the filters', () => {
     fireEvent.press(screen.getByTestId('decade-1990'))
     fireEvent.press(screen.getByTestId('language-ml'))
     fireEvent.press(screen.getByTestId('language-ta'))
-    step(screen, 'Runtime', 6)
+    step(screen, 'Runtime, Shortest', 6)
     fireEvent.press(screen.getByTestId('filter-apply'))
 
     await waitFor(() =>

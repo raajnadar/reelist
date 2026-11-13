@@ -274,6 +274,7 @@ function WatchlistScreen() {
           label={o.label}
           leadingIcon={o.icon}
           trailingIcon={order === o.value ? 'check' : undefined}
+          selected={order === o.value}
           onPress={() => setOrder(o.value)}
         />
       ))}

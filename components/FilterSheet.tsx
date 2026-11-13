@@ -175,8 +175,6 @@ function FilterForm({
         </Section>
 
         <Section title="Runtime" value={runtimeLabel(draft.runtime ?? {})}>
-          {/* R49: a screen reader can move only the low thumb of a range
-              slider. The fix is in the library; the app has no way around it. */}
           <Slider
             value={runtimeBounds}
             onValueChange={pickRuntime}
@@ -187,6 +185,8 @@ function FilterForm({
             showTickMarks={false}
             formatValueLabel={runtimeText}
             accessibilityLabel="Runtime"
+            startThumbAccessibilityLabel="Shortest"
+            endThumbAccessibilityLabel="Longest"
             testID="filter-runtime-slider"
           />
         </Section>

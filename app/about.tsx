@@ -304,6 +304,7 @@ export default function AboutScreen() {
                     <Menu.Item
                       label="No preference"
                       leadingIcon={language.code ? undefined : 'check'}
+                      selected={!language.code}
                       onPress={() => setLanguage(null)}
                       testID="language-none"
                     />
@@ -313,6 +314,7 @@ export default function AboutScreen() {
                         key={item.value}
                         label={item.label}
                         leadingIcon={item.value === language.code ? 'check' : undefined}
+                        selected={item.value === language.code}
                         onPress={() => setLanguage(item.value)}
                         testID={`language-${item.value}`}
                       />
@@ -362,6 +364,7 @@ export default function AboutScreen() {
                     <Menu.Item
                       label={`Follow device (${regionName(device)})`}
                       leadingIcon={region.chosen ? undefined : 'check'}
+                      selected={!region.chosen}
                       onPress={() => setRegion(null)}
                       testID="region-device"
                     />
@@ -373,6 +376,7 @@ export default function AboutScreen() {
                         leadingIcon={
                           region.chosen && item.code === region.code ? 'check' : undefined
                         }
+                        selected={region.chosen && item.code === region.code}
                         onPress={() => setRegion(item.code)}
                         testID={`region-${item.code}`}
                       />
